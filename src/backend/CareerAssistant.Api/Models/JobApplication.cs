@@ -11,4 +11,9 @@ public class JobApplication
     public string JobDescription { get; set; } = string.Empty;
 
     public string Status { get; set; } = "Saved";
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // Navigation property
+    public ICollection<JobAnalysisResult> AnalysisResults { get; set; } = new List<JobAnalysisResult>();
 }
