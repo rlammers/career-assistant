@@ -118,7 +118,7 @@ POST   /api/jobs/{id}/analyse    → Analyze job against profile
 
 1. Reads user Profile
 2. Reads JobApplication by id
-3. Calls AI service
+3. Mocks AI analysis locally
 4. Stores JobAnalysisResult
 5. Returns result
 

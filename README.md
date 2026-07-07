@@ -14,15 +14,29 @@ A personal career management tool that helps users:
 ## Tech Stack
 
 Backend:
+
 - C#
 - ASP.NET Core Web API
 - Entity Framework Core
 - SQL
 
 Frontend:
+
 - React
 - TypeScript
 
 ## Status
 
 MVP in development.
+
+## Backend API
+
+Implemented backend controllers support the following endpoints:
+
+- `GET /api/profile`
+- `POST /api/profile`
+- `GET /api/jobs`
+- `GET /api/jobs/{id}`
+- `POST /api/jobs`
+- `PATCH /api/jobs/{id}/status`
+- `POST /api/jobs/{id}/analyse` (mocked analysis response)
