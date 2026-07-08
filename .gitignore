@@ -31,5 +31,14 @@ dist/
 .DS_Store
 Thumbs.db
 
-# DB Files
+# Ignore SQLite database files
+*.sqlite
+*.sqlite3
 *.db
+
+# Ignore SQLite temporary and journal files
+*.sqlite-journal
+*.sqlite3-journal
+*.db-journal
+*.db-wal
+*.db-shm
