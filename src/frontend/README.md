@@ -35,8 +35,8 @@ Output is in the `dist/` directory.
 
 ## Dependencies
 
-- **React 18** – UI framework
-- **React Router** – Client-side routing (to be installed)
+- **React** – UI framework
+- **React Router** – Client-side routing
 - **TypeScript** – Type safety
 - **Vite** – Build tool and dev server
 
@@ -45,11 +45,11 @@ Output is in the `dist/` directory.
 - Profile page (edit and save user profile)
 - Job list page (view all saved jobs)
 - Job detail page (view job description and analysis)
-- API integration with backend (mocked for now)
+- API integration with backend
 
 ## API Integration
 
-All API calls are made via the Fetch API to `http://localhost:5000/api` (backend URL will be configurable).
+All API calls are made via the Fetch API to `http://localhost:5117/api` by default. Set `VITE_API_BASE_URL` to override it.
 
 Endpoints consumed:
 

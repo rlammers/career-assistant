@@ -11,12 +11,14 @@ export interface Profile {
   experience: string;
 }
 
+export type JobStatus = 'Saved' | 'Applied' | 'Interview' | 'Offer' | 'Rejected';
+
 export interface JobApplication {
   id: number;
   company: string;
   role: string;
   jobDescription: string;
-  status: string;
+  status: JobStatus;
   createdAt: string;
   analysisResults: JobAnalysisResult[];
 }
@@ -53,19 +55,19 @@ export const profileAPI = {
 // Job Application endpoints
 export const jobAPI = {
   getJobs: async (): Promise<JobApplication[]> => {
-    const response = await fetch(`${API_BASE_URL}/jobApplications`);
+    const response = await fetch(`${API_BASE_URL}/jobs`);
     if (!response.ok) throw new Error(`Failed to fetch jobs: ${response.statusText}`);
     return response.json();
   },
 
   getJob: async (id: number): Promise<JobApplication> => {
-    const response = await fetch(`${API_BASE_URL}/jobApplications/${id}`);
+    const response = await fetch(`${API_BASE_URL}/jobs/${id}`);
     if (!response.ok) throw new Error(`Failed to fetch job: ${response.statusText}`);
     return response.json();
   },
 
   createJob: async (job: Omit<JobApplication, 'id' | 'createdAt' | 'analysisResults' | 'status'>): Promise<JobApplication> => {
-    const response = await fetch(`${API_BASE_URL}/jobApplications`, {
+    const response = await fetch(`${API_BASE_URL}/jobs`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(job),
@@ -74,8 +76,8 @@ export const jobAPI = {
     return response.json();
   },
 
-  updateJobStatus: async (id: number, status: string): Promise<JobApplication> => {
-    const response = await fetch(`${API_BASE_URL}/jobApplications/${id}/status`, {
+  updateJobStatus: async (id: number, status: JobStatus): Promise<JobApplication> => {
+    const response = await fetch(`${API_BASE_URL}/jobs/${id}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),
@@ -88,7 +90,7 @@ export const jobAPI = {
 // Analysis endpoint
 export const analysisAPI = {
   analyzeJob: async (jobId: number): Promise<JobAnalysisResult> => {
-    const response = await fetch(`${API_BASE_URL}/jobApplications/${jobId}/analyse`, {
+    const response = await fetch(`${API_BASE_URL}/jobs/${jobId}/analyse`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });

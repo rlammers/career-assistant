@@ -27,7 +27,7 @@ export const ProfilePage = () => {
         skills: data.skills,
         experience: data.experience,
       });
-    } catch (err) {
+    } catch {
       // Profile doesn't exist yet, that's okay
       setError(null);
     } finally {

@@ -27,9 +27,8 @@ Frontend:
 
 ## Status
 
-MVP in development.
-Backend MVP complete.
-Front end MVP to do.
+MVP complete.
+Backend and frontend core loop implemented.
 
 ## Backend API
 

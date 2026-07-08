@@ -1,6 +1,6 @@
 @CareerAssistant.Api_HostAddress = http://localhost:5117
 
-GET http://localhost:5068/api/JobApplications
+GET {{CareerAssistant.Api_HostAddress}}/api/jobs
 Accept: application/json
 
 ###

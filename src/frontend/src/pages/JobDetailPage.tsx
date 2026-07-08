@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { jobAPI } from '../services/api';
-import type { JobApplication, JobAnalysisResult } from '../services/api';
+import type { JobApplication, JobAnalysisResult, JobStatus } from '../services/api';
 
 export const JobDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -10,14 +10,10 @@ export const JobDetailPage = () => {
   const [analysis, setAnalysis] = useState<JobAnalysisResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [statusDropdown, setStatusDropdown] = useState('');
+  const [statusDropdown, setStatusDropdown] = useState<JobStatus>('Saved');
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
-  useEffect(() => {
-    fetchJobDetails();
-  }, [id]);
-
-  const fetchJobDetails = async () => {
+  const fetchJobDetails = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     setError(null);
@@ -35,7 +31,11 @@ export const JobDetailPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchJobDetails();
+  }, [fetchJobDetails]);
 
   const handleStatusChange = async () => {
     if (!job || statusDropdown === job.status) return;
@@ -73,7 +73,7 @@ export const JobDetailPage = () => {
           <strong>Status:</strong>
           <select
             value={statusDropdown}
-            onChange={(e) => setStatusDropdown(e.target.value)}
+            onChange={(e) => setStatusDropdown(e.target.value as JobStatus)}
             style={{ marginLeft: '10px', padding: '5px' }}
           >
             <option value="Saved">Saved</option>
