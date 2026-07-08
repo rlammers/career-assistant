@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { jobAPI, JobApplication, analysisAPI } from '../services/api';
+import { jobAPI, analysisAPI } from '../services/api';
+import type { JobApplication } from '../services/api';
 
 export const JobListPage = () => {
   const navigate = useNavigate();

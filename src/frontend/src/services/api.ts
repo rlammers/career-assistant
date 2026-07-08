@@ -64,7 +64,7 @@ export const jobAPI = {
     return response.json();
   },
 
-  createJob: async (job: Omit<JobApplication, 'id' | 'createdAt' | 'analysisResults'>): Promise<JobApplication> => {
+  createJob: async (job: Omit<JobApplication, 'id' | 'createdAt' | 'analysisResults' | 'status'>): Promise<JobApplication> => {
     const response = await fetch(`${API_BASE_URL}/jobs`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { jobAPI, JobApplication, JobAnalysisResult } from '../services/api';
+import { jobAPI } from '../services/api';
+import type { JobApplication, JobAnalysisResult } from '../services/api';
 
 export const JobDetailPage = () => {
   const { id } = useParams<{ id: string }>();

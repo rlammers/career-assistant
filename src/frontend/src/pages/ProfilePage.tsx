@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { profileAPI, Profile } from '../services/api';
+import { profileAPI } from '../services/api';
+import type { Profile } from '../services/api';
 
 export const ProfilePage = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
