@@ -1,7 +1,7 @@
 // API service layer for backend communication
-// Base URL: http://localhost:5000/api
+// Base URL: http://localhost:5117/api
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5117/api';
 
 // Types
 export interface Profile {
@@ -53,19 +53,19 @@ export const profileAPI = {
 // Job Application endpoints
 export const jobAPI = {
   getJobs: async (): Promise<JobApplication[]> => {
-    const response = await fetch(`${API_BASE_URL}/jobs`);
+    const response = await fetch(`${API_BASE_URL}/jobApplications`);
     if (!response.ok) throw new Error(`Failed to fetch jobs: ${response.statusText}`);
     return response.json();
   },
 
   getJob: async (id: number): Promise<JobApplication> => {
-    const response = await fetch(`${API_BASE_URL}/jobs/${id}`);
+    const response = await fetch(`${API_BASE_URL}/jobApplications/${id}`);
     if (!response.ok) throw new Error(`Failed to fetch job: ${response.statusText}`);
     return response.json();
   },
 
   createJob: async (job: Omit<JobApplication, 'id' | 'createdAt' | 'analysisResults' | 'status'>): Promise<JobApplication> => {
-    const response = await fetch(`${API_BASE_URL}/jobs`, {
+    const response = await fetch(`${API_BASE_URL}/jobApplications`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(job),
@@ -75,7 +75,7 @@ export const jobAPI = {
   },
 
   updateJobStatus: async (id: number, status: string): Promise<JobApplication> => {
-    const response = await fetch(`${API_BASE_URL}/jobs/${id}/status`, {
+    const response = await fetch(`${API_BASE_URL}/jobApplications/${id}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),
@@ -88,7 +88,7 @@ export const jobAPI = {
 // Analysis endpoint
 export const analysisAPI = {
   analyzeJob: async (jobId: number): Promise<JobAnalysisResult> => {
-    const response = await fetch(`${API_BASE_URL}/jobs/${jobId}/analyse`, {
+    const response = await fetch(`${API_BASE_URL}/jobApplications/${jobId}/analyse`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });
