@@ -7,9 +7,18 @@ using Microsoft.EntityFrameworkCore;
 namespace CareerAssistant.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/jobs")]
 public class JobApplicationsController : ControllerBase
 {
+    private static readonly HashSet<string> AllowedStatuses = new(StringComparer.Ordinal)
+    {
+        "Saved",
+        "Applied",
+        "Interview",
+        "Offer",
+        "Rejected"
+    };
+
     private readonly ApplicationDbContext _dbContext;
 
     public JobApplicationsController(ApplicationDbContext dbContext)
@@ -63,6 +72,11 @@ public class JobApplicationsController : ControllerBase
     [HttpPatch("{id}/status")]
     public async Task<ActionResult<JobApplication>> PatchStatus(int id, JobStatusUpdateRequest request)
     {
+        if (!AllowedStatuses.Contains(request.Status))
+        {
+            return BadRequest("Status must be one of: Saved, Applied, Interview, Offer, Rejected.");
+        }
+
         var job = await _dbContext.JobApplications.FindAsync(id);
 
         if (job == null)
