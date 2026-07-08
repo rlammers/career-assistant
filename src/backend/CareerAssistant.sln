@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareerAssistant.Api", "CareerAssistant.Api\CareerAssistant.Api.csproj", "{951A0AD5-CC45-4305-854C-DA26B6D40C88}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareerAssistant.Api.Tests", "CareerAssistant.Api.Tests\CareerAssistant.Api.Tests.csproj", "{D7491449-DFA0-4646-835D-89C6826C653D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{951A0AD5-CC45-4305-854C-DA26B6D40C88}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{951A0AD5-CC45-4305-854C-DA26B6D40C88}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{951A0AD5-CC45-4305-854C-DA26B6D40C88}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D7491449-DFA0-4646-835D-89C6826C653D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D7491449-DFA0-4646-835D-89C6826C653D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D7491449-DFA0-4646-835D-89C6826C653D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D7491449-DFA0-4646-835D-89C6826C653D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
