@@ -28,6 +28,8 @@ Frontend:
 ## Status
 
 MVP in development.
+Backend MVP complete.
+Front end MVP to do.
 
 ## Backend API
 
