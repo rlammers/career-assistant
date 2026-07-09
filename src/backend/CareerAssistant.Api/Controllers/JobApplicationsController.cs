@@ -96,7 +96,9 @@ public class JobApplicationsController : ControllerBase
     [HttpPost("{id}/analyse")]
     public async Task<ActionResult<JobAnalysisResultResponse>> Analyse(int id)
     {
-        var profile = await _dbContext.Profiles.FirstOrDefaultAsync();
+        var profile = await _dbContext.Profiles
+            .OrderBy(p => p.Id)
+            .FirstOrDefaultAsync();
         var job = await _dbContext.JobApplications.FindAsync(id);
 
         if (job == null)
