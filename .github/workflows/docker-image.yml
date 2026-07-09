@@ -1,0 +1,22 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build backend Docker image
+        run: docker build . --file src/backend/CareerAssistant.Api/Dockerfile --tag career-assistant-backend:ci
+
+      - name: Build frontend Docker image
+        run: docker build . --file src/frontend/Dockerfile --tag career-assistant-frontend:ci
