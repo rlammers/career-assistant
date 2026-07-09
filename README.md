@@ -61,7 +61,7 @@ Implemented backend controllers support the following endpoints:
 
 Prerequisites:
 
-- .NET 8 SDK
+- .NET 10 SDK
 - Node.js and npm
 
 Run the backend API:
