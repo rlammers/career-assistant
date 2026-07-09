@@ -10,7 +10,7 @@ RUN dotnet publish src/backend/CareerAssistant.Api/CareerAssistant.Api.csproj \
     --output /app/publish \
     --no-restore
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
 RUN mkdir -p /app/data && chown -R app:app /app/data
