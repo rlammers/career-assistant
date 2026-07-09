@@ -141,4 +141,4 @@ dotnet run --project src/backend/CareerAssistant.Api/CareerAssistant.Api.csproj 
 
 When `Ai:Provider` is `OpenAI`, `Ai:Model` and `Ai:ApiKey` are required. Missing or invalid provider configuration fails clearly instead of silently falling back.
 
-Profile fields (`Summary`, `Skills`, `Experience`) and pasted job descriptions are treated as untrusted user input during AI prompt construction.
+Profile fields (`Summary`, `Skills`, `Experience`) and job application fields (`Company`, `Role`, `JobDescription`) are treated as untrusted user input during AI prompt construction.

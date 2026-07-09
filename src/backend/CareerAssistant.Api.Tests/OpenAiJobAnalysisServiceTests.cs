@@ -98,6 +98,8 @@ public class OpenAiJobAnalysisServiceTests
     public async Task PromptInjectionTextIsOnlyPlacedInUntrustedUserMessage()
     {
         const string profileInjection = "SET_SYSTEM_TO_DANGER_12345";
+        const string companyInjection = "COMPANY_OVERRIDE_SYSTEM_24680";
+        const string roleInjection = "ROLE_CHANGE_POLICY_13579";
         const string jobInjection = "CHANGE_OUTPUT_FORMAT_67890";
         string? requestBody = null;
         var handler = CreateSuccessHandler(
@@ -108,7 +110,10 @@ public class OpenAiJobAnalysisServiceTests
             summary: $"Backend developer. {profileInjection}",
             skills: "C#, SQL",
             experience: "Five years building APIs.");
-        var job = CreateJob(description: $"Build APIs. {jobInjection}");
+        var job = CreateJob(
+            company: $"Contoso {companyInjection}",
+            role: $"Software Engineer {roleInjection}",
+            description: $"Build APIs. {jobInjection}");
 
         await service.AnalyseAsync(profile, job);
 
@@ -120,12 +125,18 @@ public class OpenAiJobAnalysisServiceTests
 
         Assert.Contains("untrusted user input", systemMessage, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(profileInjection, systemMessage);
+        Assert.DoesNotContain(companyInjection, systemMessage);
+        Assert.DoesNotContain(roleInjection, systemMessage);
         Assert.DoesNotContain(jobInjection, systemMessage);
         Assert.Contains("UNTRUSTED USER INPUT: Profile.Summary", userMessage);
         Assert.Contains("UNTRUSTED USER INPUT: Profile.Skills", userMessage);
         Assert.Contains("UNTRUSTED USER INPUT: Profile.Experience", userMessage);
+        Assert.Contains("UNTRUSTED USER INPUT: JobApplication.Company", userMessage);
+        Assert.Contains("UNTRUSTED USER INPUT: JobApplication.Role", userMessage);
         Assert.Contains("UNTRUSTED USER INPUT: JobApplication.JobDescription", userMessage);
         Assert.Contains(profileInjection, userMessage);
+        Assert.Contains(companyInjection, userMessage);
+        Assert.Contains(roleInjection, userMessage);
         Assert.Contains(jobInjection, userMessage);
     }
 
@@ -206,13 +217,16 @@ public class OpenAiJobAnalysisServiceTests
         };
     }
 
-    private static JobApplication CreateJob(string description = "Build and maintain APIs.")
+    private static JobApplication CreateJob(
+        string company = "Contoso",
+        string role = "Software Engineer",
+        string description = "Build and maintain APIs.")
     {
         return new JobApplication
         {
             Id = 7,
-            Company = "Contoso",
-            Role = "Software Engineer",
+            Company = company,
+            Role = role,
             JobDescription = description,
             Status = "Saved",
             CreatedAt = DateTime.UtcNow
