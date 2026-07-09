@@ -1,3 +1,4 @@
+using System.Data;
 using System.Data.Common;
 using CareerAssistant.Api.Data;
 using CareerAssistant.Api.Services;
@@ -15,19 +16,43 @@ namespace CareerAssistant.Api.Tests;
 public class CareerAssistantApiFactory : WebApplicationFactory<Program>
 {
     private readonly SqliteConnection _connection = new("Data Source=:memory:");
+    private readonly IReadOnlyDictionary<string, string?> _configuration;
+    private readonly IJobAnalysisService? _jobAnalysisService;
+    private readonly bool _useConfiguredJobAnalysisService;
+
+    public CareerAssistantApiFactory(
+        IReadOnlyDictionary<string, string?>? configuration = null,
+        IJobAnalysisService? jobAnalysisService = null,
+        bool useConfiguredJobAnalysisService = false)
+    {
+        _configuration = configuration ?? new Dictionary<string, string?>();
+        _jobAnalysisService = jobAnalysisService;
+        _useConfiguredJobAnalysisService = useConfiguredJobAnalysisService;
+    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        _connection.Open();
+        if (_connection.State != ConnectionState.Open)
+        {
+            _connection.Open();
+        }
 
         builder.ConfigureAppConfiguration((_, configuration) =>
         {
-            configuration.AddInMemoryCollection(new Dictionary<string, string?>
+            var testConfiguration = new Dictionary<string, string?>
             {
                 ["AI:Provider"] = "Mock",
                 ["AI:Model"] = "test-mock",
-                ["OpenAI:ApiKey"] = string.Empty
-            });
+                ["OpenAI:ApiKey"] = string.Empty,
+                ["Database:MigrateOnStartup"] = "false"
+            };
+
+            foreach (var setting in _configuration)
+            {
+                testConfiguration[setting.Key] = setting.Value;
+            }
+
+            configuration.AddInMemoryCollection(testConfiguration);
         });
 
         builder.ConfigureLogging(logging =>
@@ -37,8 +62,11 @@ public class CareerAssistantApiFactory : WebApplicationFactory<Program>
 
         builder.ConfigureServices(services =>
         {
-            services.RemoveAll<IJobAnalysisService>();
-            services.AddScoped<IJobAnalysisService, MockJobAnalysisService>();
+            if (!_useConfiguredJobAnalysisService)
+            {
+                services.RemoveAll<IJobAnalysisService>();
+                services.AddScoped<IJobAnalysisService>(_ => _jobAnalysisService ?? new MockJobAnalysisService());
+            }
 
             var dbContextOptionsDescriptor = services.SingleOrDefault(
                 service => service.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));

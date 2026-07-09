@@ -1,0 +1,11 @@
+services:
+  backend:
+    environment:
+      AI__Provider: OpenAI
+      OpenAI__ApiKeyFile: /run/secrets/openai_api_key
+    secrets:
+      - openai_api_key
+
+secrets:
+  openai_api_key:
+    environment: OPENAI_API_KEY

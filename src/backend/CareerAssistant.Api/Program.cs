@@ -2,6 +2,7 @@ using CareerAssistant.Api.Data;
 using CareerAssistant.Api.Options;
 using CareerAssistant.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.HttpOverrides;
 using OpenAI;
 using System.ClientModel;
 using System.ClientModel.Primitives;
@@ -32,13 +33,26 @@ else if (string.Equals(aiProvider, "OpenAI", StringComparison.OrdinalIgnoreCase)
         throw new InvalidOperationException("OpenAI analysis provider requires AI:Model to be configured.");
     }
 
-    var apiKey = builder.Configuration["OpenAI:ApiKey"];
     var openAiOptions = builder.Configuration.GetSection("OpenAI").Get<OpenAiOptions>() ?? new OpenAiOptions();
+    var apiKey = builder.Configuration["OpenAI:ApiKey"];
     apiKey = string.IsNullOrWhiteSpace(apiKey) ? openAiOptions.ApiKey : apiKey;
+
+    var apiKeyFile = builder.Configuration["OpenAI:ApiKeyFile"];
+    apiKeyFile = string.IsNullOrWhiteSpace(apiKeyFile) ? openAiOptions.ApiKeyFile : apiKeyFile;
+
+    if (string.IsNullOrWhiteSpace(apiKey) && !string.IsNullOrWhiteSpace(apiKeyFile))
+    {
+        if (!File.Exists(apiKeyFile))
+        {
+            throw new InvalidOperationException($"OpenAI analysis provider could not read OpenAI:ApiKeyFile at '{apiKeyFile}'.");
+        }
+
+        apiKey = File.ReadAllText(apiKeyFile).Trim();
+    }
 
     if (string.IsNullOrWhiteSpace(apiKey))
     {
-        throw new InvalidOperationException("OpenAI analysis provider requires OpenAI:ApiKey to be configured.");
+        throw new InvalidOperationException("OpenAI analysis provider requires OpenAI:ApiKey or OpenAI:ApiKeyFile to be configured.");
     }
 
     builder.Services.AddSingleton(serviceProvider =>
@@ -76,10 +90,13 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
+        var frontendOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+            ?? ["http://localhost:5173"];
+
         policy
-            .WithOrigins("http://localhost:5173")
-            .AllowAnyMethod()
-            .AllowAnyHeader();
+            .WithOrigins(frontendOrigins)
+            .WithMethods("GET", "POST", "PATCH")
+            .WithHeaders("Content-Type");
     });
 });
 
@@ -94,6 +111,38 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
+var forwardedHeadersEnabled = builder.Configuration.GetValue("ForwardedHeaders:Enabled", false);
+var migrateOnStartup = builder.Configuration.GetValue("Database:MigrateOnStartup", true);
+
+app.Logger.LogInformation(
+    "Starting Career Assistant API in {Environment}. AI provider: {AIProvider}. Migrate on startup: {MigrateOnStartup}. Forwarded headers: {ForwardedHeadersEnabled}.",
+    app.Environment.EnvironmentName,
+    aiProvider,
+    migrateOnStartup,
+    forwardedHeadersEnabled);
+
+if (forwardedHeadersEnabled)
+{
+    var forwardedHeadersOptions = new ForwardedHeadersOptions
+    {
+        ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+    };
+
+    forwardedHeadersOptions.KnownNetworks.Clear();
+    forwardedHeadersOptions.KnownProxies.Clear();
+
+    app.UseForwardedHeaders(forwardedHeadersOptions);
+}
+
+if (migrateOnStartup)
+{
+    app.Logger.LogInformation("Applying database migrations.");
+
+    using var scope = app.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    dbContext.Database.Migrate();
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -107,6 +156,7 @@ app.UseCors("AllowFrontend");
 
 app.UseAuthorization();
 
+app.MapMethods("/health", ["GET", "HEAD"], () => Results.Ok(new { status = "Healthy" }));
 app.MapControllers();
 
 app.Run();
