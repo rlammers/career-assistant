@@ -89,10 +89,9 @@ Default configuration in `src/backend/CareerAssistant.Api/appsettings.json`:
 
 ```json
 {
-  "Ai": {
+  "AI": {
     "Provider": "Mock",
-    "Model": "",
-    "ApiKey": "",
+    "Model": "gpt-5-mini",
     "BaseUrl": "https://api.openai.com/v1",
     "TimeoutSeconds": 60
   }
@@ -102,9 +101,22 @@ Default configuration in `src/backend/CareerAssistant.Api/appsettings.json`:
 Supported providers:
 
 - `Mock`: deterministic fake analysis for local development and tests
-- `OpenAI`: OpenAI-compatible HTTP provider using `/chat/completions`
+- `OpenAI`: official OpenAI .NET SDK provider
 
-Do not put real API keys in `appsettings.json`, `appsettings.Development.json`, frontend code, or committed files.
+Do not put real API keys in `appsettings.json`, `appsettings.Development.json`, frontend code, or committed files. The API key is read from `OpenAI:ApiKey`, which should come from user secrets, environment variables, or deployment configuration.
+
+OpenAI provider example without a committed API key:
+
+```json
+{
+  "AI": {
+    "Provider": "OpenAI",
+    "Model": "gpt-5-mini",
+    "BaseUrl": "https://api.openai.com/v1",
+    "TimeoutSeconds": 60
+  }
+}
+```
 
 ### Configure OpenAI With User Secrets
 
@@ -113,11 +125,11 @@ From the backend project directory:
 ```powershell
 cd src/backend/CareerAssistant.Api
 dotnet user-secrets init
-dotnet user-secrets set "Ai:Provider" "OpenAI"
-dotnet user-secrets set "Ai:Model" "gpt-4o-mini"
-dotnet user-secrets set "Ai:ApiKey" "your-api-key"
-dotnet user-secrets set "Ai:BaseUrl" "https://api.openai.com/v1"
-dotnet user-secrets set "Ai:TimeoutSeconds" "60"
+dotnet user-secrets set "AI:Provider" "OpenAI"
+dotnet user-secrets set "AI:Model" "gpt-5-mini"
+dotnet user-secrets set "AI:BaseUrl" "https://api.openai.com/v1"
+dotnet user-secrets set "AI:TimeoutSeconds" "60"
+dotnet user-secrets set "OpenAI:ApiKey" "your-api-key"
 ```
 
 Then run the backend again:
@@ -131,14 +143,14 @@ dotnet run --launch-profile http
 PowerShell example:
 
 ```powershell
-$env:Ai__Provider="OpenAI"
-$env:Ai__Model="gpt-4o-mini"
-$env:Ai__ApiKey="your-api-key"
-$env:Ai__BaseUrl="https://api.openai.com/v1"
-$env:Ai__TimeoutSeconds="60"
+$env:AI__Provider="OpenAI"
+$env:AI__Model="gpt-5-mini"
+$env:AI__BaseUrl="https://api.openai.com/v1"
+$env:AI__TimeoutSeconds="60"
+$env:OpenAI__ApiKey="your-api-key"
 dotnet run --project src/backend/CareerAssistant.Api/CareerAssistant.Api.csproj --launch-profile http
 ```
 
-When `Ai:Provider` is `OpenAI`, `Ai:Model` and `Ai:ApiKey` are required. Missing or invalid provider configuration fails clearly instead of silently falling back.
+When `AI:Provider` is `OpenAI`, `AI:Model` and `OpenAI:ApiKey` are required. Missing or invalid provider configuration fails clearly instead of silently falling back.
 
 Profile fields (`Summary`, `Skills`, `Experience`) and job application fields (`Company`, `Role`, `JobDescription`) are treated as untrusted user input during AI prompt construction.

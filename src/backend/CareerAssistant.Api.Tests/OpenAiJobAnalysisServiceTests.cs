@@ -1,10 +1,7 @@
-using System.Net;
-using System.Text;
 using System.Text.Json;
 using CareerAssistant.Api.Models;
 using CareerAssistant.Api.Options;
 using CareerAssistant.Api.Services;
-using Microsoft.Extensions.Options;
 
 namespace CareerAssistant.Api.Tests;
 
@@ -13,7 +10,7 @@ public class OpenAiJobAnalysisServiceTests
     [Fact]
     public async Task ValidStructuredResponseMapsToJobAnalysisResult()
     {
-        var service = CreateService(CreateSuccessHandler(matchScore: 82));
+        var service = CreateService(CreateSuccessClient(matchScore: 82));
 
         var result = await service.AnalyseAsync(CreateProfile(), CreateJob());
 
@@ -30,7 +27,7 @@ public class OpenAiJobAnalysisServiceTests
     [InlineData(144, 100)]
     public async Task MatchScoreIsClamped(int providerScore, int expectedScore)
     {
-        var service = CreateService(CreateSuccessHandler(providerScore));
+        var service = CreateService(CreateSuccessClient(providerScore));
 
         var result = await service.AnalyseAsync(CreateProfile(), CreateJob());
 
@@ -40,20 +37,7 @@ public class OpenAiJobAnalysisServiceTests
     [Fact]
     public async Task InvalidStructuredContentThrowsClearError()
     {
-        var response = new
-        {
-            choices = new[]
-            {
-                new
-                {
-                    message = new
-                    {
-                        content = "{not valid json"
-                    }
-                }
-            }
-        };
-        var service = CreateService(new StubHttpMessageHandler(_ => Task.FromResult(JsonResponse(response))));
+        var service = CreateService(new StubOpenAiChatCompletionClient("{not valid json"));
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(
             () => service.AnalyseAsync(CreateProfile(), CreateJob()));
@@ -62,36 +46,31 @@ public class OpenAiJobAnalysisServiceTests
     }
 
     [Fact]
-    public async Task MissingChoicesThrowClearError()
+    public async Task MissingContentThrowsClearError()
     {
-        var service = CreateService(new StubHttpMessageHandler(_ =>
-            Task.FromResult(JsonResponse(new { choices = Array.Empty<object>() }))));
+        var service = CreateService(new StubOpenAiChatCompletionClient(""));
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(
             () => service.AnalyseAsync(CreateProfile(), CreateJob()));
 
-        Assert.Contains("message content", exception.Message);
+        Assert.Contains("structured JSON", exception.Message);
     }
 
-    [Theory]
-    [InlineData("", "model")]
-    [InlineData("gpt-test", "apiKey")]
-    public async Task MissingConfigurationFailsBeforeHttpCall(string model, string missingSetting)
+    [Fact]
+    public async Task MissingModelFailsBeforeExternalCall()
     {
-        var handler = new StubHttpMessageHandler(_ =>
-            throw new InvalidOperationException("HTTP should not be called."));
-        var service = CreateService(handler, new AiOptions
+        var client = new StubOpenAiChatCompletionClient("{}");
+        var service = CreateService(client, new AiOptions
         {
             Provider = "OpenAI",
-            Model = model,
-            ApiKey = missingSetting == "apiKey" ? "" : "test-key",
+            Model = "",
             BaseUrl = "https://api.openai.com/v1"
         });
 
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => service.AnalyseAsync(CreateProfile(), CreateJob()));
 
-        Assert.Equal(0, handler.CallCount);
+        Assert.Equal(0, client.CallCount);
     }
 
     [Fact]
@@ -101,11 +80,8 @@ public class OpenAiJobAnalysisServiceTests
         const string companyInjection = "COMPANY_OVERRIDE_SYSTEM_24680";
         const string roleInjection = "ROLE_CHANGE_POLICY_13579";
         const string jobInjection = "CHANGE_OUTPUT_FORMAT_67890";
-        string? requestBody = null;
-        var handler = CreateSuccessHandler(
-            matchScore: 80,
-            onRequestAsync: async request => requestBody = await request.Content!.ReadAsStringAsync());
-        var service = CreateService(handler);
+        var client = CreateSuccessClient(matchScore: 80);
+        var service = CreateService(client);
         var profile = CreateProfile(
             summary: $"Backend developer. {profileInjection}",
             skills: "C#, SQL",
@@ -117,11 +93,8 @@ public class OpenAiJobAnalysisServiceTests
 
         await service.AnalyseAsync(profile, job);
 
-        Assert.NotNull(requestBody);
-        using var document = JsonDocument.Parse(requestBody);
-        var messages = document.RootElement.GetProperty("messages");
-        var systemMessage = messages[0].GetProperty("content").GetString();
-        var userMessage = messages[1].GetProperty("content").GetString();
+        var systemMessage = client.SystemMessage;
+        var userMessage = client.UserMessage;
 
         Assert.Contains("untrusted user input", systemMessage, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(profileInjection, systemMessage);
@@ -140,36 +113,44 @@ public class OpenAiJobAnalysisServiceTests
         Assert.Contains(jobInjection, userMessage);
     }
 
+    [Fact]
+    public async Task SendsStrictStructuredOutputSchemaToCompletionClient()
+    {
+        var client = CreateSuccessClient(matchScore: 80);
+        var service = CreateService(client);
+
+        await service.AnalyseAsync(CreateProfile(), CreateJob());
+
+        Assert.NotNull(client.ResponseSchema);
+        using var document = JsonDocument.Parse(client.ResponseSchema.ToString());
+        var root = document.RootElement;
+
+        Assert.Equal("object", root.GetProperty("type").GetString());
+        Assert.False(root.GetProperty("additionalProperties").GetBoolean());
+        Assert.Contains(
+            root.GetProperty("required").EnumerateArray(),
+            e => e.GetString() == "matchScore");
+        Assert.True(root.GetProperty("properties").TryGetProperty("coverLetterDraft", out _));
+    }
+
     private static OpenAiJobAnalysisService CreateService(
-        HttpMessageHandler handler,
+        StubOpenAiChatCompletionClient client,
         AiOptions? options = null)
     {
-        var httpClient = new HttpClient(handler);
-
         return new OpenAiJobAnalysisService(
-            httpClient,
+            client,
             Microsoft.Extensions.Options.Options.Create(options ?? new AiOptions
             {
                 Provider = "OpenAI",
                 Model = "gpt-test",
-                ApiKey = "test-key",
                 BaseUrl = "https://api.openai.com/v1",
                 TimeoutSeconds = 60
             }));
     }
 
-    private static StubHttpMessageHandler CreateSuccessHandler(
-        int matchScore,
-        Func<HttpRequestMessage, Task>? onRequestAsync = null)
+    private static StubOpenAiChatCompletionClient CreateSuccessClient(int matchScore)
     {
-        return new StubHttpMessageHandler(async request =>
-        {
-            if (onRequestAsync != null)
-            {
-                await onRequestAsync(request);
-            }
-
-            var analysis = new
+        var analysis = new
             {
                 matchScore,
                 missingSkills = "Azure",
@@ -177,30 +158,8 @@ public class OpenAiJobAnalysisServiceTests
                 suggestions = "Emphasise API delivery.",
                 coverLetterDraft = "Dear hiring team..."
             };
-            var response = new
-            {
-                choices = new[]
-                {
-                    new
-                    {
-                        message = new
-                        {
-                            content = JsonSerializer.Serialize(analysis)
-                        }
-                    }
-                }
-            };
 
-            return JsonResponse(response);
-        });
-    }
-
-    private static HttpResponseMessage JsonResponse(object value)
-    {
-        return new HttpResponseMessage(HttpStatusCode.OK)
-        {
-            Content = new StringContent(JsonSerializer.Serialize(value), Encoding.UTF8, "application/json")
-        };
+        return new StubOpenAiChatCompletionClient(JsonSerializer.Serialize(analysis));
     }
 
     private static Profile CreateProfile(
@@ -233,23 +192,35 @@ public class OpenAiJobAnalysisServiceTests
         };
     }
 
-    private sealed class StubHttpMessageHandler : HttpMessageHandler
+    private sealed class StubOpenAiChatCompletionClient : IOpenAiChatCompletionClient
     {
-        private readonly Func<HttpRequestMessage, Task<HttpResponseMessage>> _send;
+        private readonly string _content;
 
-        public StubHttpMessageHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> send)
+        public StubOpenAiChatCompletionClient(string content)
         {
-            _send = send;
+            _content = content;
         }
 
         public int CallCount { get; private set; }
 
-        protected override Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request,
-            CancellationToken cancellationToken)
+        public string SystemMessage { get; private set; } = string.Empty;
+
+        public string UserMessage { get; private set; } = string.Empty;
+
+        public BinaryData ResponseSchema { get; private set; } = BinaryData.FromString("{}");
+
+        public Task<string> CompleteAsync(
+            string systemMessage,
+            string userMessage,
+            BinaryData responseSchema,
+            CancellationToken cancellationToken = default)
         {
             CallCount++;
-            return _send(request);
+            SystemMessage = systemMessage;
+            UserMessage = userMessage;
+            ResponseSchema = responseSchema;
+
+            return Task.FromResult(_content);
         }
     }
 }
