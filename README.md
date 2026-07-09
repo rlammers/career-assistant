@@ -15,7 +15,7 @@ A personal career management tool that helps users:
 
 Backend:
 
-- C# / .NET 8
+- C# / .NET 10
 - ASP.NET Core Web API
 - Entity Framework Core
 - SQLite
