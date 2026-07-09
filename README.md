@@ -81,6 +81,32 @@ Run tests:
 dotnet test src/backend/CareerAssistant.sln
 ```
 
+## Running With Docker
+
+Prerequisites:
+
+- Docker Desktop
+
+Build and start the full app:
+
+```powershell
+docker compose up --build
+```
+
+The frontend runs at `http://localhost:5173`. It serves the production Vite build through nginx and proxies `/api` requests to the backend container.
+
+The backend API is also published on loopback only at `http://localhost:5117` for direct local API testing. SQLite data is stored in the Docker volume `career-assistant-data`.
+
+The Docker setup defaults to the mock AI provider. To use OpenAI, pass the API key as a Docker Compose secret sourced from your shell environment:
+
+```powershell
+$env:AI__Model="gpt-5-mini"
+$env:OPENAI_API_KEY="your-api-key"
+docker compose -f docker-compose.yml -f docker-compose.openai.yml up --build
+```
+
+Do not put real API keys in Compose files, appsettings files, frontend code, or committed files.
+
 ## AI Provider Configuration
 
 The app defaults to the deterministic mock provider, so it works locally without an API key or API cost.

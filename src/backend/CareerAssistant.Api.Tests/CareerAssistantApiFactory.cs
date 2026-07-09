@@ -26,7 +26,8 @@ public class CareerAssistantApiFactory : WebApplicationFactory<Program>
             {
                 ["AI:Provider"] = "Mock",
                 ["AI:Model"] = "test-mock",
-                ["OpenAI:ApiKey"] = string.Empty
+                ["OpenAI:ApiKey"] = string.Empty,
+                ["Database:MigrateOnStartup"] = "false"
             });
         });
 
