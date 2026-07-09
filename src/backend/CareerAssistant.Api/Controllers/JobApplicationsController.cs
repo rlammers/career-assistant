@@ -1,6 +1,7 @@
 using CareerAssistant.Api.Data;
 using CareerAssistant.Api.DTOs;
 using CareerAssistant.Api.Models;
+using CareerAssistant.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,10 +21,12 @@ public class JobApplicationsController : ControllerBase
     };
 
     private readonly ApplicationDbContext _dbContext;
+    private readonly IJobAnalysisService _jobAnalysisService;
 
-    public JobApplicationsController(ApplicationDbContext dbContext)
+    public JobApplicationsController(ApplicationDbContext dbContext, IJobAnalysisService jobAnalysisService)
     {
         _dbContext = dbContext;
+        _jobAnalysisService = jobAnalysisService;
     }
 
     [HttpGet]
@@ -106,15 +109,26 @@ public class JobApplicationsController : ControllerBase
             return BadRequest("Profile must be created before analysis.");
         }
 
-        var analysisResult = new JobAnalysisResult
+        JobAnalysisResult analysisResult;
+
+        try
         {
-            JobApplicationId = job.Id,
-            MatchScore = 75,
-            MissingSkills = "Communication, Teamwork",
-            Strengths = "Relevant experience and strong role fit",
-            Suggestions = "Highlight leadership and project ownership in your resume.",
-            CoverLetterDraft = "I am excited to apply for this role because my experience aligns with the key requirements."
-        };
+            analysisResult = await _jobAnalysisService.AnalyseAsync(profile, job, HttpContext.RequestAborted);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Problem(
+                title: "Job analysis failed.",
+                detail: ex.Message,
+                statusCode: StatusCodes.Status500InternalServerError);
+        }
+
+        analysisResult.JobApplicationId = job.Id;
+        analysisResult.MatchScore = Math.Clamp(analysisResult.MatchScore, 0, 100);
+        analysisResult.MissingSkills ??= string.Empty;
+        analysisResult.Strengths ??= string.Empty;
+        analysisResult.Suggestions ??= string.Empty;
+        analysisResult.CoverLetterDraft ??= string.Empty;
 
         _dbContext.JobAnalysisResults.Add(analysisResult);
         await _dbContext.SaveChangesAsync();

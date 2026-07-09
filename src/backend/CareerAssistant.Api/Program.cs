@@ -1,4 +1,6 @@
 using CareerAssistant.Api.Data;
+using CareerAssistant.Api.Options;
+using CareerAssistant.Api.Services;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 
@@ -9,6 +11,31 @@ var builder = WebApplication.CreateBuilder(args);
 // Add DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.Configure<AiOptions>(builder.Configuration.GetSection("Ai"));
+
+var aiOptions = builder.Configuration.GetSection("Ai").Get<AiOptions>() ?? new AiOptions();
+var aiProvider = string.IsNullOrWhiteSpace(aiOptions.Provider) ? "Mock" : aiOptions.Provider;
+
+if (string.Equals(aiProvider, "Mock", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddScoped<IJobAnalysisService, MockJobAnalysisService>();
+}
+else if (string.Equals(aiProvider, "OpenAI", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddHttpClient<OpenAiJobAnalysisService>((serviceProvider, httpClient) =>
+    {
+        var options = serviceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<AiOptions>>().Value;
+        var timeoutSeconds = options.TimeoutSeconds > 0 ? options.TimeoutSeconds : 60;
+        httpClient.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
+    });
+    builder.Services.AddScoped<IJobAnalysisService>(serviceProvider =>
+        serviceProvider.GetRequiredService<OpenAiJobAnalysisService>());
+}
+else
+{
+    throw new InvalidOperationException($"Unsupported AI provider '{aiProvider}'. Supported providers are Mock and OpenAI.");
+}
 
 // Add CORS
 builder.Services.AddCors(options =>

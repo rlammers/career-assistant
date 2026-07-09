@@ -15,15 +15,16 @@ A personal career management tool that helps users:
 
 Backend:
 
-- C#
+- C# / .NET 8
 - ASP.NET Core Web API
 - Entity Framework Core
-- SQL
+- SQLite
 
 Frontend:
 
 - React
 - TypeScript
+- Vite
 
 ## Status
 
@@ -40,4 +41,104 @@ Implemented backend controllers support the following endpoints:
 - `GET /api/jobs/{id}`
 - `POST /api/jobs`
 - `PATCH /api/jobs/{id}/status`
-- `POST /api/jobs/{id}/analyse` (mocked analysis response)
+- `POST /api/jobs/{id}/analyse`
+
+## Running Locally
+
+Prerequisites:
+
+- .NET 8 SDK
+- Node.js and npm
+
+Run the backend API:
+
+```powershell
+dotnet run --project src/backend/CareerAssistant.Api/CareerAssistant.Api.csproj --launch-profile http
+```
+
+The API runs at `http://localhost:5117`. Swagger is available at `http://localhost:5117/swagger` in development.
+
+Run the frontend in a second terminal:
+
+```powershell
+cd src/frontend
+npm install
+npm run dev
+```
+
+The frontend runs at `http://localhost:5173` and calls the backend at `http://localhost:5117/api` by default.
+
+To use a different backend URL for the frontend, set:
+
+```powershell
+$env:VITE_API_BASE_URL="http://localhost:5117/api"
+npm run dev
+```
+
+Run tests:
+
+```powershell
+dotnet test src/backend/CareerAssistant.sln
+```
+
+## AI Provider Configuration
+
+The app defaults to the deterministic mock provider, so it works locally without an API key or API cost.
+
+Default configuration in `src/backend/CareerAssistant.Api/appsettings.json`:
+
+```json
+{
+  "Ai": {
+    "Provider": "Mock",
+    "Model": "",
+    "ApiKey": "",
+    "BaseUrl": "https://api.openai.com/v1",
+    "TimeoutSeconds": 60
+  }
+}
+```
+
+Supported providers:
+
+- `Mock`: deterministic fake analysis for local development and tests
+- `OpenAI`: OpenAI-compatible HTTP provider using `/chat/completions`
+
+Do not put real API keys in `appsettings.json`, `appsettings.Development.json`, frontend code, or committed files.
+
+### Configure OpenAI With User Secrets
+
+From the backend project directory:
+
+```powershell
+cd src/backend/CareerAssistant.Api
+dotnet user-secrets init
+dotnet user-secrets set "Ai:Provider" "OpenAI"
+dotnet user-secrets set "Ai:Model" "gpt-4o-mini"
+dotnet user-secrets set "Ai:ApiKey" "your-api-key"
+dotnet user-secrets set "Ai:BaseUrl" "https://api.openai.com/v1"
+dotnet user-secrets set "Ai:TimeoutSeconds" "60"
+```
+
+Then run the backend again:
+
+```powershell
+dotnet run --launch-profile http
+```
+
+### Configure OpenAI With Environment Variables
+
+PowerShell example:
+
+```powershell
+$env:Ai__Provider="OpenAI"
+$env:Ai__Model="gpt-4o-mini"
+$env:Ai__ApiKey="your-api-key"
+$env:Ai__BaseUrl="https://api.openai.com/v1"
+$env:Ai__TimeoutSeconds="60"
+dotnet run --project src/backend/CareerAssistant.Api/CareerAssistant.Api.csproj --launch-profile http
+```
+
+When `Ai:Provider` is `OpenAI`, `Ai:Model` and `Ai:ApiKey` are required. Missing or invalid provider configuration fails clearly instead of silently falling back.
+
+Profile fields (`Summary`, `Skills`, `Experience`) and pasted job descriptions are treated as untrusted user input during AI prompt construction.

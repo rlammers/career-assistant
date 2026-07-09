@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace CareerAssistant.Api.Tests;
 
@@ -15,6 +16,11 @@ public class CareerAssistantApiFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         _connection.Open();
+
+        builder.ConfigureLogging(logging =>
+        {
+            logging.ClearProviders();
+        });
 
         builder.ConfigureServices(services =>
         {
