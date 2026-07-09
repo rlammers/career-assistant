@@ -1,10 +1,13 @@
 using System.Data.Common;
 using CareerAssistant.Api.Data;
+using CareerAssistant.Api.Services;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 
 namespace CareerAssistant.Api.Tests;
@@ -17,6 +20,16 @@ public class CareerAssistantApiFactory : WebApplicationFactory<Program>
     {
         _connection.Open();
 
+        builder.ConfigureAppConfiguration((_, configuration) =>
+        {
+            configuration.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["AI:Provider"] = "Mock",
+                ["AI:Model"] = "test-mock",
+                ["OpenAI:ApiKey"] = string.Empty
+            });
+        });
+
         builder.ConfigureLogging(logging =>
         {
             logging.ClearProviders();
@@ -24,6 +37,9 @@ public class CareerAssistantApiFactory : WebApplicationFactory<Program>
 
         builder.ConfigureServices(services =>
         {
+            services.RemoveAll<IJobAnalysisService>();
+            services.AddScoped<IJobAnalysisService, MockJobAnalysisService>();
+
             var dbContextOptionsDescriptor = services.SingleOrDefault(
                 service => service.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
 

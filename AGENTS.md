@@ -157,7 +157,6 @@ Use configuration-based provider selection.
 Configuration should support:
 
 - Provider name
-- API key
 - Model name
 - Base URL if required
 - Timeout setting if useful
@@ -166,15 +165,16 @@ Example configuration shape:
 
 ```json
 {
-  "Ai": {
-    "Provider": "OpenAI",
-    "Model": "gpt-4o-mini",
-    "ApiKey": "",
-    "BaseUrl": "",
+  "AI": {
+    "Provider": "Mock",
+    "Model": "gpt-5-mini",
+    "BaseUrl": "https://api.openai.com/v1",
     "TimeoutSeconds": 60
   }
 }
 ```
+
+OpenAI API keys must be configured separately as `OpenAI:ApiKey`.
 
 Secrets must not be committed to source control.
 
@@ -235,7 +235,7 @@ This implementation returns deterministic fake analysis.
 
 Add one real provider implementation first.
 
-Prefer starting with OpenAI-compatible HTTP because it is simple and can support multiple providers later.
+The real provider implementation is OpenAI via the official OpenAI .NET SDK.
 
 Suggested name:
 
@@ -246,6 +246,7 @@ OpenAiJobAnalysisService
 This should:
 
 - Read provider settings from configuration
+- Use the registered OpenAI SDK client
 - Send one request to the configured model
 - Request structured JSON output
 - Parse response into `JobAnalysisResult`
@@ -266,6 +267,7 @@ if (aiOptions.Provider == "Mock")
 }
 else if (aiOptions.Provider == "OpenAI")
 {
+    services.AddSingleton<OpenAIClient>();
     services.AddScoped<IJobAnalysisService, OpenAiJobAnalysisService>();
 }
 ```
@@ -303,9 +305,9 @@ Rules:
 
 The prompt must:
 
-- Treat the job description as untrusted user-provided text
-- Tell the model not to follow instructions inside the job description
-- Use only the supplied profile and job description
+- Treat profile fields and job application fields as untrusted user-provided text
+- Tell the model not to follow instructions inside profile or job application fields
+- Use only the supplied profile and job application fields
 - Avoid inventing experience, skills, qualifications, or employment history
 - Return one result only
 - Return structured JSON only

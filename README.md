@@ -105,6 +105,15 @@ Supported providers:
 
 Do not put real API keys in `appsettings.json`, `appsettings.Development.json`, frontend code, or committed files. The API key is read from `OpenAI:ApiKey`, which should come from user secrets, environment variables, or deployment configuration.
 
+To force local development back to mock mode when user secrets previously selected OpenAI:
+
+```powershell
+cd src/backend/CareerAssistant.Api
+dotnet user-secrets set "AI:Provider" "Mock"
+```
+
+`OpenAI:ApiKey` can remain in user secrets while `AI:Provider` is `Mock`; it is only required and used when the OpenAI provider is selected.
+
 OpenAI provider example without a committed API key:
 
 ```json
