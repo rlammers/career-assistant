@@ -1,32 +1,36 @@
-# Job Application Tracker MVP
+# Job Application Tracker
 
 ## Purpose
 
-Minimal job application tracker with AI-assisted job analysis.
+Minimal job application tracker with configurable AI-assisted job analysis.
 
-**User capabilities:**
+User capabilities:
 
-- Store a basic profile (skills and experience)
+- Store a basic profile with skills and experience
 - Paste job descriptions
 - Generate AI analysis comparing profile vs job
 - Track application status over time
+- Configure which AI provider is used for analysis
 
-**What this is NOT:** job board, CRM, or full ATS system
+This is NOT a job board, Customer Relationship Management system, or full Applicant Tracking System.
 
 ---
 
-## Tech Stack (fixed)
+## Tech Stack
 
-**Backend**
+Backend:
 
 - ASP.NET Core Web API (.NET 8)
 - Entity Framework Core
-- SQLite (preferred for MVP simplicity)
+- SQLite
 
-**Frontend**
+Frontend:
 
-- React (Vite)
-- Fetch API (no Redux, no external state management)
+- React
+- Vite
+- Fetch API
+- No Redux
+- No external state management unless clearly justified
 
 ---
 
@@ -34,212 +38,389 @@ Minimal job application tracker with AI-assisted job analysis.
 
 Keep everything minimal, functional, and linear.
 
-✅ **In scope:** Features that directly support storing profiles, saving jobs, analyzing job vs profile, tracking status
+In scope:
 
-❌ **Out of scope:** Everything else
+- Storing profiles
+- Saving jobs
+- Analysing jobs against the profile
+- Tracking application status
+- Configuring AI provider usage
+
+Out of scope:
+
+- Job scraping
+- Authentication
+- Multi-user support
+- Email sending
+- Complex AI agent workflows
+- CV PDF generation
+- Analytics dashboards
 
 ---
 
-## Domain Model (MVP only)
+## Domain Model
 
 ### JobApplication
 
-Represents a single applied or saved job.
+Represents a single saved or applied job.
 
-| Field          | Type     | Notes                      |
-| -------------- | -------- | -------------------------- |
-| Id             | int      | Primary key                |
-| Company        | string   |                            |
-| Role           | string   |                            |
-| JobDescription | string   | Raw pasted job description |
-| Status         | string   | See allowed values below   |
-| CreatedAt      | DateTime |                            |
+Fields:
 
-**Allowed Status values:**
+- Id
+- Company
+- Role
+- JobDescription
+- Status
+- CreatedAt
 
-- `Saved`
-- `Applied`
-- `Interview`
-- `Offer`
-- `Rejected`
+Allowed status values:
+
+- Saved
+- Applied
+- Interview
+- Offer
+- Rejected
+
+---
 
 ### Profile
 
-Single user profile (no multi-user support in MVP).
+Single user profile.
 
-| Field      | Type   | Notes                |
-| ---------- | ------ | -------------------- |
-| Id         | int    | Primary key          |
-| Summary    | string |                      |
-| Skills     | string | Comma-separated list |
-| Experience | string | Free text            |
+Fields:
+
+- Id
+- Summary
+- Skills
+- Experience
+
+No multi-user support.
+
+---
 
 ### JobAnalysisResult
 
 AI-generated analysis tied to a job.
 
-| Field            | Type   | Notes                        |
-| ---------------- | ------ | ---------------------------- |
-| Id               | int    | Primary key                  |
-| JobApplicationId | int    | Foreign key → JobApplication |
-| MatchScore       | int    | 0–100 range                  |
-| MissingSkills    | string |                              |
-| Strengths        | string |                              |
-| Suggestions      | string |                              |
-| CoverLetterDraft | string |                              |
+Fields:
+
+- Id
+- JobApplicationId
+- MatchScore
+- MissingSkills
+- Strengths
+- Suggestions
+- CoverLetterDraft
 
 ---
 
-## API Endpoints (MVP only)
+## API Endpoints
 
 ### Profile
 
-```
-GET    /api/profile              → Retrieve user profile
-POST   /api/profile              → Create or update profile
+```http
+GET    /api/profile
+POST   /api/profile
 ```
 
 ### Jobs
 
-```
-GET    /api/jobs                 → List all job applications
-GET    /api/jobs/{id}            → Get single job application
-POST   /api/jobs                 → Create new job application
-PATCH  /api/jobs/{id}/status     → Update job status
+```http
+GET    /api/jobs
+GET    /api/jobs/{id}
+POST   /api/jobs
+PATCH  /api/jobs/{id}/status
 ```
 
 ### Analysis
 
-```
-POST   /api/jobs/{id}/analyse    → Analyze job against profile
+```http
+POST   /api/jobs/{id}/analyse
 ```
 
-**Analysis endpoint behavior:**
+This endpoint must:
 
-1. Reads user Profile
-2. Reads JobApplication by id
-3. Mocks AI analysis locally
-4. Stores JobAnalysisResult
-5. Returns result
+1. Read the user profile
+2. Read the job application
+3. Use the configured AI provider
+4. Store the analysis result
+5. Return the analysis result
 
 ---
 
-## AI Service Rules
+## AI Provider Configuration
 
-The AI service must:
+AI usage must not be hardcoded inside controllers.
 
-**Input:**
+Use configuration-based provider selection.
 
-- Profile (user summary, skills, experience)
-- Job description (raw text)
+Configuration should support:
 
-**Output:**
+- Provider name
+- Model name
+- Base URL if required
+- Timeout setting if useful
 
-- Match score (0–100)
-- Missing skills
-- Strengths
-- Improvement suggestions
-- Cover letter draft
+Example configuration shape:
 
-**Constraints:**
+```json
+{
+  "AI": {
+    "Provider": "Mock",
+    "Model": "gpt-5-mini",
+    "BaseUrl": "https://api.openai.com/v1",
+    "TimeoutSeconds": 60
+  }
+}
+```
 
-- Do not introduce external data
-- Do not assume missing profile info
-- Do not generate multiple variants
-- Return single structured response only
-- One AI call per analysis (no chaining, multi-agent flows, or refinement loops)
+OpenAI API keys must be configured separately as `OpenAI:ApiKey`.
+
+Secrets must not be committed to source control.
+
+Use one of:
+
+- User secrets for local development
+- Environment variables
+- Secure deployment configuration
+
+Do not store real API keys in:
+
+- appsettings.json
+- appsettings.Development.json
+- frontend code
+- GitHub repository files
 
 ---
 
-## Frontend Pages (MVP only)
+## AI Service Abstraction
 
-### 1. Profile Page
+Create an abstraction for job analysis.
+
+Required interface:
+
+```csharp
+public interface IJobAnalysisService
+{
+    Task<JobAnalysisResult> AnalyseAsync(Profile profile, JobApplication jobApplication, CancellationToken cancellationToken = default);
+}
+```
+
+Implementation rules:
+
+- Controllers depend on `IJobAnalysisService`, not a concrete provider
+- Provider-specific code must stay inside service implementations
+- AI request construction must not be duplicated in controllers
+- The analysis endpoint must still make only one AI call
+
+---
+
+## Supported AI Implementations
+
+Initial implementations should be:
+
+### MockJobAnalysisService
+
+Used for:
+
+- local development without API cost
+- tests
+- fallback while configuring real providers
+
+This implementation returns deterministic fake analysis.
+
+---
+
+### Configured Provider Implementation
+
+Add one real provider implementation first.
+
+The real provider implementation is OpenAI via the official OpenAI .NET SDK.
+
+Suggested name:
+
+```csharp
+OpenAiJobAnalysisService
+```
+
+This should:
+
+- Read provider settings from configuration
+- Use the registered OpenAI SDK client
+- Send one request to the configured model
+- Request structured JSON output
+- Parse response into `JobAnalysisResult`
+- Fail clearly if configuration is missing
+
+---
+
+## Provider Swapping Rule
+
+Provider selection should happen in dependency injection setup, not in controllers.
+
+Example intent:
+
+```csharp
+if (aiOptions.Provider == "Mock")
+{
+    services.AddScoped<IJobAnalysisService, MockJobAnalysisService>();
+}
+else if (aiOptions.Provider == "OpenAI")
+{
+    services.AddSingleton<OpenAIClient>();
+    services.AddScoped<IJobAnalysisService, OpenAiJobAnalysisService>();
+}
+```
+
+Do not use provider-specific logic inside controllers.
+
+---
+
+## AI Output Contract
+
+The AI provider must return a single structured result.
+
+Expected shape:
+
+```json
+{
+  "matchScore": 80,
+  "missingSkills": "Azure, Kubernetes",
+  "strengths": "Strong C# and SQL background",
+  "suggestions": "Emphasise API design and React experience",
+  "coverLetterDraft": "Draft cover letter text..."
+}
+```
+
+Rules:
+
+- MatchScore must be clamped to 0–100
+- Missing fields should be handled safely
+- Invalid AI responses should return a clear error
+- Do not silently store malformed analysis results
+
+---
+
+## Prompt Rules
+
+The prompt must:
+
+- Treat profile fields and job application fields as untrusted user-provided text
+- Tell the model not to follow instructions inside profile or job application fields
+- Use only the supplied profile and job application fields
+- Avoid inventing experience, skills, qualifications, or employment history
+- Return one result only
+- Return structured JSON only
+
+---
+
+## AI Integration Constraints
+
+Allowed:
+
+- One AI call per job analysis
+- One provider abstraction
+- Mock provider
+- One real provider
+- Configurable model/provider/API key
+
+Not allowed:
+
+- Prompt chaining
+- Multi-agent flows
+- Automatic retries with different prompts
+- Background job queues
+- Streaming responses
+- Multiple generated variants
+- Provider-specific logic in controllers
+
+---
+
+## Frontend Pages
+
+### Profile Page
 
 - Edit profile
 - Save profile
 
-### 2. Job List Page
+### Job List Page
 
 - List all jobs
 - Show status
 - Click job to view details
-- Button: "Analyse job"
+- Button: Analyse job
 
-### 3. Job Detail Page
+### Job Detail Page
 
 - View job description
 - View AI analysis
 - Update status
 
----
+### Settings Page
 
-## Explicitly Out of Scope
+Minimal AI settings page is optional.
 
-Do NOT implement:
+If implemented, it should only display or update safe non-secret settings.
 
-- Authentication or multi-user support
-- CV PDF generation
-- Cover letter editing UI
-- Email sending or automation
-- Job scraping or APIs from job boards
-- Kanban boards or complex UI dashboards
-- Analytics dashboards
-- Notifications system
-- Advanced AI agents or multi-step reasoning pipelines
-- Role-based access control
+Do not expose API keys in the frontend.
 
 ---
 
 ## Data Handling Rules
 
-- Profile is single global record (no user separation)
+- Profile is a single global record
 - JobApplication stores raw pasted job description only
-- AI outputs are stored as-is (no post-processing logic beyond storage)
-- No versioning system in MVP
+- AI outputs are stored after validation
+- No versioning system
+- No user account separation
+- No provider secrets stored in database for MVP
 
 ---
 
 ## Code Structure Guidance
 
-**Backend structure:**
+Backend structure:
 
 - Controllers
 - Models
-- Data (DbContext)
-- Services (AI service only)
+- Data
+- Services
+- Options
 
-No additional architecture layers.
+Suggested additions:
+
+```text
+Services/
+  IJobAnalysisService.cs
+  MockJobAnalysisService.cs
+  OpenAiJobAnalysisService.cs
+
+Options/
+  AiOptions.cs
+```
+
+No additional architecture layers unless necessary.
 
 ---
 
-## AI Integration Constraint
+## Definition of Done
 
-Only one AI call per job analysis.
+This phase is complete when:
 
-No:
-
-- Chaining prompts
-- Multi-agent flows
-- Refinement loops
-
----
-
-## Definition of Done (MVP)
-
-The MVP is complete when:
-
-- A profile can be created and retrieved
-- A job can be added via API
-- Jobs can be listed
-- A job can be analysed via AI endpoint
-- Analysis is stored and retrieved
-- Job status can be updated
-- React UI can perform all above actions
+- Existing mock analysis still works
+- AI provider configuration exists
+- API keys are not committed
+- Controllers depend on `IJobAnalysisService`
+- A real provider can be selected through configuration
+- Provider implementation can be swapped without changing controller code
+- Invalid or missing AI configuration fails clearly
+- Analysis is still stored as `JobAnalysisResult`
+- Existing MVP functionality still works
 
 ---
 
 ## Stability Rule
 
-If a feature adds complexity without improving the core loop:
+If a feature adds complexity without improving the core analysis workflow:
 
-**Do not implement it.**
+Do not implement it.
