@@ -31,6 +31,20 @@ Frontend:
 MVP complete.
 Backend and frontend core loop implemented.
 
+Next milestone: public portfolio demo.
+
+The demo should show employers the working application without creating AI usage cost:
+
+- React frontend deployed
+- ASP.NET Core API deployed
+- Database deployed and persistent
+- Mock AI provider enabled
+- Demo data available
+- No authentication required
+- No OpenAI API key in the demo environment
+
+Anyone should be able to try the core workflow without costing money.
+
 ## Backend API
 
 Implemented backend controllers support the following endpoints:
@@ -97,7 +111,37 @@ The frontend runs at `http://localhost:5173`. It serves the production Vite buil
 
 The backend API is also published on loopback only at `http://localhost:5117` for direct local API testing. SQLite data is stored in the Docker volume `career-assistant-data`.
 
-The Docker setup defaults to the mock AI provider. To use OpenAI, pass the API key as a Docker Compose secret sourced from your shell environment:
+The Docker setup defaults to the mock AI provider. OpenAI configuration is covered below.
+
+## Configuration
+
+The app is configured by environment. Code should stay the same between local development, demo deployment, and personal use.
+
+| Environment | Provider | Purpose |
+| --- | --- | --- |
+| Development | `Mock` | Build and test without cost |
+| Demo | `Mock` | Public portfolio demo with no paid AI usage |
+| Personal | `OpenAI` | Private use with a real provider |
+| Future | `OpenAI`, `Azure OpenAI`, or `Anthropic` | Additional provider options without changing controllers |
+
+Default AI settings live in `src/backend/CareerAssistant.Api/appsettings.json` and use the deterministic `Mock` provider. OpenAI is available through configuration for personal use.
+
+Use mock mode:
+
+```powershell
+dotnet user-secrets set "AI:Provider" "Mock"
+```
+
+Use OpenAI locally with user secrets:
+
+```powershell
+cd src/backend/CareerAssistant.Api
+dotnet user-secrets set "AI:Provider" "OpenAI"
+dotnet user-secrets set "AI:Model" "gpt-5-mini"
+dotnet user-secrets set "OpenAI:ApiKey" "your-api-key"
+```
+
+Use OpenAI in Docker through a Compose secret:
 
 ```powershell
 $env:AI__Model="gpt-5-mini"
@@ -105,87 +149,6 @@ $env:OPENAI_API_KEY="your-api-key"
 docker compose -f docker-compose.yml -f docker-compose.openai.yml up --build
 ```
 
-Do not put real API keys in Compose files, appsettings files, frontend code, or committed files.
-
-## AI Provider Configuration
-
-The app defaults to the deterministic mock provider, so it works locally without an API key or API cost.
-
-Default configuration in `src/backend/CareerAssistant.Api/appsettings.json`:
-
-```json
-{
-  "AI": {
-    "Provider": "Mock",
-    "Model": "gpt-5-mini",
-    "BaseUrl": "https://api.openai.com/v1",
-    "TimeoutSeconds": 60
-  }
-}
-```
-
-Supported providers:
-
-- `Mock`: deterministic fake analysis for local development and tests
-- `OpenAI`: official OpenAI .NET SDK provider
-
-Do not put real API keys in `appsettings.json`, `appsettings.Development.json`, frontend code, or committed files. The API key is read from `OpenAI:ApiKey`, which should come from user secrets, environment variables, or deployment configuration.
-
-To force local development back to mock mode when user secrets previously selected OpenAI:
-
-```powershell
-cd src/backend/CareerAssistant.Api
-dotnet user-secrets set "AI:Provider" "Mock"
-```
-
-`OpenAI:ApiKey` can remain in user secrets while `AI:Provider` is `Mock`; it is only required and used when the OpenAI provider is selected.
-
-OpenAI provider example without a committed API key:
-
-```json
-{
-  "AI": {
-    "Provider": "OpenAI",
-    "Model": "gpt-5-mini",
-    "BaseUrl": "https://api.openai.com/v1",
-    "TimeoutSeconds": 60
-  }
-}
-```
-
-### Configure OpenAI With User Secrets
-
-From the backend project directory:
-
-```powershell
-cd src/backend/CareerAssistant.Api
-dotnet user-secrets init
-dotnet user-secrets set "AI:Provider" "OpenAI"
-dotnet user-secrets set "AI:Model" "gpt-5-mini"
-dotnet user-secrets set "AI:BaseUrl" "https://api.openai.com/v1"
-dotnet user-secrets set "AI:TimeoutSeconds" "60"
-dotnet user-secrets set "OpenAI:ApiKey" "your-api-key"
-```
-
-Then run the backend again:
-
-```powershell
-dotnet run --launch-profile http
-```
-
-### Configure OpenAI With Environment Variables
-
-PowerShell example:
-
-```powershell
-$env:AI__Provider="OpenAI"
-$env:AI__Model="gpt-5-mini"
-$env:AI__BaseUrl="https://api.openai.com/v1"
-$env:AI__TimeoutSeconds="60"
-$env:OpenAI__ApiKey="your-api-key"
-dotnet run --project src/backend/CareerAssistant.Api/CareerAssistant.Api.csproj --launch-profile http
-```
-
-When `AI:Provider` is `OpenAI`, `AI:Model` and `OpenAI:ApiKey` are required. Missing or invalid provider configuration fails clearly instead of silently falling back.
+Do not put real API keys in Compose files, appsettings files, frontend code, or committed files. When `AI:Provider` is `OpenAI`, `AI:Model` and either `OpenAI:ApiKey` or `OpenAI:ApiKeyFile` are required.
 
 Profile fields (`Summary`, `Skills`, `Experience`) and job application fields (`Company`, `Role`, `JobDescription`) are treated as untrusted user input during AI prompt construction.

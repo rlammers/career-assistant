@@ -16,6 +16,39 @@ This is NOT a job board, Customer Relationship Management system, or full Applic
 
 ---
 
+## Current Milestone
+
+### Phase 1: Public Portfolio Demo
+
+Purpose:
+
+- Show employers what was built
+- Let anyone try the core workflow without costing the owner money
+- Demonstrate clean separation between deployment configuration and application behaviour
+
+Target configuration:
+
+- React frontend deployed
+- ASP.NET Core API deployed
+- Database deployed
+- Mock AI provider enabled
+- Demo data available
+- No authentication required
+- No OpenAI API key in production demo
+
+The public demo must not use paid AI calls. It should use deterministic mock analysis and safe demo data so the app can be explored freely.
+
+Environment intent:
+
+- Development: `Provider = Mock`
+- Demo: `Provider = Mock`
+- Personal: `Provider = OpenAI`
+- Future: `Provider = OpenAI`, `Azure OpenAI`, or `Anthropic`
+
+The code should not change between these environments. Only configuration should change.
+
+---
+
 ## Tech Stack
 
 Backend:
@@ -153,6 +186,13 @@ This endpoint must:
 AI usage must not be hardcoded inside controllers.
 
 Use configuration-based provider selection.
+
+Provider choice should vary by environment, not by controller or code path. The intended environment split is:
+
+- Development: `Mock`
+- Demo: `Mock`
+- Personal: `OpenAI`
+- Future: `OpenAI`, `Azure OpenAI`, or `Anthropic`
 
 Configuration should support:
 
@@ -403,19 +443,19 @@ No additional architecture layers unless necessary.
 
 ---
 
-## Definition of Done
+## Next Definition of Done: Public Portfolio Demo
 
-This phase is complete when:
+The next milestone is complete when:
 
-- Existing mock analysis still works
-- AI provider configuration exists
-- API keys are not committed
-- Controllers depend on `IJobAnalysisService`
-- A real provider can be selected through configuration
-- Provider implementation can be swapped without changing controller code
-- Invalid or missing AI configuration fails clearly
-- Analysis is still stored as `JobAnalysisResult`
-- Existing MVP functionality still works
+- React frontend is publicly deployed
+- ASP.NET Core API is publicly deployed behind the frontend or a reverse proxy
+- Database is deployed and persistent
+- Demo environment uses `AI:Provider = Mock`
+- Demo data is present and safe to show publicly
+- No authentication is required for the demo
+- No OpenAI API key or paid provider secret is present in the demo environment
+- Anyone can exercise the main profile, job, status, and analysis workflow without causing AI usage cost
+- Personal/OpenAI usage remains available through configuration only, without code changes
 
 ---
 
