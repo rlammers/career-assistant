@@ -1,7 +1,11 @@
 // API service layer for backend communication
-// Base URL: http://localhost:5117/api
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5117/api';
+const trimTrailingSlashes = (value: string) => value.replace(/\/+$/, '');
+
+const API_BASE_URL = trimTrailingSlashes(import.meta.env.VITE_API_BASE_URL || 'http://localhost:5117/api');
+const API_HEALTH_URL = API_BASE_URL.endsWith('/api')
+  ? `${API_BASE_URL.slice(0, -4)}/health`
+  : `${API_BASE_URL}/health`;
 
 // Types
 export interface Profile {
@@ -102,7 +106,7 @@ export const analysisAPI = {
 // Helper function to check API availability
 export const checkAPIHealth = async (): Promise<boolean> => {
   try {
-    const response = await fetch(`${API_BASE_URL.replace('/api', '')}/health`, {
+    const response = await fetch(API_HEALTH_URL, {
       method: 'HEAD',
     });
     return response.ok;

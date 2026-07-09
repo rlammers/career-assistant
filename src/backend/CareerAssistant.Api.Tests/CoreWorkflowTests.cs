@@ -1,12 +1,28 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using CareerAssistant.Api.Models;
+using CareerAssistant.Api.Services;
 
 namespace CareerAssistant.Api.Tests;
 
 public class CoreWorkflowTests
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
+    [Fact]
+    public async Task HealthEndpointSupportsGetAndHead()
+    {
+        using var factory = new CareerAssistantApiFactory();
+        using var client = factory.CreateClient();
+
+        var getResponse = await client.GetAsync("/health");
+        var headRequest = new HttpRequestMessage(HttpMethod.Head, "/health");
+        var headResponse = await client.SendAsync(headRequest);
+
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, headResponse.StatusCode);
+    }
 
     [Fact]
     public async Task ProfileCanBeCreatedAndRetrieved()
@@ -72,6 +88,29 @@ public class CoreWorkflowTests
     }
 
     [Fact]
+    public async Task InvalidJobApplicationStatusReturnsBadRequestAndDoesNotChangeStatus()
+    {
+        using var factory = new CareerAssistantApiFactory();
+        using var client = factory.CreateClient();
+        var job = await CreateJobAsync(client);
+
+        var updateRequest = new HttpRequestMessage(HttpMethod.Patch, $"/api/jobs/{job.Id}/status")
+        {
+            Content = JsonContent.Create(new { Status = "NotARealStatus" })
+        };
+
+        var updateResponse = await client.SendAsync(updateRequest);
+
+        Assert.Equal(HttpStatusCode.BadRequest, updateResponse.StatusCode);
+
+        var persistedResponse = await client.GetAsync($"/api/jobs/{job.Id}");
+        persistedResponse.EnsureSuccessStatusCode();
+        var persistedJob = await ReadResponseAsync<JobApplicationResponse>(persistedResponse);
+
+        Assert.Equal("Saved", persistedJob.Status);
+    }
+
+    [Fact]
     public async Task AiAnalysisEndpointReturnsSuccessfulResponse()
     {
         using var factory = new CareerAssistantApiFactory();
@@ -89,6 +128,20 @@ public class CoreWorkflowTests
         Assert.False(string.IsNullOrWhiteSpace(analysis.Strengths));
         Assert.False(string.IsNullOrWhiteSpace(analysis.Suggestions));
         Assert.False(string.IsNullOrWhiteSpace(analysis.CoverLetterDraft));
+    }
+
+    [Fact]
+    public async Task AiAnalysisRequiresProfile()
+    {
+        using var factory = new CareerAssistantApiFactory();
+        using var client = factory.CreateClient();
+        var job = await CreateJobAsync(client);
+
+        var response = await client.PostAsync($"/api/jobs/{job.Id}/analyse", content: null);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var message = await response.Content.ReadAsStringAsync();
+        Assert.Contains("Profile must be created before analysis.", message);
     }
 
     [Fact]
@@ -115,6 +168,26 @@ public class CoreWorkflowTests
         Assert.Equal(
             "I am excited to apply for this role because my experience aligns with the key requirements.",
             analysis.CoverLetterDraft);
+    }
+
+    [Fact]
+    public async Task FailedAiAnalysisDoesNotPersistAnalysisResult()
+    {
+        using var factory = new CareerAssistantApiFactory(
+            jobAnalysisService: new FailingJobAnalysisService());
+        using var client = factory.CreateClient();
+        await CreateProfileAsync(client);
+        var job = await CreateJobAsync(client);
+
+        var analysisResponse = await client.PostAsync($"/api/jobs/{job.Id}/analyse", content: null);
+
+        Assert.Equal(HttpStatusCode.InternalServerError, analysisResponse.StatusCode);
+
+        var jobResponse = await client.GetAsync($"/api/jobs/{job.Id}");
+        jobResponse.EnsureSuccessStatusCode();
+        var persistedJob = await ReadResponseAsync<JobApplicationResponse>(jobResponse);
+
+        Assert.Empty(persistedJob.AnalysisResults);
     }
 
     [Fact]
@@ -204,4 +277,15 @@ public class CoreWorkflowTests
         string Strengths,
         string Suggestions,
         string CoverLetterDraft);
+
+    private sealed class FailingJobAnalysisService : IJobAnalysisService
+    {
+        public Task<JobAnalysisResult> AnalyseAsync(
+            Profile profile,
+            JobApplication jobApplication,
+            CancellationToken cancellationToken = default)
+        {
+            throw new InvalidOperationException("Analysis provider returned malformed content.");
+        }
+    }
 }

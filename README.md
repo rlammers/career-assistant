@@ -95,23 +95,67 @@ Run tests:
 dotnet test src/backend/CareerAssistant.sln
 ```
 
-## Running With Docker
+## Running with Docker
 
 Prerequisites:
 
 - Docker Desktop
 
-Build and start the full app:
+Build and start the full app locally:
 
 ```powershell
 docker compose up --build
 ```
 
-The frontend runs at `http://localhost:5173`. It serves the production Vite build through nginx and proxies `/api` requests to the backend container.
+The frontend runs at `http://localhost:5173` by default. It serves the production Vite build through nginx and proxies `/api` and `/health` to the backend container.
 
 The backend API is also published on loopback only at `http://localhost:5117` for direct local API testing. SQLite data is stored in the Docker volume `career-assistant-data`.
 
-The Docker setup defaults to the mock AI provider. OpenAI configuration is covered below.
+Docker Compose defaults to the deterministic mock AI provider, so running the public demo workflow locally does not make paid AI calls.
+
+Common Docker environment variables:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `FRONTEND_PORT` | `5173` | Host port for the frontend container |
+| `BACKEND_PORT` | `5117` | Host loopback port for direct backend testing |
+| `FRONTEND_ORIGIN` | `http://localhost:5173` | Backend CORS origin for the frontend |
+| `API_UPSTREAM` | `http://backend:8080` | Internal backend URL used by the frontend nginx proxy |
+| `ConnectionStrings__DefaultConnection` | `Data Source=/app/data/CareerAssistant.db` | SQLite database path inside the backend container |
+| `Database__MigrateOnStartup` | `true` | Whether the API applies EF Core migrations on startup |
+| `AI__Provider` | `Mock` | Job analysis provider |
+| `AI__Model` | `gpt-5-mini` | Model name used by real AI providers |
+| `AI__BaseUrl` | `https://api.openai.com/v1` | OpenAI-compatible API base URL |
+| `AI__TimeoutSeconds` | `60` | AI request timeout |
+| `LOGGING_LEVEL_DEFAULT` | `Information` | Compose override for the default ASP.NET Core log level |
+| `LOGGING_LEVEL_MICROSOFT_ASPNETCORE` | `Warning` | Compose override for the ASP.NET Core framework log level |
+| `ForwardedHeaders__Enabled` | `true` in Compose | Enables forwarded proxy headers for container reverse proxies |
+
+Use different local ports:
+
+```powershell
+$env:FRONTEND_PORT="8081"
+$env:BACKEND_PORT="8082"
+$env:FRONTEND_ORIGIN="http://localhost:8081"
+docker compose up --build
+```
+
+Use mock mode explicitly:
+
+```powershell
+$env:AI__Provider="Mock"
+docker compose up --build
+```
+
+Use OpenAI in Docker through a Compose secret:
+
+```powershell
+$env:AI__Model="gpt-5-mini"
+$env:OPENAI_API_KEY="your-api-key"
+docker compose -f docker-compose.yml -f docker-compose.openai.yml up --build
+```
+
+Do not put real API keys in Compose files, appsettings files, frontend code, or committed files. When `AI__Provider` is `OpenAI`, `AI__Model` and either `OpenAI__ApiKey` or `OpenAI__ApiKeyFile` are required.
 
 ## Configuration
 
@@ -141,14 +185,27 @@ dotnet user-secrets set "AI:Model" "gpt-5-mini"
 dotnet user-secrets set "OpenAI:ApiKey" "your-api-key"
 ```
 
-Use OpenAI in Docker through a Compose secret:
-
-```powershell
-$env:AI__Model="gpt-5-mini"
-$env:OPENAI_API_KEY="your-api-key"
-docker compose -f docker-compose.yml -f docker-compose.openai.yml up --build
-```
-
-Do not put real API keys in Compose files, appsettings files, frontend code, or committed files. When `AI:Provider` is `OpenAI`, `AI:Model` and either `OpenAI:ApiKey` or `OpenAI:ApiKeyFile` are required.
+For non-Docker local development, `AI:Provider`, `AI:Model`, and `OpenAI:ApiKey` can be set with user secrets as shown above. Environment variables use double underscores, for example `AI__Provider` and `OpenAI__ApiKey`.
 
 Profile fields (`Summary`, `Skills`, `Experience`) and job application fields (`Company`, `Role`, `JobDescription`) are treated as untrusted user input during AI prompt construction.
+
+## Deployment Readiness Notes
+
+The app is designed to be deployed by changing configuration, not code.
+
+Backend container:
+
+- Listens on HTTP port `8080`.
+- Exposes `GET /health` and `HEAD /health` for platform health probes.
+- Uses SQLite at `ConnectionStrings__DefaultConnection`; mount persistent storage when using SQLite outside local development.
+- Runs migrations on startup by default. Set `Database__MigrateOnStartup=false` if migrations will be handled separately.
+- Uses `AI__Provider=Mock` for public demo deployments to avoid paid AI calls.
+- Enable `ForwardedHeaders__Enabled=true` when the API is behind a trusted reverse proxy or managed ingress that terminates TLS.
+
+Frontend container:
+
+- Listens on HTTP port `8080`.
+- Serves the built React app and proxies `/api` to `API_UPSTREAM`.
+- For a paired frontend/backend deployment, set `API_UPSTREAM` to the backend's internal HTTP address.
+
+No cloud-specific deployment resources are included yet. Future deployment should use the same images and provide environment variables, persistent storage for `/app/data`, and a backend address for `API_UPSTREAM`.

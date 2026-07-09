@@ -2,6 +2,7 @@ using CareerAssistant.Api.Data;
 using CareerAssistant.Api.Options;
 using CareerAssistant.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.HttpOverrides;
 using OpenAI;
 using System.ClientModel;
 using System.ClientModel.Primitives;
@@ -110,10 +111,33 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
+var forwardedHeadersEnabled = builder.Configuration.GetValue("ForwardedHeaders:Enabled", false);
 var migrateOnStartup = builder.Configuration.GetValue("Database:MigrateOnStartup", true);
+
+app.Logger.LogInformation(
+    "Starting Career Assistant API in {Environment}. AI provider: {AIProvider}. Migrate on startup: {MigrateOnStartup}. Forwarded headers: {ForwardedHeadersEnabled}.",
+    app.Environment.EnvironmentName,
+    aiProvider,
+    migrateOnStartup,
+    forwardedHeadersEnabled);
+
+if (forwardedHeadersEnabled)
+{
+    var forwardedHeadersOptions = new ForwardedHeadersOptions
+    {
+        ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+    };
+
+    forwardedHeadersOptions.KnownNetworks.Clear();
+    forwardedHeadersOptions.KnownProxies.Clear();
+
+    app.UseForwardedHeaders(forwardedHeadersOptions);
+}
 
 if (migrateOnStartup)
 {
+    app.Logger.LogInformation("Applying database migrations.");
+
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     dbContext.Database.Migrate();
@@ -132,7 +156,7 @@ app.UseCors("AllowFrontend");
 
 app.UseAuthorization();
 
-app.MapGet("/health", () => Results.Ok(new { status = "Healthy" }));
+app.MapMethods("/health", ["GET", "HEAD"], () => Results.Ok(new { status = "Healthy" }));
 app.MapControllers();
 
 app.Run();

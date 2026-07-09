@@ -35,6 +35,25 @@ public class OpenAiJobAnalysisServiceTests
     }
 
     [Fact]
+    public async Task MissingOrNullOptionalFieldsMapToEmptyStrings()
+    {
+        var response = new
+        {
+            matchScore = 70,
+            missingSkills = (string?)null
+        };
+        var service = CreateService(new StubOpenAiChatCompletionClient(JsonSerializer.Serialize(response)));
+
+        var result = await service.AnalyseAsync(CreateProfile(), CreateJob());
+
+        Assert.Equal(70, result.MatchScore);
+        Assert.Equal(string.Empty, result.MissingSkills);
+        Assert.Equal(string.Empty, result.Strengths);
+        Assert.Equal(string.Empty, result.Suggestions);
+        Assert.Equal(string.Empty, result.CoverLetterDraft);
+    }
+
+    [Fact]
     public async Task InvalidStructuredContentThrowsClearError()
     {
         var service = CreateService(new StubOpenAiChatCompletionClient("{not valid json"));

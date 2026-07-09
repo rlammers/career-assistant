@@ -71,6 +71,8 @@ Frontend:
 
 Keep everything minimal, functional, and linear.
 
+Prefer incremental improvements over large refactors. Preserve the current architecture unless there is a clear engineering benefit to changing it.
+
 In scope:
 
 - Storing profiles
