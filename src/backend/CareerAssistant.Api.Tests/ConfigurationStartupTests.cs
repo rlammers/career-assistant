@@ -43,6 +43,47 @@ public class ConfigurationStartupTests
     }
 
     [Fact]
+    public void EnabledAuthenticationWithoutRequiredConfigurationFailsClearlyOnStartup()
+    {
+        var exception = Assert.ThrowsAny<Exception>(() => WithEnvironmentVariables(
+            new Dictionary<string, string?>
+            {
+                ["Authentication__Enabled"] = "true"
+            },
+            () =>
+            {
+                using var factory = new CareerAssistantApiFactory(useConfiguredJobAnalysisService: true);
+                using var client = factory.CreateClient();
+            }));
+
+        AssertExceptionContains(exception, "Authentication:TenantId is required when authentication is enabled.");
+    }
+
+    [Fact]
+    public async Task EnabledAuthenticationWithCompleteConfigurationStarts()
+    {
+        await WithEnvironmentVariablesAsync(
+            new Dictionary<string, string?>
+            {
+                ["Authentication__Enabled"] = "true",
+                ["Authentication__TenantId"] = "11111111-1111-1111-1111-111111111111",
+                ["Authentication__ClientId"] = "22222222-2222-2222-2222-222222222222",
+                ["Authentication__Audience"] = "api://22222222-2222-2222-2222-222222222222",
+                ["Authentication__Issuer"] = "https://login.microsoftonline.com/11111111-1111-1111-1111-111111111111/v2.0",
+                ["Database__MigrateOnStartup"] = "false"
+            },
+            async () =>
+            {
+                using var factory = new CareerAssistantApiFactory(useConfiguredJobAnalysisService: true);
+                using var client = factory.CreateClient();
+
+                var response = await client.GetAsync("/health");
+
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            });
+    }
+
+    [Fact]
     public void OpenAiProviderWithoutApiKeyFailsClearlyOnStartup()
     {
         var exception = Assert.ThrowsAny<Exception>(() => WithEnvironmentVariables(

@@ -114,7 +114,7 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             }
             {
               name: 'Database__MigrateOnStartup'
-              value: 'true'
+              value: 'false'
             }
             {
               name: 'Demo__Enabled'
@@ -131,6 +131,14 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             {
               name: 'ForwardedHeaders__Enabled'
               value: 'true'
+            }
+            {
+              name: 'ForwardedHeaders__KnownProxies__0'
+              value: '127.0.0.1'
+            }
+            {
+              name: 'ForwardedHeaders__KnownProxies__1'
+              value: '::1'
             }
             {
               name: 'Logging__LogLevel__Default'
