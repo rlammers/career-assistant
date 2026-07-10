@@ -44,7 +44,8 @@ public class CareerAssistantApiFactory : WebApplicationFactory<Program>
                 ["AI:Provider"] = "Mock",
                 ["AI:Model"] = "test-mock",
                 ["OpenAI:ApiKey"] = string.Empty,
-                ["Database:MigrateOnStartup"] = "false"
+                ["Database:MigrateOnStartup"] = "false",
+                ["Demo:Enabled"] = "false"
             };
 
             foreach (var setting in _configuration)

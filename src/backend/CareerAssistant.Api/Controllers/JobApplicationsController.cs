@@ -1,9 +1,11 @@
 using CareerAssistant.Api.Data;
 using CareerAssistant.Api.DTOs;
 using CareerAssistant.Api.Models;
+using CareerAssistant.Api.Options;
 using CareerAssistant.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace CareerAssistant.Api.Controllers;
 
@@ -22,11 +24,19 @@ public class JobApplicationsController : ControllerBase
 
     private readonly ApplicationDbContext _dbContext;
     private readonly IJobAnalysisService _jobAnalysisService;
+    private readonly DemoOptions _demoOptions;
+    private readonly DemoQuotaGate _demoQuotaGate;
 
-    public JobApplicationsController(ApplicationDbContext dbContext, IJobAnalysisService jobAnalysisService)
+    public JobApplicationsController(
+        ApplicationDbContext dbContext,
+        IJobAnalysisService jobAnalysisService,
+        IOptions<DemoOptions> demoOptions,
+        DemoQuotaGate demoQuotaGate)
     {
         _dbContext = dbContext;
         _jobAnalysisService = jobAnalysisService;
+        _demoOptions = demoOptions.Value;
+        _demoQuotaGate = demoQuotaGate;
     }
 
     [HttpGet]
@@ -57,6 +67,36 @@ public class JobApplicationsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<JobApplication>> Post(JobApplicationRequest request)
     {
+        if (!_demoOptions.Enabled)
+        {
+            return await CreateJobAsync(request);
+        }
+
+        await _demoQuotaGate.JobWrites.WaitAsync(HttpContext.RequestAborted);
+
+        try
+        {
+            return await CreateJobAsync(request);
+        }
+        finally
+        {
+            _demoQuotaGate.JobWrites.Release();
+        }
+    }
+
+    private async Task<ActionResult<JobApplication>> CreateJobAsync(JobApplicationRequest request)
+    {
+        if (_demoOptions.Enabled
+            && await _dbContext.JobApplications.CountAsync() >= _demoOptions.MaxJobs)
+        {
+            return Conflict(new ProblemDetails
+            {
+                Title = "Demo job limit reached.",
+                Detail = $"The public demo stores at most {_demoOptions.MaxJobs} jobs. Delete a job or wait for the next demo reset.",
+                Status = StatusCodes.Status409Conflict
+            });
+        }
+
         var job = new JobApplication
         {
             Company = request.Company,
@@ -145,6 +185,40 @@ public class JobApplicationsController : ControllerBase
         if (profile == null)
         {
             return BadRequest("Profile must be created before analysis.");
+        }
+
+        if (_demoOptions.Enabled)
+        {
+            await _demoQuotaGate.AnalysisWrites.WaitAsync(HttpContext.RequestAborted);
+        }
+
+        try
+        {
+            return await CreateAnalysisAsync(profile, job);
+        }
+        finally
+        {
+            if (_demoOptions.Enabled)
+            {
+                _demoQuotaGate.AnalysisWrites.Release();
+            }
+        }
+    }
+
+    private async Task<ActionResult<JobAnalysisResultResponse>> CreateAnalysisAsync(
+        Profile profile,
+        JobApplication job)
+    {
+
+        if (_demoOptions.Enabled
+            && await _dbContext.JobAnalysisResults.CountAsync() >= _demoOptions.MaxAnalyses)
+        {
+            return Conflict(new ProblemDetails
+            {
+                Title = "Demo analysis limit reached.",
+                Detail = $"The public demo stores at most {_demoOptions.MaxAnalyses} analyses. Wait for the next demo reset.",
+                Status = StatusCodes.Status409Conflict
+            });
         }
 
         JobAnalysisResult analysisResult;

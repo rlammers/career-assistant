@@ -123,6 +123,9 @@ Common Docker environment variables:
 | `API_UPSTREAM` | `http://backend:8080` | Internal backend URL used by the frontend nginx proxy |
 | `ConnectionStrings__DefaultConnection` | `Data Source=/app/data/CareerAssistant.db` | SQLite database path inside the backend container |
 | `Database__MigrateOnStartup` | `true` | Whether the API applies EF Core migrations on startup |
+| `DEMO_ENABLED` | `false` | Enables public-demo storage quotas |
+| `DEMO_MAX_JOBS` | `100` | Maximum jobs retained while demo mode is enabled |
+| `DEMO_MAX_ANALYSES` | `200` | Maximum analyses retained while demo mode is enabled |
 | `AI__Provider` | `Mock` | Job analysis provider |
 | `AI__Model` | `gpt-5-mini` | Model name used by real AI providers |
 | `AI__BaseUrl` | `https://api.openai.com/v1` | OpenAI-compatible API base URL |
@@ -146,6 +149,15 @@ Use mock mode explicitly:
 $env:AI__Provider="Mock"
 docker compose up --build
 ```
+
+Preview the bounded public-demo behavior locally:
+
+```powershell
+$env:DEMO_ENABLED="true"
+docker compose up --build
+```
+
+When enabled, the API limits the shared store to 100 jobs and 200 analyses. Personal and ordinary local usage leave demo mode disabled.
 
 Use OpenAI in Docker through a Compose secret:
 
@@ -209,3 +221,5 @@ Frontend container:
 - For a paired frontend/backend deployment, set `API_UPSTREAM` to the backend's internal HTTP address.
 
 No cloud-specific deployment resources are included yet. Future deployment should use the same images and provide environment variables, persistent storage for `/app/data`, and a backend address for `API_UPSTREAM`.
+
+Static Azure readiness resources now live in `infra/azure`. They have not been deployed. Deployment is blocked pending the findings in `docs/security-review.md`; see `docs/azure-architecture.md` and `docs/azure-future-runbook.md` for the reviewed design and future operator checklist.

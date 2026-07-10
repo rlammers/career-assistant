@@ -1,0 +1,68 @@
+name: Deployment readiness security
+
+on:
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate without deployment
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Validate frontend
+        working-directory: src/frontend
+        run: |
+          npm ci
+          npm test
+          npm run lint
+          npm run build
+          npm audit --audit-level=high
+
+      - name: Validate backend
+        working-directory: src/backend
+        run: |
+          dotnet restore
+          dotnet test --no-restore --verbosity normal
+          dotnet list package --vulnerable --include-transitive
+
+      - name: Compile and lint Bicep
+        run: |
+          az bicep install
+          az bicep build --file infra/azure/foundation.bicep --stdout > /dev/null
+          az bicep build --file infra/azure/application.bicep --stdout > /dev/null
+
+      - name: Build production images locally
+        run: |
+          docker build --file src/backend/CareerAssistant.Api/Dockerfile --tag career-assistant-backend:security-review .
+          docker build --file src/frontend/Dockerfile --tag career-assistant-frontend:security-review .
+
+      - name: Scan repository secrets
+        run: docker run --rm --volume "$PWD:/repo" zricethezav/gitleaks:v8.30.0 detect --source=/repo --redact --no-banner
+
+      - name: Scan filesystem and images
+        run: |
+          docker run --rm --volume "$PWD:/work" aquasec/trivy:0.69.3 fs --scanners vuln,misconfig --severity HIGH,CRITICAL --exit-code 1 /work
+          docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.69.3 image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 career-assistant-backend:security-review
+          docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.69.3 image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 career-assistant-frontend:security-review
