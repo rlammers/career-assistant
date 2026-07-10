@@ -445,6 +445,17 @@ No additional architecture layers unless necessary.
 
 ---
 
+## UI Stability
+
+Interactive UI components should remain visually stable while users interact with them.
+
+- Do not let buttons, controls, cards, or surrounding content jump or shift when loading, success, error, or validation states appear
+- Reserve enough layout space for transient text, indicators, and status messages when practical
+- Preserve control position and dimensions across state changes where possible
+- Only introduce intentional movement or layout shifts when a specific requirement makes the movement part of the desired experience
+
+---
+
 ## Next Definition of Done: Public Portfolio Demo
 
 The next milestone is complete when:

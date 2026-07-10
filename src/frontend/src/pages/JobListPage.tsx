@@ -14,6 +14,7 @@ export const JobListPage = () => {
     jobDescription: '',
   });
   const [showForm, setShowForm] = useState(false);
+  const [analyzingJobId, setAnalyzingJobId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchJobs();
@@ -55,12 +56,18 @@ export const JobListPage = () => {
   };
 
   const handleAnalyzeJob = async (jobId: number) => {
+    if (analyzingJobId !== null) return;
+
+    setAnalyzingJobId(jobId);
+    setError(null);
     try {
       await analysisAPI.analyzeJob(jobId);
       alert('Job analyzed! View the details to see the analysis.');
       await fetchJobs(); // Refresh to show new analysis
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to analyze job');
+    } finally {
+      setAnalyzingJobId(null);
     }
   };
 
@@ -150,18 +157,35 @@ export const JobListPage = () => {
               <strong>Added:</strong> {new Date(job.createdAt).toLocaleDateString()}
             </p>
             <div style={{ marginTop: '10px' }}>
-              <button
-                onClick={() => handleViewJob(job.id)}
-                style={{ marginRight: '10px', padding: '8px 16px', cursor: 'pointer' }}
+              <div>
+                <button
+                  onClick={() => handleViewJob(job.id)}
+                  style={{ marginRight: '10px', padding: '8px 16px', cursor: 'pointer' }}
+                >
+                  View Details
+                </button>
+                <button
+                  onClick={() => handleAnalyzeJob(job.id)}
+                  disabled={analyzingJobId !== null}
+                  aria-busy={analyzingJobId === job.id}
+                  style={{
+                    padding: '8px 16px',
+                    cursor: analyzingJobId !== null ? 'wait' : 'pointer',
+                    backgroundColor: '#4CAF50',
+                    color: 'white',
+                    opacity: analyzingJobId !== null && analyzingJobId !== job.id ? 0.6 : 1,
+                  }}
+                >
+                  {analyzingJobId === job.id ? 'Analyzing...' : 'Analyze Job'}
+                </button>
+              </div>
+              <div
+                role="status"
+                aria-live="polite"
+                style={{ marginTop: '8px', minHeight: '24px' }}
               >
-                View Details
-              </button>
-              <button
-                onClick={() => handleAnalyzeJob(job.id)}
-                style={{ padding: '8px 16px', cursor: 'pointer', backgroundColor: '#4CAF50', color: 'white' }}
-              >
-                Analyze Job
-              </button>
+                {analyzingJobId === job.id ? 'Waiting for the AI provider...' : ''}
+              </div>
             </div>
           </div>
         ))}
