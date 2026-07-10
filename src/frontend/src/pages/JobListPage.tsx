@@ -157,31 +157,35 @@ export const JobListPage = () => {
               <strong>Added:</strong> {new Date(job.createdAt).toLocaleDateString()}
             </p>
             <div style={{ marginTop: '10px' }}>
-              <button
-                onClick={() => handleViewJob(job.id)}
-                style={{ marginRight: '10px', padding: '8px 16px', cursor: 'pointer' }}
+              <div>
+                <button
+                  onClick={() => handleViewJob(job.id)}
+                  style={{ marginRight: '10px', padding: '8px 16px', cursor: 'pointer' }}
+                >
+                  View Details
+                </button>
+                <button
+                  onClick={() => handleAnalyzeJob(job.id)}
+                  disabled={analyzingJobId !== null}
+                  aria-busy={analyzingJobId === job.id}
+                  style={{
+                    padding: '8px 16px',
+                    cursor: analyzingJobId !== null ? 'wait' : 'pointer',
+                    backgroundColor: '#4CAF50',
+                    color: 'white',
+                    opacity: analyzingJobId !== null && analyzingJobId !== job.id ? 0.6 : 1,
+                  }}
+                >
+                  {analyzingJobId === job.id ? 'Analyzing...' : 'Analyze Job'}
+                </button>
+              </div>
+              <div
+                role="status"
+                aria-live="polite"
+                style={{ marginTop: '8px', minHeight: '24px' }}
               >
-                View Details
-              </button>
-              <button
-                onClick={() => handleAnalyzeJob(job.id)}
-                disabled={analyzingJobId !== null}
-                aria-busy={analyzingJobId === job.id}
-                style={{
-                  padding: '8px 16px',
-                  cursor: analyzingJobId !== null ? 'wait' : 'pointer',
-                  backgroundColor: '#4CAF50',
-                  color: 'white',
-                  opacity: analyzingJobId !== null && analyzingJobId !== job.id ? 0.6 : 1,
-                }}
-              >
-                {analyzingJobId === job.id ? 'Analyzing...' : 'Analyze Job'}
-              </button>
-              {analyzingJobId === job.id && (
-                <span role="status" aria-live="polite" style={{ marginLeft: '10px' }}>
-                  Waiting for the AI provider...
-                </span>
-              )}
+                {analyzingJobId === job.id ? 'Waiting for the AI provider...' : ''}
+              </div>
             </div>
           </div>
         ))}
