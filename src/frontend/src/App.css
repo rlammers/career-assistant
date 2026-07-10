@@ -1,3 +1,21 @@
+.form-input,
+.form-textarea {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  padding: 8px;
+}
+
+.form-textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.form-textarea--large {
+  min-height: 6.5rem;
+}
+
 .counter {
   font-size: 16px;
   padding: 5px 10px;
