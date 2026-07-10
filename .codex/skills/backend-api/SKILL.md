@@ -41,6 +41,17 @@ Preserve or improve clear validation messages without creating inconsistent endp
 5. Consider cancellation tokens, async behavior, null handling, and persistence failure paths.
 6. Explain design decisions and material trade-offs in the handoff when more than one reasonable approach exists.
 
+## Security and deployment configuration checklist
+
+For infrastructure and middleware changes:
+
+- Use secure, fail-closed defaults. Do not trust all proxies, origins, hosts, or forwarded headers unless there is a documented, narrowly scoped deployment reason.
+- Treat environment-specific configuration as part of the implementation. Verify development, local container, and public deployment settings separately; do not rely on a development fallback in production.
+- Register every middleware service explicitly before using it. For authentication and authorization, configure both service registration and the request pipeline, including `AddAuthorization()` before `UseAuthorization()`.
+- CORS policies must allow the headers and methods required by the client, including `Authorization` for bearer authentication, while restricting origins to explicit configured values.
+- Avoid enabling database migration-on-startup by default. Enable it explicitly only for suitable development or single-instance demo environments; public or multi-instance deployments should use a reviewed deployment migration process.
+- When accepting proxy or network configuration, validate IP addresses, CIDR ranges, origins, and other deployment inputs at startup and fail clearly on invalid values.
+
 ## Tests and verification
 
 Use a risk-based approach.
