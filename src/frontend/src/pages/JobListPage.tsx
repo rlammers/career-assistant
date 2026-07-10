@@ -109,37 +109,37 @@ export const JobListPage = () => {
           <div style={{ marginBottom: '10px' }}>
             <label htmlFor="company">Company</label>
             <input
+              className="form-input"
               id="company"
               type="text"
               name="company"
               value={formData.company}
               onChange={handleChange}
               required
-              style={{ width: '100%', padding: '8px' }}
             />
           </div>
           <div style={{ marginBottom: '10px' }}>
             <label htmlFor="role">Role</label>
             <input
+              className="form-input"
               id="role"
               type="text"
               name="role"
               value={formData.role}
               onChange={handleChange}
               required
-              style={{ width: '100%', padding: '8px' }}
             />
           </div>
           <div style={{ marginBottom: '10px' }}>
             <label htmlFor="jobDescription">Job Description</label>
             <textarea
+              className="form-textarea form-textarea--large"
               id="jobDescription"
               name="jobDescription"
               value={formData.jobDescription}
               onChange={handleChange}
               required
               rows={6}
-              style={{ width: '100%', padding: '8px' }}
             />
           </div>
           <button type="submit" disabled={loading} style={{ padding: '10px 20px', cursor: 'pointer' }}>

@@ -64,39 +64,39 @@ export const ProfilePage = () => {
         <div style={{ marginBottom: '15px' }}>
           <label htmlFor="summary">Professional Summary</label>
           <textarea
+            className="form-textarea form-textarea--large"
             id="summary"
             name="summary"
             value={formData.summary}
             onChange={handleChange}
             placeholder="Brief overview of your professional background"
             rows={4}
-            style={{ width: '100%', padding: '8px' }}
           />
         </div>
 
         <div style={{ marginBottom: '15px' }}>
           <label htmlFor="skills">Skills (comma-separated)</label>
           <textarea
+            className="form-textarea"
             id="skills"
             name="skills"
             value={formData.skills}
             onChange={handleChange}
             placeholder="e.g., JavaScript, React, TypeScript, etc."
             rows={3}
-            style={{ width: '100%', padding: '8px' }}
           />
         </div>
 
         <div style={{ marginBottom: '15px' }}>
           <label htmlFor="experience">Experience</label>
           <textarea
+            className="form-textarea form-textarea--large"
             id="experience"
             name="experience"
             value={formData.experience}
             onChange={handleChange}
             placeholder="Your professional experience and background"
             rows={4}
-            style={{ width: '100%', padding: '8px' }}
           />
         </div>
 
