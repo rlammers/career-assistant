@@ -111,6 +111,53 @@ public class CoreWorkflowTests
     }
 
     [Fact]
+    public async Task CorsPreflightAllowsEditingJobs()
+    {
+        using var factory = new CareerAssistantApiFactory();
+        using var client = factory.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Options, "/api/jobs/1");
+        request.Headers.Add("Origin", "http://localhost:5173");
+        request.Headers.Add("Access-Control-Request-Method", "PUT");
+        request.Headers.Add("Access-Control-Request-Headers", "content-type");
+
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Contains(
+            "PUT",
+            string.Join(',', response.Headers.GetValues("Access-Control-Allow-Methods")));
+    }
+
+    [Fact]
+    public async Task JobApplicationFieldsCanBeUpdated()
+    {
+        using var factory = new CareerAssistantApiFactory();
+        using var client = factory.CreateClient();
+        var job = await CreateJobAsync(client);
+
+        var updateResponse = await client.PutAsJsonAsync($"/api/jobs/{job.Id}", new
+        {
+            Company = "Fabrikam",
+            Role = "Senior Software Engineer",
+            JobDescription = "Design and maintain APIs."
+        });
+        updateResponse.EnsureSuccessStatusCode();
+        var updatedJob = await ReadResponseAsync<JobApplicationResponse>(updateResponse);
+
+        Assert.Equal("Fabrikam", updatedJob.Company);
+        Assert.Equal("Senior Software Engineer", updatedJob.Role);
+        Assert.Equal("Design and maintain APIs.", updatedJob.JobDescription);
+        Assert.Equal(job.Status, updatedJob.Status);
+        Assert.Equal(job.CreatedAt, updatedJob.CreatedAt);
+
+        var persistedJob = await ReadResponseAsync<JobApplicationResponse>(
+            await client.GetAsync($"/api/jobs/{job.Id}"));
+        Assert.Equal(updatedJob.Company, persistedJob.Company);
+        Assert.Equal(updatedJob.Role, persistedJob.Role);
+        Assert.Equal(updatedJob.JobDescription, persistedJob.JobDescription);
+    }
+
+    [Fact]
     public async Task InvalidJobApplicationStatusReturnsBadRequestAndDoesNotChangeStatus()
     {
         using var factory = new CareerAssistantApiFactory();
@@ -228,11 +275,19 @@ public class CoreWorkflowTests
         };
         var updateResponse = await client.SendAsync(updateRequest);
 
+        var editResponse = await client.PutAsJsonAsync($"/api/jobs/{missingJobId}", new
+        {
+            Company = "Missing",
+            Role = "Missing",
+            JobDescription = "Missing"
+        });
+
         var analyseResponse = await client.PostAsync($"/api/jobs/{missingJobId}/analyse", content: null);
         var deleteResponse = await client.DeleteAsync($"/api/jobs/{missingJobId}");
 
         Assert.Equal(HttpStatusCode.NotFound, getResponse.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, updateResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, editResponse.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, analyseResponse.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, deleteResponse.StatusCode);
     }
