@@ -54,6 +54,8 @@ if (authenticationOptions.Enabled)
         });
 }
 
+builder.Services.AddAuthorization();
+
 var aiOptions = builder.Configuration.GetSection("AI").Get<AiOptions>() ?? new AiOptions();
 var aiProvider = string.IsNullOrWhiteSpace(aiOptions.Provider) ? "Mock" : aiOptions.Provider;
 
