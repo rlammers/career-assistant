@@ -53,7 +53,7 @@ The code should not change between these environments. Only configuration should
 
 Backend:
 
-- ASP.NET Core Web API (.NET 8)
+- ASP.NET Core Web API (.NET 10)
 - Entity Framework Core
 - SQLite
 

@@ -15,7 +15,7 @@ A personal career management tool that helps users:
 
 Backend:
 
-- C# / .NET 8
+- C# / .NET 10
 - ASP.NET Core Web API
 - Entity Framework Core
 - SQLite
@@ -61,7 +61,7 @@ Implemented backend controllers support the following endpoints:
 
 Prerequisites:
 
-- .NET 8 SDK
+- .NET 10 SDK
 - Node.js and npm
 
 Run the backend API:

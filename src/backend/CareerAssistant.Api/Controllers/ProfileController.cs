@@ -20,7 +20,9 @@ public class ProfileController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<Profile>> Get()
     {
-        var profile = await _dbContext.Profiles.FirstOrDefaultAsync();
+        var profile = await _dbContext.Profiles
+            .OrderBy(p => p.Id)
+            .FirstOrDefaultAsync();
 
         if (profile == null)
         {
@@ -33,7 +35,9 @@ public class ProfileController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Profile>> Post(ProfileRequest request)
     {
-        var profile = await _dbContext.Profiles.FirstOrDefaultAsync();
+        var profile = await _dbContext.Profiles
+            .OrderBy(p => p.Id)
+            .FirstOrDefaultAsync();
 
         if (profile == null)
         {
