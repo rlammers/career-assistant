@@ -1,0 +1,4 @@
+interface:
+  display_name: "GitHub Actions"
+  short_description: "Build secure, useful continuous integration"
+  default_prompt: "Use $github-actions to improve CI for this repository."

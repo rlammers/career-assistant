@@ -1,0 +1,4 @@
+interface:
+  display_name: "Backend API"
+  short_description: "Implement safe, maintainable ASP.NET Core APIs"
+  default_prompt: "Use $backend-api to implement this ASP.NET Core API change."

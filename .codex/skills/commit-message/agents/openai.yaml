@@ -1,0 +1,4 @@
+interface:
+  display_name: "Commit Message"
+  short_description: "Prepare coherent Conventional Commits"
+  default_prompt: "Use $commit-message to organize these changes into coherent commits."
