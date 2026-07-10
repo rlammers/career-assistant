@@ -1,6 +1,6 @@
 # Career Assistant
 
-AI-assisted job application management system. For learning and demo purposes while I'm on my job search. I am using some free tier AI agents to help out, but they are limited so it forces me to understand and take ownership of the generated code. Also learning where the agents are most useful and situations I should avoid wasting tokens on.
+AI-assisted job application management system. For learning and demo purposes while I'm on my job search. I am using AI tools like Codex as part of my learning.
 
 ## Purpose
 
