@@ -35,8 +35,24 @@ Do not attempt to infer whether a user is a recruiter from their email domain, p
 - [ ] Configure the SPA/API scopes and least-privilege consent required by the application.
 - [ ] Define one explicit demo-access assignment, such as an app role or dedicated group.
 - [ ] Require assignment to the enterprise application where supported by the selected configuration.
-- [ ] Record tenant ID, client ID, audience, issuer, and safe redirect settings as deployment configuration.
+- [x] Record tenant ID, client ID, audience, issuer, and safe redirect settings as deployment configuration.
 - [ ] Store any confidential credential only in secure deployment configuration; prefer flows that do not require a frontend secret.
+
+Use secure deployment configuration for the following non-secret values; do not commit production values:
+
+```json
+{
+  "Authentication": {
+    "TenantId": "<tenant-guid>",
+    "ClientId": "<api-app-client-guid>",
+    "Audience": "api://<api-app-client-guid>",
+    "Issuer": "https://login.microsoftonline.com/<tenant-guid>/v2.0",
+    "SpaRedirectUri": "https://<public-frontend-host>/"
+  }
+}
+```
+
+The production redirect URI must use HTTPS and exactly match the URI registered in Entra. `SpaRedirectUri` is frontend configuration only; it must not contain a secret.
 
 ### Backend
 
@@ -44,7 +60,7 @@ Do not attempt to infer whether a user is a recruiter from their email domain, p
 - [ ] Validate token signature, issuer, audience, tenant, and lifetime.
 - [ ] Add a server-side authorization policy requiring the configured demo-access assignment.
 - [ ] Require that policy for every controller/API route.
-- [ ] Keep only operational endpoints intentionally needed by the platform, such as `/health`, anonymous.
+- [x] Keep only operational endpoints intentionally needed by the platform, such as `/health`, anonymous.
 - [ ] Return `401 Unauthorized` for missing or invalid authentication and `403 Forbidden` for authenticated users without access.
 - [ ] Ensure direct requests to the API cannot bypass authorization through the frontend proxy or sidecar address.
 - [ ] Do not use email address or display name as the durable authorization identifier.

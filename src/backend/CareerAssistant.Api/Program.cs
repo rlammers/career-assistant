@@ -156,7 +156,8 @@ app.UseCors("AllowFrontend");
 
 app.UseAuthorization();
 
-app.MapMethods("/health", ["GET", "HEAD"], () => Results.Ok(new { status = "Healthy" }));
+app.MapMethods("/health", ["GET", "HEAD"], () => Results.Ok(new { status = "Healthy" }))
+    .AllowAnonymous();
 app.MapControllers();
 
 app.Run();
