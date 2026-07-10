@@ -1,8 +1,10 @@
 using CareerAssistant.Api.Data;
 using CareerAssistant.Api.Options;
 using CareerAssistant.Api.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.IdentityModel.Tokens;
 using OpenAI;
 using System.ClientModel;
 using System.ClientModel.Primitives;
@@ -17,12 +19,39 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.Configure<AiOptions>(builder.Configuration.GetSection("AI"));
 builder.Services.Configure<OpenAiOptions>(builder.Configuration.GetSection("OpenAI"));
+builder.Services.AddOptions<AuthenticationOptions>()
+    .Bind(builder.Configuration.GetSection(AuthenticationOptions.SectionName))
+    .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.TenantId), "Authentication:TenantId is required when authentication is enabled.")
+    .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.ClientId), "Authentication:ClientId is required when authentication is enabled.")
+    .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.Audience), "Authentication:Audience is required when authentication is enabled.")
+    .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.Issuer), "Authentication:Issuer is required when authentication is enabled.")
+    .ValidateOnStart();
 builder.Services.AddOptions<DemoOptions>()
     .Bind(builder.Configuration.GetSection(DemoOptions.SectionName))
     .Validate(options => options.MaxJobs > 0, "Demo:MaxJobs must be greater than zero.")
     .Validate(options => options.MaxAnalyses > 0, "Demo:MaxAnalyses must be greater than zero.")
     .ValidateOnStart();
 builder.Services.AddSingleton<DemoQuotaGate>();
+
+var authenticationOptions = builder.Configuration.GetSection(AuthenticationOptions.SectionName).Get<AuthenticationOptions>() ?? new AuthenticationOptions();
+
+if (authenticationOptions.Enabled)
+{
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+            options.Authority = $"https://login.microsoftonline.com/{authenticationOptions.TenantId}/v2.0";
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = authenticationOptions.Issuer,
+                ValidateAudience = true,
+                ValidAudience = authenticationOptions.Audience,
+                ValidateIssuerSigningKey = true,
+                ValidateLifetime = true
+            };
+        });
+}
 
 var aiOptions = builder.Configuration.GetSection("AI").Get<AiOptions>() ?? new AiOptions();
 var aiProvider = string.IsNullOrWhiteSpace(aiOptions.Provider) ? "Mock" : aiOptions.Provider;
@@ -153,6 +182,11 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseCors("AllowFrontend");
+
+if (authenticationOptions.Enabled)
+{
+    app.UseAuthentication();
+}
 
 app.UseAuthorization();
 

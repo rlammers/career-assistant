@@ -36,7 +36,7 @@ Do not attempt to infer whether a user is a recruiter from their email domain, p
 - [ ] Define one explicit demo-access assignment, such as an app role or dedicated group.
 - [ ] Require assignment to the enterprise application where supported by the selected configuration.
 - [x] Record tenant ID, client ID, audience, issuer, and safe redirect settings as deployment configuration.
-- [ ] Store any confidential credential only in secure deployment configuration; prefer flows that do not require a frontend secret.
+- [x] Store any confidential credential only in secure deployment configuration; prefer flows that do not require a frontend secret.
 
 Use secure deployment configuration for the following non-secret values; do not commit production values:
 
@@ -52,11 +52,11 @@ Use secure deployment configuration for the following non-secret values; do not 
 }
 ```
 
-The production redirect URI must use HTTPS and exactly match the URI registered in Entra. `SpaRedirectUri` is frontend configuration only; it must not contain a secret.
+The production redirect URI must use HTTPS and exactly match the URI registered in Entra. `SpaRedirectUri` is frontend configuration only; it must not contain a secret. The SPA authorization-code-with-PKCE flow and API token validation do not require a client secret. If a future confidential credential is needed, use .NET user secrets locally and the deployment platform's secret store in deployed environments; never put it in `appsettings*.json`, frontend configuration, or source control.
 
 ### Backend
 
-- [ ] Add ASP.NET Core token authentication using the Microsoft identity platform configuration.
+- [x] Add ASP.NET Core token authentication using the Microsoft identity platform configuration.
 - [ ] Validate token signature, issuer, audience, tenant, and lifetime.
 - [ ] Add a server-side authorization policy requiring the configured demo-access assignment.
 - [ ] Require that policy for every controller/API route.

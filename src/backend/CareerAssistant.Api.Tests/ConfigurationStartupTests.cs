@@ -43,6 +43,23 @@ public class ConfigurationStartupTests
     }
 
     [Fact]
+    public void EnabledAuthenticationWithoutRequiredConfigurationFailsClearlyOnStartup()
+    {
+        var exception = Assert.ThrowsAny<Exception>(() => WithEnvironmentVariables(
+            new Dictionary<string, string?>
+            {
+                ["Authentication__Enabled"] = "true"
+            },
+            () =>
+            {
+                using var factory = new CareerAssistantApiFactory(useConfiguredJobAnalysisService: true);
+                using var client = factory.CreateClient();
+            }));
+
+        AssertExceptionContains(exception, "Authentication:TenantId is required when authentication is enabled.");
+    }
+
+    [Fact]
     public void OpenAiProviderWithoutApiKeyFailsClearlyOnStartup()
     {
         var exception = Assert.ThrowsAny<Exception>(() => WithEnvironmentVariables(
