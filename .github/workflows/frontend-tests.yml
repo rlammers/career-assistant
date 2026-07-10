@@ -5,18 +5,43 @@ on:
     branches: ["main"]
   push:
     branches: ["main"]
+    paths:
+      - 'src/frontend/**'
+      - '.github/workflows/frontend-tests.yml'
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: frontend-tests-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  test:
-    name: Test
+  changes:
+    name: Detect frontend changes
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - name: Detect changed frontend inputs
+        id: filter
+        uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4
+        with:
+          filters: |
+            frontend:
+              - 'src/frontend/**'
+              - '.github/workflows/frontend-tests.yml'
+
+  test:
+    name: Test and build frontend
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     defaults:
       run:
@@ -24,10 +49,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: 24
           cache: npm
@@ -38,3 +63,23 @@ jobs:
 
       - name: Run frontend tests
         run: npm test
+
+      - name: Lint frontend
+        run: npm run lint
+
+      - name: Build frontend
+        run: npm run build
+
+  required:
+    name: Required frontend check
+    needs: [changes, test]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Confirm frontend check result
+        if: needs.changes.result == 'success' && (needs.test.result == 'success' || needs.test.result == 'skipped')
+        run: echo "Frontend check passed or was not required for this change."
+      - name: Fail when frontend check fails
+        if: needs.changes.result != 'success' || (needs.test.result != 'success' && needs.test.result != 'skipped')
+        run: exit 1
