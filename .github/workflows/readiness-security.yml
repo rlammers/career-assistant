@@ -103,8 +103,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
       - name: Build backend image
-        run: docker build --file src/backend/CareerAssistant.Api/Dockerfile --tag career-assistant-backend:security-review .
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: src/backend/CareerAssistant.Api/Dockerfile
+          load: true
+          tags: career-assistant-backend:security-review
+          cache-from: type=gha,scope=backend-image
+          cache-to: type=gha,mode=max,scope=backend-image
 
       - name: Scan backend image
         run: docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.69.3 image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 career-assistant-backend:security-review
@@ -118,8 +128,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
       - name: Build frontend image
-        run: docker build --file src/frontend/Dockerfile --tag career-assistant-frontend:security-review .
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: src/frontend/Dockerfile
+          load: true
+          tags: career-assistant-frontend:security-review
+          cache-from: type=gha,scope=frontend-image
+          cache-to: type=gha,mode=max,scope=frontend-image
 
       - name: Scan frontend image
         run: docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.69.3 image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 career-assistant-frontend:security-review
