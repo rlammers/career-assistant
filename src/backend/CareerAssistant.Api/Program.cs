@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using OpenAI;
 using System.ClientModel;
 using System.ClientModel.Primitives;
+using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -157,8 +158,25 @@ if (forwardedHeadersEnabled)
         ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
     };
 
-    forwardedHeadersOptions.KnownIPNetworks.Clear();
-    forwardedHeadersOptions.KnownProxies.Clear();
+    foreach (var proxy in builder.Configuration.GetSection("ForwardedHeaders:KnownProxies").Get<string[]>() ?? [])
+    {
+        if (!IPAddress.TryParse(proxy, out var address))
+        {
+            throw new InvalidOperationException($"ForwardedHeaders:KnownProxies contains an invalid IP address: '{proxy}'.");
+        }
+
+        forwardedHeadersOptions.KnownProxies.Add(address);
+    }
+
+    foreach (var network in builder.Configuration.GetSection("ForwardedHeaders:KnownIPNetworks").Get<string[]>() ?? [])
+    {
+        if (!System.Net.IPNetwork.TryParse(network, out var ipNetwork))
+        {
+            throw new InvalidOperationException($"ForwardedHeaders:KnownIPNetworks contains an invalid CIDR network: '{network}'.");
+        }
+
+        forwardedHeadersOptions.KnownIPNetworks.Add(ipNetwork);
+    }
 
     app.UseForwardedHeaders(forwardedHeadersOptions);
 }

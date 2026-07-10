@@ -34,6 +34,7 @@ services:
       Demo__MaxJobs: ${DEMO_MAX_JOBS:-100}
       Demo__MaxAnalyses: ${DEMO_MAX_ANALYSES:-200}
       ForwardedHeaders__Enabled: ${ForwardedHeaders__Enabled:-true}
+      ForwardedHeaders__KnownIPNetworks__0: ${ForwardedHeaders__KnownIPNetworks:-172.30.0.0/16}
       Cors__AllowedOrigins__0: ${FRONTEND_ORIGIN:-http://localhost:5173}
       Logging__LogLevel__Default: ${LOGGING_LEVEL_DEFAULT:-Information}
       Logging__LogLevel__Microsoft.AspNetCore: ${LOGGING_LEVEL_MICROSOFT_ASPNETCORE:-Warning}
@@ -69,6 +70,12 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16
 
 volumes:
   career-assistant-data:
