@@ -6,7 +6,7 @@ Deployment status: **not deployed; readiness work remains**
 
 ## Public summary
 
-The application has been reviewed as a deliberately small public portfolio demo. The review covered input handling, data access, AI-provider separation, dependency and container vulnerabilities, secret exposure, reverse-proxy behavior, CI permissions, and the proposed cloud boundary.
+The application has been reviewed as a deliberately small public portfolio demo. The review covered input handling, data access, AI-provider separation, dependency and container vulnerabilities, secret exposure, reverse-proxy behavior, CI permissions, and the proposed cloud boundary. The deployment goal now requires invitation-only Microsoft Entra authentication and server-side authorization before public ingress is enabled.
 
 The repository contains no Azure credentials or paid-provider secret. The proposed demo selects the deterministic Mock provider, uses non-root containers, limits stored demo records, validates user-controlled text, and keeps the API behind the frontend proxy.
 
@@ -42,7 +42,7 @@ Detailed tactical findings, exact limits, observed response behavior, internal t
 
 ## Public deployment decision
 
-Do not deploy yet. Persistence behavior, shared-demo lifecycle, production edge behavior, and operational controls still require validation. The detailed blockers and evidence remain in the ignored private assessment.
+Do not deploy yet. The invitation-only authentication and explicit server-side authorization policy in `docs/auth-todo.md` must be implemented and verified. Persistence behavior, shared-demo lifecycle, production edge behavior, and operational controls also still require validation. The detailed blockers and evidence remain in the ignored private assessment.
 
 ## References
 

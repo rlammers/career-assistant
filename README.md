@@ -40,10 +40,10 @@ The demo should show employers the working application without creating AI usage
 - Database deployed and persistent
 - Mock AI provider enabled
 - Demo data available
-- No authentication required
+- Invitation-only Microsoft Entra authentication and explicit user authorization required before public deployment
 - No OpenAI API key in the demo environment
 
-Anyone should be able to try the core workflow without costing money.
+Only invited guests permitted by the application's authorization policy may use the demo workflow. Guests may authenticate with Microsoft identities or email one-time passcodes; mock analysis keeps that use free of paid AI calls. See `docs/auth-todo.md` for the implementation checklist.
 
 ## Backend API
 
@@ -213,6 +213,7 @@ Backend container:
 - Runs migrations on startup by default. Set `Database__MigrateOnStartup=false` if migrations will be handled separately.
 - Uses `AI__Provider=Mock` for public demo deployments to avoid paid AI calls.
 - Enable `ForwardedHeaders__Enabled=true` when the API is behind a trusted reverse proxy or managed ingress that terminates TLS.
+- Before enabling public ingress, require invitation-only Microsoft Entra authentication and enforce authorization on the API; frontend-only route protection is not sufficient.
 
 Frontend container:
 
@@ -222,4 +223,4 @@ Frontend container:
 
 No cloud-specific deployment resources are included yet. Future deployment should use the same images and provide environment variables, persistent storage for `/app/data`, and a backend address for `API_UPSTREAM`.
 
-Static Azure readiness resources now live in `infra/azure`. They have not been deployed. Deployment is blocked pending the findings in `docs/security-review.md`; see `docs/azure-architecture.md` and `docs/azure-future-runbook.md` for the reviewed design and future operator checklist.
+Static Azure readiness resources now live in `infra/azure`. They have not been deployed. Deployment is blocked until the authentication and authorization work in `docs/auth-todo.md` and the remaining findings in `docs/security-review.md` are resolved; see `docs/azure-architecture.md` and `docs/azure-future-runbook.md` for the reviewed design and future operator checklist.

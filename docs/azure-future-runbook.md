@@ -7,6 +7,7 @@ This document is an operator checklist, not an executable deployment script. Do 
 ## Preconditions
 
 - Resolve or explicitly accept every deployment-blocking security finding.
+- Complete `docs/auth-todo.md`, including Entra B2B guest invitations, email one-time passcode fallback, token validation, and explicit application assignment. Do not enable public ingress with anonymous application access.
 - Re-run tests, package audits, secret scan, image scans, and Bicep compilation.
 - Confirm Australia East supports the selected resource/API versions.
 - Calculate current prices in the Azure Pricing Calculator and create a low budget alert before provisioning.
@@ -18,8 +19,8 @@ This document is an operator checklist, not an executable deployment script. Do 
 2. Deploy `foundation.bicep` and retain its non-secret outputs.
 3. Build both images from the reviewed commit, scan them, push commit-specific tags, and record their digests.
 4. Deploy `application.bicep` using immutable image references.
-5. Confirm the app uses one replica, Mock AI, HTTPS-only ingress, private API sidecar, and the persistent mount.
-6. Exercise health, profile, job, status, analysis, deletion, rate-limit, and persistence scenarios using fictional data.
+5. Confirm the app uses one replica, Mock AI, HTTPS-only ingress, private API sidecar, the persistent mount, and invitation-only Entra authentication with server-side authorization.
+6. Verify unauthenticated and unauthorized direct API requests are rejected, then exercise health, profile, job, status, analysis, deletion, rate-limit, and persistence scenarios as an authorized user using fictional data.
 7. Record the public Azure hostname and observed cost/telemetry baseline.
 
 ## Cost controls
