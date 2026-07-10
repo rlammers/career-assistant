@@ -128,12 +128,12 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         var frontendOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-            ?? ["http://localhost:5173"];
+            ?? [];
 
         policy
             .WithOrigins(frontendOrigins)
-            .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE")
-            .WithHeaders("Content-Type");
+            .AllowAnyHeader()
+            .AllowAnyMethod();
     });
 });
 
