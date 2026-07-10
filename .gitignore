@@ -52,3 +52,6 @@ Thumbs.db
 *.db-journal
 *.db-wal
 *.db-shm
+
+# Local-only detailed security assessment
+docs/security-review-private.md

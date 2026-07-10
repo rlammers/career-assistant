@@ -6,6 +6,7 @@ using CareerAssistant.Api.Services;
 using CareerAssistant.Api.Data;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
+using CareerAssistant.Api.DTOs;
 
 namespace CareerAssistant.Api.Tests;
 
@@ -292,6 +293,114 @@ public class CoreWorkflowTests
         Assert.Equal(HttpStatusCode.NotFound, deleteResponse.StatusCode);
     }
 
+    [Theory]
+    [InlineData("Summary", InputLimits.ProfileSummaryMaxLength)]
+    [InlineData("Skills", InputLimits.ProfileSkillsMaxLength)]
+    [InlineData("Experience", InputLimits.ProfileExperienceMaxLength)]
+    public async Task OversizedProfileFieldsReturnValidationErrors(string field, int maximumLength)
+    {
+        using var factory = new CareerAssistantApiFactory();
+        using var client = factory.CreateClient();
+        var request = new Dictionary<string, string>
+        {
+            ["Summary"] = "Summary",
+            ["Skills"] = "C#",
+            ["Experience"] = "Experience",
+            [field] = new string('x', maximumLength + 1)
+        };
+
+        var response = await client.PostAsJsonAsync("/api/profile", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("Company", InputLimits.CompanyMaxLength)]
+    [InlineData("Role", InputLimits.RoleMaxLength)]
+    [InlineData("JobDescription", InputLimits.JobDescriptionMaxLength)]
+    public async Task OversizedJobFieldsReturnValidationErrors(string field, int maximumLength)
+    {
+        using var factory = new CareerAssistantApiFactory();
+        using var client = factory.CreateClient();
+        var request = new Dictionary<string, string>
+        {
+            ["Company"] = "Contoso",
+            ["Role"] = "Developer",
+            ["JobDescription"] = "Description",
+            [field] = new string('x', maximumLength + 1)
+        };
+
+        var response = await client.PostAsJsonAsync("/api/jobs", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("Company")]
+    [InlineData("Role")]
+    [InlineData("JobDescription")]
+    public async Task RequiredJobFieldsRejectWhitespace(string field)
+    {
+        using var factory = new CareerAssistantApiFactory();
+        using var client = factory.CreateClient();
+        var request = new Dictionary<string, string>
+        {
+            ["Company"] = "Contoso",
+            ["Role"] = "Developer",
+            ["JobDescription"] = "Description",
+            [field] = "   "
+        };
+
+        var response = await client.PostAsJsonAsync("/api/jobs", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DemoJobQuotaReturnsConflictWithoutStoringAnotherJob()
+    {
+        using var factory = new CareerAssistantApiFactory(new Dictionary<string, string?>
+        {
+            ["Demo:Enabled"] = "true",
+            ["Demo:MaxJobs"] = "1"
+        });
+        using var client = factory.CreateClient();
+        await CreateJobAsync(client);
+
+        var response = await client.PostAsJsonAsync("/api/jobs", new
+        {
+            Company = "Fabrikam",
+            Role = "Developer",
+            JobDescription = "This job exceeds the configured demo quota."
+        });
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        using var scope = factory.Services.CreateScope();
+        Assert.Equal(1, await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().JobApplications.CountAsync());
+    }
+
+    [Fact]
+    public async Task DemoAnalysisQuotaReturnsConflictBeforeCallingProviderAgain()
+    {
+        var provider = new CountingJobAnalysisService();
+        using var factory = new CareerAssistantApiFactory(
+            new Dictionary<string, string?>
+            {
+                ["Demo:Enabled"] = "true",
+                ["Demo:MaxAnalyses"] = "1"
+            },
+            provider);
+        using var client = factory.CreateClient();
+        await CreateProfileAsync(client);
+        var job = await CreateJobAsync(client);
+        (await client.PostAsync($"/api/jobs/{job.Id}/analyse", content: null)).EnsureSuccessStatusCode();
+
+        var response = await client.PostAsync($"/api/jobs/{job.Id}/analyse", content: null);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal(1, provider.CallCount);
+    }
+
     private static async Task CreateProfileAsync(HttpClient client)
     {
         var response = await client.PostAsJsonAsync("/api/profile", new
@@ -366,6 +475,27 @@ public class CoreWorkflowTests
             CancellationToken cancellationToken = default)
         {
             throw new InvalidOperationException("Analysis provider returned malformed content.");
+        }
+    }
+
+    private sealed class CountingJobAnalysisService : IJobAnalysisService
+    {
+        public int CallCount { get; private set; }
+
+        public Task<JobAnalysisResult> AnalyseAsync(
+            Profile profile,
+            JobApplication jobApplication,
+            CancellationToken cancellationToken = default)
+        {
+            CallCount++;
+            return Task.FromResult(new JobAnalysisResult
+            {
+                MatchScore = 75,
+                MissingSkills = "None",
+                Strengths = "Test strength",
+                Suggestions = "Test suggestion",
+                CoverLetterDraft = "Test draft"
+            });
         }
     }
 }

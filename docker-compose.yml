@@ -30,6 +30,9 @@ services:
       AI__BaseUrl: ${AI__BaseUrl:-https://api.openai.com/v1}
       AI__TimeoutSeconds: ${AI__TimeoutSeconds:-60}
       Database__MigrateOnStartup: ${Database__MigrateOnStartup:-true}
+      Demo__Enabled: ${DEMO_ENABLED:-false}
+      Demo__MaxJobs: ${DEMO_MAX_JOBS:-100}
+      Demo__MaxAnalyses: ${DEMO_MAX_ANALYSES:-200}
       ForwardedHeaders__Enabled: ${ForwardedHeaders__Enabled:-true}
       Cors__AllowedOrigins__0: ${FRONTEND_ORIGIN:-http://localhost:5173}
       Logging__LogLevel__Default: ${LOGGING_LEVEL_DEFAULT:-Information}

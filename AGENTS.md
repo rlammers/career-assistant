@@ -23,7 +23,7 @@ This is NOT a job board, Customer Relationship Management system, or full Applic
 Purpose:
 
 - Show employers what was built
-- Let anyone try the core workflow without costing the owner money
+- Let authorized invited users try the core workflow without costing the owner money
 - Demonstrate clean separation between deployment configuration and application behaviour
 
 Target configuration:
@@ -33,10 +33,10 @@ Target configuration:
 - Database deployed
 - Mock AI provider enabled
 - Demo data available
-- No authentication required
+- Invitation-only Microsoft Entra authentication and explicit user authorization required
 - No OpenAI API key in production demo
 
-The public demo must not use paid AI calls. It should use deterministic mock analysis and safe demo data so the app can be explored freely.
+The public demo must not use paid AI calls. It should use deterministic mock analysis and safe demo data. Public deployment must remain blocked until the invitation-only authentication and server-side authorization described in `docs/auth-todo.md` are implemented and verified.
 
 Environment intent:
 
@@ -84,7 +84,7 @@ In scope:
 Out of scope:
 
 - Job scraping
-- Authentication
+- Separate social identity integrations, local passwords, and account-management features beyond Entra B2B invitation authentication and email one-time passcode fallback
 - Multi-user support
 - Email sending
 - Complex AI agent workflows
@@ -415,6 +415,7 @@ Do not expose API keys in the frontend.
 - AI outputs are stored after validation
 - No versioning system
 - No user account separation
+- Entra guest identities are an access-control boundary only; authorized users still access the same global demo data
 - No provider secrets stored in database for MVP
 
 ---
@@ -465,9 +466,10 @@ The next milestone is complete when:
 - Database is deployed and persistent
 - Demo environment uses `AI:Provider = Mock`
 - Demo data is present and safe to show publicly
-- No authentication is required for the demo
+- Entra authentication is required for every non-health application route, supporting invited Microsoft identities and email one-time passcode guests
+- Server-side authorization restricts access to explicitly assigned invited guests; frontend route guards alone do not satisfy this requirement
 - No OpenAI API key or paid provider secret is present in the demo environment
-- Anyone can exercise the main profile, job, status, and analysis workflow without causing AI usage cost
+- Authorized users can exercise the main profile, job, status, and analysis workflow without causing AI usage cost
 - Personal/OpenAI usage remains available through configuration only, without code changes
 
 ---

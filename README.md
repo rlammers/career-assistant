@@ -40,10 +40,10 @@ The demo should show employers the working application without creating AI usage
 - Database deployed and persistent
 - Mock AI provider enabled
 - Demo data available
-- No authentication required
+- Invitation-only Microsoft Entra authentication and explicit user authorization required before public deployment
 - No OpenAI API key in the demo environment
 
-Anyone should be able to try the core workflow without costing money.
+Only invited guests permitted by the application's authorization policy may use the demo workflow. Guests may authenticate with Microsoft identities or email one-time passcodes; mock analysis keeps that use free of paid AI calls. See `docs/auth-todo.md` for the implementation checklist.
 
 ## Backend API
 
@@ -123,6 +123,9 @@ Common Docker environment variables:
 | `API_UPSTREAM` | `http://backend:8080` | Internal backend URL used by the frontend nginx proxy |
 | `ConnectionStrings__DefaultConnection` | `Data Source=/app/data/CareerAssistant.db` | SQLite database path inside the backend container |
 | `Database__MigrateOnStartup` | `true` | Whether the API applies EF Core migrations on startup |
+| `DEMO_ENABLED` | `false` | Enables public-demo storage quotas |
+| `DEMO_MAX_JOBS` | `100` | Maximum jobs retained while demo mode is enabled |
+| `DEMO_MAX_ANALYSES` | `200` | Maximum analyses retained while demo mode is enabled |
 | `AI__Provider` | `Mock` | Job analysis provider |
 | `AI__Model` | `gpt-5-mini` | Model name used by real AI providers |
 | `AI__BaseUrl` | `https://api.openai.com/v1` | OpenAI-compatible API base URL |
@@ -146,6 +149,15 @@ Use mock mode explicitly:
 $env:AI__Provider="Mock"
 docker compose up --build
 ```
+
+Preview the bounded public-demo behavior locally:
+
+```powershell
+$env:DEMO_ENABLED="true"
+docker compose up --build
+```
+
+When enabled, the API limits the shared store to 100 jobs and 200 analyses. Personal and ordinary local usage leave demo mode disabled.
 
 Use OpenAI in Docker through a Compose secret:
 
@@ -201,6 +213,7 @@ Backend container:
 - Runs migrations on startup by default. Set `Database__MigrateOnStartup=false` if migrations will be handled separately.
 - Uses `AI__Provider=Mock` for public demo deployments to avoid paid AI calls.
 - Enable `ForwardedHeaders__Enabled=true` when the API is behind a trusted reverse proxy or managed ingress that terminates TLS.
+- Before enabling public ingress, require invitation-only Microsoft Entra authentication and enforce authorization on the API; frontend-only route protection is not sufficient.
 
 Frontend container:
 
@@ -209,3 +222,5 @@ Frontend container:
 - For a paired frontend/backend deployment, set `API_UPSTREAM` to the backend's internal HTTP address.
 
 No cloud-specific deployment resources are included yet. Future deployment should use the same images and provide environment variables, persistent storage for `/app/data`, and a backend address for `API_UPSTREAM`.
+
+Static Azure readiness resources now live in `infra/azure`. They have not been deployed. Deployment is blocked until the authentication and authorization work in `docs/auth-todo.md` and the remaining findings in `docs/security-review.md` are resolved; see `docs/azure-architecture.md` and `docs/azure-future-runbook.md` for the reviewed design and future operator checklist.

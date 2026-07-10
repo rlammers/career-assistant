@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.HttpOverrides;
 using OpenAI;
 using System.ClientModel;
 using System.ClientModel.Primitives;
-using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +17,12 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.Configure<AiOptions>(builder.Configuration.GetSection("AI"));
 builder.Services.Configure<OpenAiOptions>(builder.Configuration.GetSection("OpenAI"));
+builder.Services.AddOptions<DemoOptions>()
+    .Bind(builder.Configuration.GetSection(DemoOptions.SectionName))
+    .Validate(options => options.MaxJobs > 0, "Demo:MaxJobs must be greater than zero.")
+    .Validate(options => options.MaxAnalyses > 0, "Demo:MaxAnalyses must be greater than zero.")
+    .ValidateOnStart();
+builder.Services.AddSingleton<DemoQuotaGate>();
 
 var aiOptions = builder.Configuration.GetSection("AI").Get<AiOptions>() ?? new AiOptions();
 var aiProvider = string.IsNullOrWhiteSpace(aiOptions.Provider) ? "Mock" : aiOptions.Provider;
@@ -100,12 +105,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        // TODO: Return DTOs from controller, then remove this.
-        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-    });
+builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

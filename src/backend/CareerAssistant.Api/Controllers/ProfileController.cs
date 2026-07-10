@@ -18,7 +18,7 @@ public class ProfileController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<Profile>> Get()
+    public async Task<ActionResult<ProfileResponse>> Get()
     {
         var profile = await _dbContext.Profiles
             .OrderBy(p => p.Id)
@@ -29,11 +29,11 @@ public class ProfileController : ControllerBase
             return NotFound();
         }
 
-        return Ok(profile);
+        return Ok(ProfileResponse.FromEntity(profile));
     }
 
     [HttpPost]
-    public async Task<ActionResult<Profile>> Post(ProfileRequest request)
+    public async Task<ActionResult<ProfileResponse>> Post(ProfileRequest request)
     {
         var profile = await _dbContext.Profiles
             .OrderBy(p => p.Id)
@@ -59,6 +59,6 @@ public class ProfileController : ControllerBase
 
         await _dbContext.SaveChangesAsync();
 
-        return Ok(profile);
+        return Ok(ProfileResponse.FromEntity(profile));
     }
 }
