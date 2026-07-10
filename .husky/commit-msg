@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+
+message_file="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
+repository_root="$(git rev-parse --show-toplevel)"
+
+cd "$repository_root/src/frontend" || exit 1
+./node_modules/.bin/commitlint --color false --edit "$message_file"
