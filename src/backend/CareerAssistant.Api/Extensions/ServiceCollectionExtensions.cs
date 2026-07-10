@@ -32,7 +32,6 @@ internal static class ServiceCollectionExtensions
         services.AddControllers();
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
-
     }
 
     private static void AddCareerAssistantOptions(this IServiceCollection services, IConfiguration configuration)
