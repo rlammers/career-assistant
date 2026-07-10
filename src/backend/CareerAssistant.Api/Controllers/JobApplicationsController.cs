@@ -40,17 +40,17 @@ public class JobApplicationsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<JobApplication>>> Get()
+    public async Task<ActionResult<IEnumerable<JobApplicationResponse>>> Get()
     {
         var jobs = await _dbContext.JobApplications
             .Include(j => j.AnalysisResults)
             .ToListAsync();
 
-        return Ok(jobs);
+        return Ok(jobs.Select(JobApplicationResponse.FromEntity));
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<JobApplication>> Get(int id)
+    public async Task<ActionResult<JobApplicationResponse>> Get(int id)
     {
         var job = await _dbContext.JobApplications
             .Include(j => j.AnalysisResults)
@@ -61,11 +61,11 @@ public class JobApplicationsController : ControllerBase
             return NotFound();
         }
 
-        return Ok(job);
+        return Ok(JobApplicationResponse.FromEntity(job));
     }
 
     [HttpPost]
-    public async Task<ActionResult<JobApplication>> Post(JobApplicationRequest request)
+    public async Task<ActionResult<JobApplicationResponse>> Post(JobApplicationRequest request)
     {
         if (!_demoOptions.Enabled)
         {
@@ -84,7 +84,7 @@ public class JobApplicationsController : ControllerBase
         }
     }
 
-    private async Task<ActionResult<JobApplication>> CreateJobAsync(JobApplicationRequest request)
+    private async Task<ActionResult<JobApplicationResponse>> CreateJobAsync(JobApplicationRequest request)
     {
         if (_demoOptions.Enabled
             && await _dbContext.JobApplications.CountAsync() >= _demoOptions.MaxJobs)
@@ -109,11 +109,11 @@ public class JobApplicationsController : ControllerBase
         _dbContext.JobApplications.Add(job);
         await _dbContext.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(Get), new { id = job.Id }, job);
+        return CreatedAtAction(nameof(Get), new { id = job.Id }, JobApplicationResponse.FromEntity(job));
     }
 
     [HttpPut("{id}")]
-    public async Task<ActionResult<JobApplication>> Put(int id, JobApplicationRequest request)
+    public async Task<ActionResult<JobApplicationResponse>> Put(int id, JobApplicationRequest request)
     {
         var job = await _dbContext.JobApplications
             .Include(j => j.AnalysisResults)
@@ -129,11 +129,11 @@ public class JobApplicationsController : ControllerBase
         job.JobDescription = request.JobDescription;
         await _dbContext.SaveChangesAsync();
 
-        return Ok(job);
+        return Ok(JobApplicationResponse.FromEntity(job));
     }
 
     [HttpPatch("{id}/status")]
-    public async Task<ActionResult<JobApplication>> PatchStatus(int id, JobStatusUpdateRequest request)
+    public async Task<ActionResult<JobApplicationResponse>> PatchStatus(int id, JobStatusUpdateRequest request)
     {
         if (!AllowedStatuses.Contains(request.Status))
         {
@@ -150,7 +150,7 @@ public class JobApplicationsController : ControllerBase
         job.Status = request.Status;
         await _dbContext.SaveChangesAsync();
 
-        return Ok(job);
+        return Ok(JobApplicationResponse.FromEntity(job));
     }
 
     [HttpDelete("{id}")]
