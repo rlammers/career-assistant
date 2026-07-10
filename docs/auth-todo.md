@@ -84,6 +84,7 @@ The production redirect URI must use HTTPS and exactly match the URI registered 
 - [ ] Verify an invited non-Microsoft email can use email one-time passcode.
 - [ ] Verify removing the assignment prevents subsequent access after token/session expiry and document emergency revocation behavior.
 - [ ] Verify authorization applies to profile, job, status, analysis, and deletion operations.
+- [ ] Add integration coverage showing a valid configured-issuer/audience access token is accepted after a route is protected, while expired, wrong-issuer, and wrong-audience tokens receive `401 Unauthorized`.
 - [ ] Verify authentication failures do not expose token contents, identity details, or internal configuration in logs or responses.
 - [ ] Re-run the security review and update the deployment decision before enabling public ingress.
 
