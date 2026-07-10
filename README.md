@@ -122,7 +122,7 @@ Common Docker environment variables:
 | `FRONTEND_ORIGIN` | `http://localhost:5173` | Backend CORS origin for the frontend |
 | `API_UPSTREAM` | `http://backend:8080` | Internal backend URL used by the frontend nginx proxy |
 | `ConnectionStrings__DefaultConnection` | `Data Source=/app/data/CareerAssistant.db` | SQLite database path inside the backend container |
-| `Database__MigrateOnStartup` | `true` | Whether the API applies EF Core migrations on startup |
+| `Database__MigrateOnStartup` | `true` in Development, otherwise `false` | Whether the API applies EF Core migrations on startup |
 | `DEMO_ENABLED` | `false` | Enables public-demo storage quotas |
 | `DEMO_MAX_JOBS` | `100` | Maximum jobs retained while demo mode is enabled |
 | `DEMO_MAX_ANALYSES` | `200` | Maximum analyses retained while demo mode is enabled |
@@ -210,7 +210,7 @@ Backend container:
 - Listens on HTTP port `8080`.
 - Exposes `GET /health` and `HEAD /health` for platform health probes.
 - Uses SQLite at `ConnectionStrings__DefaultConnection`; mount persistent storage when using SQLite outside local development.
-- Runs migrations on startup by default. Set `Database__MigrateOnStartup=false` if migrations will be handled separately.
+- Applies migrations on startup only when `Database__MigrateOnStartup=true`; development enables this explicitly, while public deployments disable it.
 - Uses `AI__Provider=Mock` for public demo deployments to avoid paid AI calls.
 - Enable `ForwardedHeaders__Enabled=true` when the API is behind a trusted reverse proxy or managed ingress that terminates TLS.
 - Before enabling public ingress, require invitation-only Microsoft Entra authentication and enforce authorization on the API; frontend-only route protection is not sufficient.

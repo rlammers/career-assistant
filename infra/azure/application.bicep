@@ -114,7 +114,7 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             }
             {
               name: 'Database__MigrateOnStartup'
-              value: 'true'
+              value: 'false'
             }
             {
               name: 'Demo__Enabled'

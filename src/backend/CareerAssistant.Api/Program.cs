@@ -142,7 +142,7 @@ builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
 var forwardedHeadersEnabled = builder.Configuration.GetValue("ForwardedHeaders:Enabled", false);
-var migrateOnStartup = builder.Configuration.GetValue("Database:MigrateOnStartup", true);
+var migrateOnStartup = builder.Configuration.GetValue<bool>("Database:MigrateOnStartup");
 
 app.Logger.LogInformation(
     "Starting Career Assistant API in {Environment}. AI provider: {AIProvider}. Migrate on startup: {MigrateOnStartup}. Forwarded headers: {ForwardedHeadersEnabled}.",
