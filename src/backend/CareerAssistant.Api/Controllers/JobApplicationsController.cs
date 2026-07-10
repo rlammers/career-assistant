@@ -93,6 +93,22 @@ public class JobApplicationsController : ControllerBase
         return Ok(job);
     }
 
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var job = await _dbContext.JobApplications.FindAsync(id);
+
+        if (job == null)
+        {
+            return NotFound();
+        }
+
+        _dbContext.JobApplications.Remove(job);
+        await _dbContext.SaveChangesAsync();
+
+        return NoContent();
+    }
+
     [HttpPost("{id}/analyse")]
     public async Task<ActionResult<JobAnalysisResultResponse>> Analyse(int id)
     {

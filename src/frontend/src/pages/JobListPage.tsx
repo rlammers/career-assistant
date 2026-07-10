@@ -15,6 +15,7 @@ export const JobListPage = () => {
   });
   const [showForm, setShowForm] = useState(false);
   const [analyzingJobId, setAnalyzingJobId] = useState<number | null>(null);
+  const [deletingJobId, setDeletingJobId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchJobs();
@@ -73,6 +74,22 @@ export const JobListPage = () => {
 
   const handleViewJob = (jobId: number) => {
     navigate(`/jobs/${jobId}`);
+  };
+
+  const handleDeleteJob = async (job: JobApplication) => {
+    if (deletingJobId !== null || analyzingJobId !== null) return;
+    if (!window.confirm(`Delete ${job.role} at ${job.company}? This will also delete its analysis data.`)) return;
+
+    setDeletingJobId(job.id);
+    setError(null);
+    try {
+      await jobAPI.deleteJob(job.id);
+      setJobs((prev) => prev.filter((existingJob) => existingJob.id !== job.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete job');
+    } finally {
+      setDeletingJobId(null);
+    }
   };
 
   return (
@@ -166,17 +183,34 @@ export const JobListPage = () => {
                 </button>
                 <button
                   onClick={() => handleAnalyzeJob(job.id)}
-                  disabled={analyzingJobId !== null}
+                  disabled={analyzingJobId !== null || deletingJobId !== null}
                   aria-busy={analyzingJobId === job.id}
                   style={{
                     padding: '8px 16px',
-                    cursor: analyzingJobId !== null ? 'wait' : 'pointer',
+                    minWidth: '112px',
+                    cursor: analyzingJobId !== null || deletingJobId !== null ? 'wait' : 'pointer',
                     backgroundColor: '#4CAF50',
                     color: 'white',
-                    opacity: analyzingJobId !== null && analyzingJobId !== job.id ? 0.6 : 1,
+                    opacity: (analyzingJobId !== null && analyzingJobId !== job.id) || deletingJobId !== null ? 0.6 : 1,
                   }}
                 >
                   {analyzingJobId === job.id ? 'Analyzing...' : 'Analyze Job'}
+                </button>
+                <button
+                  onClick={() => handleDeleteJob(job)}
+                  disabled={deletingJobId !== null || analyzingJobId !== null}
+                  aria-busy={deletingJobId === job.id}
+                  style={{
+                    marginLeft: '10px',
+                    padding: '8px 16px',
+                    minWidth: '96px',
+                    cursor: deletingJobId !== null || analyzingJobId !== null ? 'wait' : 'pointer',
+                    backgroundColor: '#d32f2f',
+                    color: 'white',
+                    opacity: (deletingJobId !== null && deletingJobId !== job.id) || analyzingJobId !== null ? 0.6 : 1,
+                  }}
+                >
+                  {deletingJobId === job.id ? 'Deleting...' : 'Delete'}
                 </button>
               </div>
               <div
@@ -184,7 +218,11 @@ export const JobListPage = () => {
                 aria-live="polite"
                 style={{ marginTop: '8px', minHeight: '24px' }}
               >
-                {analyzingJobId === job.id ? 'Waiting for the AI provider...' : ''}
+                {analyzingJobId === job.id
+                  ? 'Waiting for the AI provider...'
+                  : deletingJobId === job.id
+                    ? 'Deleting job and its analysis data...'
+                    : ''}
               </div>
             </div>
           </div>
