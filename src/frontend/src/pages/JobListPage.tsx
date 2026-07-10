@@ -14,6 +14,7 @@ export const JobListPage = () => {
     jobDescription: '',
   });
   const [showForm, setShowForm] = useState(false);
+  const [analyzingJobId, setAnalyzingJobId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchJobs();
@@ -55,12 +56,18 @@ export const JobListPage = () => {
   };
 
   const handleAnalyzeJob = async (jobId: number) => {
+    if (analyzingJobId !== null) return;
+
+    setAnalyzingJobId(jobId);
+    setError(null);
     try {
       await analysisAPI.analyzeJob(jobId);
       alert('Job analyzed! View the details to see the analysis.');
       await fetchJobs(); // Refresh to show new analysis
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to analyze job');
+    } finally {
+      setAnalyzingJobId(null);
     }
   };
 
@@ -158,10 +165,23 @@ export const JobListPage = () => {
               </button>
               <button
                 onClick={() => handleAnalyzeJob(job.id)}
-                style={{ padding: '8px 16px', cursor: 'pointer', backgroundColor: '#4CAF50', color: 'white' }}
+                disabled={analyzingJobId !== null}
+                aria-busy={analyzingJobId === job.id}
+                style={{
+                  padding: '8px 16px',
+                  cursor: analyzingJobId !== null ? 'wait' : 'pointer',
+                  backgroundColor: '#4CAF50',
+                  color: 'white',
+                  opacity: analyzingJobId !== null && analyzingJobId !== job.id ? 0.6 : 1,
+                }}
               >
-                Analyze Job
+                {analyzingJobId === job.id ? 'Analyzing...' : 'Analyze Job'}
               </button>
+              {analyzingJobId === job.id && (
+                <span role="status" aria-live="polite" style={{ marginLeft: '10px' }}>
+                  Waiting for the AI provider...
+                </span>
+              )}
             </div>
           </div>
         ))}
