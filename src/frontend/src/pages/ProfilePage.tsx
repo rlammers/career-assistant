@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { profileAPI } from '../services/api';
 import type { Profile } from '../services/api';
+import { InlineError } from '../components/InlineError';
+import { useToast } from '../components/ToastContext';
 
 export const ProfilePage = () => {
+  const { showToast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [formData, setFormData] = useState({
     summary: '',
@@ -47,7 +50,7 @@ export const ProfilePage = () => {
     try {
       const savedProfile = await profileAPI.saveProfile(formData);
       setProfile(savedProfile);
-      alert('Profile saved successfully!');
+      showToast({ message: 'Profile saved successfully.', variant: 'success' });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save profile');
     } finally {
@@ -58,8 +61,6 @@ export const ProfilePage = () => {
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
       <h1>My Profile</h1>
-      {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
-
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: '15px' }}>
           <label htmlFor="summary">Professional Summary</label>
@@ -100,6 +101,7 @@ export const ProfilePage = () => {
           />
         </div>
 
+        <InlineError message={error} />
         <button type="submit" disabled={loading} style={{ padding: '10px 20px', cursor: 'pointer' }}>
           {loading ? 'Saving...' : 'Save Profile'}
         </button>

@@ -2,10 +2,12 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { ProfilePage } from './pages/ProfilePage';
 import { JobListPage } from './pages/JobListPage';
 import { JobDetailPage } from './pages/JobDetailPage';
+import { ToastProvider } from './components/Toast';
 import './App.css';
 
 function App() {
   return (
+    <ToastProvider>
     <BrowserRouter>
       <div style={{ minHeight: '100vh', backgroundColor: '#fafafa' }}>
         {/* Navigation Header */}
@@ -54,6 +56,7 @@ function App() {
         </Routes>
       </div>
     </BrowserRouter>
+    </ToastProvider>
   );
 }
 

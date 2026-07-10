@@ -2,14 +2,18 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { jobAPI } from '../services/api';
 import type { JobApplication, JobAnalysisResult, JobStatus } from '../services/api';
+import { InlineError } from '../components/InlineError';
+import { useToast } from '../components/ToastContext';
 
 export const JobDetailPage = () => {
+  const { showToast } = useToast();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [job, setJob] = useState<JobApplication | null>(null);
   const [analysis, setAnalysis] = useState<JobAnalysisResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
   const [statusDropdown, setStatusDropdown] = useState<JobStatus>('Saved');
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -46,13 +50,13 @@ export const JobDetailPage = () => {
     if (!job || statusDropdown === job.status) return;
 
     setUpdatingStatus(true);
-    setError(null);
+    setStatusError(null);
     try {
       const updatedJob = await jobAPI.updateJobStatus(job.id, statusDropdown);
       setJob(updatedJob);
-      alert('Status updated successfully!');
+      showToast({ message: 'Status updated successfully.', variant: 'success' });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update status');
+      setStatusError(err instanceof Error ? err.message : 'Failed to update status');
       setStatusDropdown(job.status); // Revert dropdown
     } finally {
       setUpdatingStatus(false);
@@ -137,6 +141,7 @@ export const JobDetailPage = () => {
             {updatingStatus ? 'Updating...' : 'Update Status'}
           </button>
         </p>
+        <InlineError message={statusError} />
         <p>
           <strong>Added:</strong> {new Date(job.createdAt).toLocaleDateString()}
         </p>

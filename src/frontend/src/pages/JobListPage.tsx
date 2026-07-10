@@ -2,12 +2,17 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { jobAPI, analysisAPI } from '../services/api';
 import type { JobApplication } from '../services/api';
+import { InlineError } from '../components/InlineError';
+import { useToast } from '../components/ToastContext';
 
 export const JobListPage = () => {
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const [jobs, setJobs] = useState<JobApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [jobErrors, setJobErrors] = useState<Record<number, string>>({});
   const [formData, setFormData] = useState({
     company: '',
     role: '',
@@ -16,21 +21,26 @@ export const JobListPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [analyzingJobId, setAnalyzingJobId] = useState<number | null>(null);
   const [deletingJobId, setDeletingJobId] = useState<number | null>(null);
+  const [confirmingDeleteJobId, setConfirmingDeleteJobId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchJobs();
   }, []);
 
-  const fetchJobs = async () => {
-    setLoading(true);
-    setError(null);
+  const fetchJobs = async (background = false): Promise<boolean> => {
+    if (!background) {
+      setLoading(true);
+      setError(null);
+    }
     try {
       const data = await jobAPI.getJobs();
       setJobs(data);
+      return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch jobs');
+      if (!background) setError(err instanceof Error ? err.message : 'Failed to fetch jobs');
+      return false;
     } finally {
-      setLoading(false);
+      if (!background) setLoading(false);
     }
   };
 
@@ -42,15 +52,15 @@ export const JobListPage = () => {
   const handleAddJob = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
+    setFormError(null);
     try {
       const newJob = await jobAPI.createJob(formData);
       setJobs((prev) => [...prev, newJob]);
       setFormData({ company: '', role: '', jobDescription: '' });
       setShowForm(false);
-      alert('Job added successfully!');
+      showToast({ message: 'Job added successfully.', variant: 'success' });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add job');
+      setFormError(err instanceof Error ? err.message : 'Failed to add job');
     } finally {
       setLoading(false);
     }
@@ -60,13 +70,20 @@ export const JobListPage = () => {
     if (analyzingJobId !== null) return;
 
     setAnalyzingJobId(jobId);
-    setError(null);
+    setJobErrors((current) => {
+      const next = { ...current };
+      delete next[jobId];
+      return next;
+    });
     try {
       await analysisAPI.analyzeJob(jobId);
-      alert('Job analyzed! View the details to see the analysis.');
-      await fetchJobs(); // Refresh to show new analysis
+      showToast({ message: 'Job analyzed. View its details to see the analysis.', variant: 'success' });
+      const refreshed = await fetchJobs(true);
+      if (!refreshed) {
+        showToast({ message: 'The analysis was saved, but the job list could not refresh. Displayed data may be stale.', variant: 'warning' });
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to analyze job');
+      setJobErrors((current) => ({ ...current, [jobId]: err instanceof Error ? err.message : 'Failed to analyze job' }));
     } finally {
       setAnalyzingJobId(null);
     }
@@ -78,15 +95,20 @@ export const JobListPage = () => {
 
   const handleDeleteJob = async (job: JobApplication) => {
     if (deletingJobId !== null || analyzingJobId !== null) return;
-    if (!window.confirm(`Delete ${job.role} at ${job.company}? This will also delete its analysis data.`)) return;
 
     setDeletingJobId(job.id);
-    setError(null);
+    setJobErrors((current) => {
+      const next = { ...current };
+      delete next[job.id];
+      return next;
+    });
     try {
       await jobAPI.deleteJob(job.id);
       setJobs((prev) => prev.filter((existingJob) => existingJob.id !== job.id));
+      setConfirmingDeleteJobId(null);
+      showToast({ message: `${job.role} at ${job.company} deleted.`, variant: 'success' });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete job');
+      setJobErrors((current) => ({ ...current, [job.id]: err instanceof Error ? err.message : 'Failed to delete job' }));
     } finally {
       setDeletingJobId(null);
     }
@@ -145,6 +167,7 @@ export const JobListPage = () => {
           <button type="submit" disabled={loading} style={{ padding: '10px 20px', cursor: 'pointer' }}>
             {loading ? 'Adding...' : 'Add Job'}
           </button>
+          <InlineError message={formError} />
         </form>
       )}
 
@@ -197,7 +220,14 @@ export const JobListPage = () => {
                   {analyzingJobId === job.id ? 'Analyzing...' : 'Analyze Job'}
                 </button>
                 <button
-                  onClick={() => handleDeleteJob(job)}
+                  onClick={() => {
+                    setConfirmingDeleteJobId(job.id);
+                    setJobErrors((current) => {
+                      const next = { ...current };
+                      delete next[job.id];
+                      return next;
+                    });
+                  }}
                   disabled={deletingJobId !== null || analyzingJobId !== null}
                   aria-busy={deletingJobId === job.id}
                   style={{
@@ -213,6 +243,21 @@ export const JobListPage = () => {
                   {deletingJobId === job.id ? 'Deleting...' : 'Delete'}
                 </button>
               </div>
+              {confirmingDeleteJobId === job.id && (
+                <div className="delete-confirmation" role="group" aria-label={`Confirm deletion of ${job.role} at ${job.company}`}>
+                  <strong>Delete {job.role} at {job.company}?</strong>
+                  <p>This will also delete its analysis data and cannot be undone.</p>
+                  <div className="delete-confirmation__actions">
+                    <button type="button" onClick={() => setConfirmingDeleteJobId(null)} disabled={deletingJobId === job.id}>
+                      Cancel
+                    </button>
+                    <button type="button" onClick={() => handleDeleteJob(job)} disabled={deletingJobId === job.id}>
+                      {deletingJobId === job.id ? 'Deleting...' : 'Delete job'}
+                    </button>
+                  </div>
+                </div>
+              )}
+              <InlineError message={jobErrors[job.id] ?? null} />
               <div
                 role="status"
                 aria-live="polite"
