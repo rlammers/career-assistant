@@ -12,6 +12,11 @@ export const JobDetailPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [statusDropdown, setStatusDropdown] = useState<JobStatus>('Saved');
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editCompany, setEditCompany] = useState('');
+  const [editRole, setEditRole] = useState('');
+  const [editJobDescription, setEditJobDescription] = useState('');
 
   const fetchJobDetails = useCallback(async () => {
     if (!id) return;
@@ -54,8 +59,37 @@ export const JobDetailPage = () => {
     }
   };
 
+  const beginEditing = () => {
+    if (!job) return;
+    setEditCompany(job.company);
+    setEditRole(job.role);
+    setEditJobDescription(job.jobDescription);
+    setError(null);
+    setEditing(true);
+  };
+
+  const handleSave = async () => {
+    if (!job) return;
+
+    setSaving(true);
+    setError(null);
+    try {
+      const updatedJob = await jobAPI.updateJob(job.id, {
+        company: editCompany,
+        role: editRole,
+        jobDescription: editJobDescription,
+      });
+      setJob(updatedJob);
+      setEditing(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update job');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) return <div style={{ padding: '20px' }}>Loading job details...</div>;
-  if (error) return <div style={{ padding: '20px', color: 'red' }}>Error: {error}</div>;
+  if (error && !job) return <div style={{ padding: '20px', color: 'red' }}>Error: {error}</div>;
   if (!job) return <div style={{ padding: '20px' }}>Job not found.</div>;
 
   return (
@@ -65,10 +99,23 @@ export const JobDetailPage = () => {
       </button>
 
       <div style={{ backgroundColor: '#f9f9f9', padding: '20px', borderRadius: '4px', marginBottom: '20px' }}>
-        <h1>{job.role}</h1>
-        <p>
-          <strong>Company:</strong> {job.company}
-        </p>
+        {editing ? (
+          <>
+            <label style={{ display: 'block', marginBottom: '12px' }}>
+              <strong>Role</strong>
+              <input value={editRole} onChange={(event) => setEditRole(event.target.value)} style={{ display: 'block', width: '100%', boxSizing: 'border-box', padding: '8px', marginTop: '4px' }} />
+            </label>
+            <label style={{ display: 'block', marginBottom: '12px' }}>
+              <strong>Company</strong>
+              <input value={editCompany} onChange={(event) => setEditCompany(event.target.value)} style={{ display: 'block', width: '100%', boxSizing: 'border-box', padding: '8px', marginTop: '4px' }} />
+            </label>
+          </>
+        ) : (
+          <>
+            <h1>{job.role}</h1>
+            <p><strong>Company:</strong> {job.company}</p>
+          </>
+        )}
         <p>
           <strong>Status:</strong>
           <select
@@ -93,11 +140,29 @@ export const JobDetailPage = () => {
         <p>
           <strong>Added:</strong> {new Date(job.createdAt).toLocaleDateString()}
         </p>
+        <div style={{ minHeight: '38px' }}>
+          {editing ? (
+            <>
+              <button onClick={handleSave} disabled={saving} style={{ padding: '8px 16px', marginRight: '8px', cursor: 'pointer' }}>{saving ? 'Saving...' : 'Save Changes'}</button>
+              <button onClick={() => { setEditing(false); setError(null); }} disabled={saving} style={{ padding: '8px 16px', cursor: 'pointer' }}>Cancel</button>
+            </>
+          ) : (
+            <button onClick={beginEditing} style={{ padding: '8px 16px', cursor: 'pointer' }}>Edit Job</button>
+          )}
+        </div>
+        <div role="status" style={{ minHeight: '24px', color: '#b00020', marginTop: '4px' }}>{error ?? ''}</div>
       </div>
 
       <div style={{ marginBottom: '20px' }}>
         <h2>Job Description</h2>
-        <div
+        {editing ? (
+          <textarea
+            value={editJobDescription}
+            onChange={(event) => setEditJobDescription(event.target.value)}
+            rows={14}
+            style={{ width: '100%', boxSizing: 'border-box', padding: '15px', fontFamily: 'monospace', fontSize: '12px', resize: 'vertical' }}
+          />
+        ) : <div
           style={{
             backgroundColor: '#fafafa',
             padding: '15px',
@@ -110,7 +175,7 @@ export const JobDetailPage = () => {
           }}
         >
           {job.jobDescription}
-        </div>
+        </div>}
       </div>
 
       {analysis ? (

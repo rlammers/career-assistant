@@ -477,3 +477,17 @@ The next milestone is complete when:
 If a feature adds complexity without improving the core analysis workflow:
 
 Do not implement it.
+
+---
+
+## Guidance Maintenance
+
+When fixing an error or bug in generated code, assess whether a concise project rule could have prevented it.
+
+If the lesson is reusable:
+
+- Update this `AGENTS.md` in the same change with the smallest practical preventive rule
+- State the invariant or required verification, not the details of the individual incident
+- Check every affected layer when introducing a cross-cutting change; for example, a new HTTP method must be allowed by the controller, CORS policy, reverse proxy, and relevant tests
+
+Do not add guidance for one-off mistakes that are already clearly covered or are unlikely to recur.

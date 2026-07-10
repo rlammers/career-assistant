@@ -80,6 +80,19 @@ export const jobAPI = {
     return response.json();
   },
 
+  updateJob: async (
+    id: number,
+    job: Pick<JobApplication, 'company' | 'role' | 'jobDescription'>,
+  ): Promise<JobApplication> => {
+    const response = await fetch(`${API_BASE_URL}/jobs/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(job),
+    });
+    if (!response.ok) throw new Error(`Failed to update job: ${response.statusText}`);
+    return response.json();
+  },
+
   updateJobStatus: async (id: number, status: JobStatus): Promise<JobApplication> => {
     const response = await fetch(`${API_BASE_URL}/jobs/${id}/status`, {
       method: 'PATCH',

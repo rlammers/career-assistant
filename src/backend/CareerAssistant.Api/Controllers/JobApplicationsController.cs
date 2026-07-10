@@ -72,6 +72,26 @@ public class JobApplicationsController : ControllerBase
         return CreatedAtAction(nameof(Get), new { id = job.Id }, job);
     }
 
+    [HttpPut("{id}")]
+    public async Task<ActionResult<JobApplication>> Put(int id, JobApplicationRequest request)
+    {
+        var job = await _dbContext.JobApplications
+            .Include(j => j.AnalysisResults)
+            .FirstOrDefaultAsync(j => j.Id == id);
+
+        if (job == null)
+        {
+            return NotFound();
+        }
+
+        job.Company = request.Company;
+        job.Role = request.Role;
+        job.JobDescription = request.JobDescription;
+        await _dbContext.SaveChangesAsync();
+
+        return Ok(job);
+    }
+
     [HttpPatch("{id}/status")]
     public async Task<ActionResult<JobApplication>> PatchStatus(int id, JobStatusUpdateRequest request)
     {
