@@ -1,51 +1,66 @@
 name: Deployment readiness security
 
 on:
-  pull_request:
-    branches: ["main"]
+  schedule:
+    - cron: "17 14 * * 0"
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  validate:
-    name: Validate without deployment
+  frontend-dependency-audit:
+    name: Audit frontend dependencies
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: npm
-          cache-dependency-path: src/frontend/package-lock.json
+
+      - name: Audit frontend dependencies
+        working-directory: src/frontend
+        run: npm audit --audit-level=high
+
+  backend-dependency-audit:
+    name: Audit backend dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
 
-      - name: Validate frontend
-        working-directory: src/frontend
-        run: |
-          npm ci
-          npm test
-          npm run lint
-          npm run build
-          npm audit --audit-level=high
-
-      - name: Validate backend
+      - name: Restore dependencies
         working-directory: src/backend
-        run: |
-          dotnet restore
-          dotnet test --no-restore --verbosity normal
-          dotnet list package --vulnerable --include-transitive
+        run: dotnet restore
+
+      - name: Audit backend dependencies
+        working-directory: src/backend
+        run: dotnet list package --vulnerable --include-transitive --no-restore
+
+  bicep-compilation:
+    name: Compile Bicep templates
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
 
       - name: Compile and lint Bicep
         run: |
@@ -53,16 +68,78 @@ jobs:
           az bicep build --file infra/azure/foundation.bicep --stdout > /dev/null
           az bicep build --file infra/azure/application.bicep --stdout > /dev/null
 
-      - name: Build production images locally
-        run: |
-          docker build --file src/backend/CareerAssistant.Api/Dockerfile --tag career-assistant-backend:security-review .
-          docker build --file src/frontend/Dockerfile --tag career-assistant-frontend:security-review .
+  secret-scan:
+    name: Scan repository secrets
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Scan repository secrets
         run: docker run --rm --volume "$PWD:/repo" zricethezav/gitleaks:v8.30.0 detect --source=/repo --redact --no-banner
 
-      - name: Scan filesystem and images
-        run: |
-          docker run --rm --volume "$PWD:/work" aquasec/trivy:0.69.3 fs --scanners vuln,misconfig --severity HIGH,CRITICAL --exit-code 1 /work
-          docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.69.3 image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 career-assistant-backend:security-review
-          docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.69.3 image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 career-assistant-frontend:security-review
+  filesystem-scan:
+    name: Scan filesystem
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Scan filesystem vulnerabilities and misconfigurations
+        run: docker run --rm --volume "$PWD:/work" aquasec/trivy:0.69.3 fs --scanners vuln,misconfig --severity HIGH,CRITICAL --exit-code 1 /work
+
+  backend-image-scan:
+    name: Build and scan backend image
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build backend image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: src/backend/CareerAssistant.Api/Dockerfile
+          load: true
+          tags: career-assistant-backend:security-review
+          cache-from: type=gha,scope=backend-image
+          cache-to: type=gha,mode=max,scope=backend-image
+
+      - name: Scan backend image
+        run: docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.69.3 image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 career-assistant-backend:security-review
+
+  frontend-image-scan:
+    name: Build and scan frontend image
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build frontend image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: src/frontend/Dockerfile
+          load: true
+          tags: career-assistant-frontend:security-review
+          cache-from: type=gha,scope=frontend-image
+          cache-to: type=gha,mode=max,scope=frontend-image
+
+      - name: Scan frontend image
+        run: docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.69.3 image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 career-assistant-frontend:security-review

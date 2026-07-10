@@ -3,20 +3,99 @@ name: Docker Image CI
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'src/backend/**'
+      - 'src/frontend/**'
+      - '.dockerignore'
+      - '.github/workflows/docker-image.yml'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - 'src/backend/**'
+      - 'src/frontend/**'
+      - '.dockerignore'
+      - '.github/workflows/docker-image.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-
-  build:
-
+  changes:
+    name: Detect image changes
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
 
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Detect changed image inputs
+        id: filter
+        uses: dorny/paths-filter@v4
+        with:
+          base: ${{ github.ref }}
+          filters: |
+            backend:
+              - 'src/backend/**'
+              - '.dockerignore'
+              - '.github/workflows/docker-image.yml'
+            frontend:
+              - 'src/frontend/**'
+              - '.dockerignore'
+              - '.github/workflows/docker-image.yml'
+
+  build-backend:
+    name: Build backend image
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v4
 
       - name: Build backend Docker image
-        run: docker build . --file src/backend/CareerAssistant.Api/Dockerfile --tag career-assistant-backend:ci
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: src/backend/CareerAssistant.Api/Dockerfile
+          push: false
+          tags: career-assistant-backend:ci
+          cache-from: type=gha,scope=backend-image
+          cache-to: type=gha,mode=max,scope=backend-image
+
+  build-frontend:
+    name: Build frontend image
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v4
 
       - name: Build frontend Docker image
-        run: docker build . --file src/frontend/Dockerfile --tag career-assistant-frontend:ci
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: src/frontend/Dockerfile
+          push: false
+          tags: career-assistant-frontend:ci
+          cache-from: type=gha,scope=frontend-image
+          cache-to: type=gha,mode=max,scope=frontend-image
