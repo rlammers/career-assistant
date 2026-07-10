@@ -15,13 +15,18 @@ on:
       - 'src/backend/**'
       - '.github/workflows/dotnet.yml'
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
+    name: Build and test backend
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     defaults:
       run:

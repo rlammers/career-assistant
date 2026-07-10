@@ -3,8 +3,14 @@ name: Frontend tests
 on:
   pull_request:
     branches: ["main"]
+    paths:
+      - 'src/frontend/**'
+      - '.github/workflows/frontend-tests.yml'
   push:
     branches: ["main"]
+    paths:
+      - 'src/frontend/**'
+      - '.github/workflows/frontend-tests.yml'
 
 permissions:
   contents: read
@@ -15,8 +21,9 @@ concurrency:
 
 jobs:
   test:
-    name: Test
+    name: Test and build frontend
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     defaults:
       run:
@@ -38,3 +45,9 @@ jobs:
 
       - name: Run frontend tests
         run: npm test
+
+      - name: Lint frontend
+        run: npm run lint
+
+      - name: Build frontend
+        run: npm run build
