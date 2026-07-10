@@ -1,0 +1,4 @@
+interface:
+  display_name: "Security Review"
+  short_description: "Assess application and deployment security risks"
+  default_prompt: "Use $security-review to assess this change for security risks."

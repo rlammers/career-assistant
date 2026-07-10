@@ -1,0 +1,4 @@
+interface:
+  display_name: "React Component"
+  short_description: "Build accessible, stable React interfaces"
+  default_prompt: "Use $react-component to implement this React UI change."

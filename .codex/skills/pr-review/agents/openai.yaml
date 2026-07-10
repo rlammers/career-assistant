@@ -1,0 +1,4 @@
+interface:
+  display_name: "PR Review"
+  short_description: "Review changes for risk and merge readiness"
+  default_prompt: "Use $pr-review to review these changes and assess whether they are ready to merge."

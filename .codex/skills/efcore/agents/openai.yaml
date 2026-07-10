@@ -1,0 +1,4 @@
+interface:
+  display_name: "EF Core"
+  short_description: "Build portable, safe EF Core persistence"
+  default_prompt: "Use $efcore to implement this EF Core data and migration change."
