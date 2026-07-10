@@ -95,7 +95,7 @@ builder.Services.AddCors(options =>
 
         policy
             .WithOrigins(frontendOrigins)
-            .WithMethods("GET", "POST", "PATCH")
+            .WithMethods("GET", "POST", "PATCH", "DELETE")
             .WithHeaders("Content-Type");
     });
 });

@@ -3,6 +3,9 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using CareerAssistant.Api.Models;
 using CareerAssistant.Api.Services;
+using CareerAssistant.Api.Data;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 
 namespace CareerAssistant.Api.Tests;
 
@@ -61,6 +64,26 @@ public class CoreWorkflowTests
         Assert.Equal("Software Engineer", job.Role);
         Assert.Equal("Build and maintain APIs.", job.JobDescription);
         Assert.Equal("Saved", job.Status);
+    }
+
+    [Fact]
+    public async Task JobApplicationAndItsAnalysisResultsCanBeDeleted()
+    {
+        using var factory = new CareerAssistantApiFactory();
+        using var client = factory.CreateClient();
+        await CreateProfileAsync(client);
+        var job = await CreateJobAsync(client);
+        var analysisResponse = await client.PostAsync($"/api/jobs/{job.Id}/analyse", content: null);
+        analysisResponse.EnsureSuccessStatusCode();
+
+        var deleteResponse = await client.DeleteAsync($"/api/jobs/{job.Id}");
+
+        Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/jobs/{job.Id}")).StatusCode);
+
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Assert.False(await dbContext.JobAnalysisResults.AnyAsync(result => result.JobApplicationId == job.Id));
     }
 
     [Fact]
@@ -206,10 +229,12 @@ public class CoreWorkflowTests
         var updateResponse = await client.SendAsync(updateRequest);
 
         var analyseResponse = await client.PostAsync($"/api/jobs/{missingJobId}/analyse", content: null);
+        var deleteResponse = await client.DeleteAsync($"/api/jobs/{missingJobId}");
 
         Assert.Equal(HttpStatusCode.NotFound, getResponse.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, updateResponse.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, analyseResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, deleteResponse.StatusCode);
     }
 
     private static async Task CreateProfileAsync(HttpClient client)
