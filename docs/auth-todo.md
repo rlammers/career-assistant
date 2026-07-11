@@ -60,7 +60,7 @@ The production redirect URI must use HTTPS and exactly match the URI registered 
 ### Backend
 
 - [x] Add ASP.NET Core token authentication using the Microsoft identity platform configuration.
-- [ ] Validate token signature, issuer, audience, tenant, and lifetime.
+- [x] Validate token signature, issuer, audience, tenant, and lifetime.
 - [x] Add a server-side authorization policy requiring the configured demo-access assignment.
 - [x] Require that policy for every controller/API route.
 - [x] After the demo-access policy is applied, keep only operational endpoints intentionally needed by the platform, such as `/health`, anonymous.
@@ -85,7 +85,7 @@ The production redirect URI must use HTTPS and exactly match the URI registered 
 - [ ] Verify an invited non-Microsoft email can use email one-time passcode.
 - [ ] Verify removing the assignment prevents subsequent access after token/session expiry and document emergency revocation behavior.
 - [ ] Verify authorization applies to profile, job, status, analysis, and deletion operations.
-- [ ] Add integration coverage showing a valid configured-issuer/audience access token is accepted after a route is protected, while expired, wrong-issuer, and wrong-audience tokens receive `401 Unauthorized`.
+- [x] Add integration coverage showing a valid configured-issuer/audience access token is accepted after a route is protected, while expired, wrong-issuer, and wrong-audience tokens receive `401 Unauthorized`.
 - [ ] Verify authentication failures do not expose token contents, identity details, or internal configuration in logs or responses.
 - [ ] Re-run the security review and update the deployment decision before enabling public ingress.
 

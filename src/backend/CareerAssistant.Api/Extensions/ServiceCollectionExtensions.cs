@@ -74,6 +74,7 @@ internal static class ServiceCollectionExtensions
             .AddJwtBearer(options =>
             {
                 options.Authority = $"https://login.microsoftonline.com/{authenticationOptions.TenantId}/v2.0";
+                options.MapInboundClaims = false;
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
@@ -82,6 +83,22 @@ internal static class ServiceCollectionExtensions
                     ValidAudience = authenticationOptions.Audience,
                     ValidateIssuerSigningKey = true,
                     ValidateLifetime = true
+                };
+                options.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = context =>
+                    {
+                        var hasExpectedTenant = context.Principal?.Claims.Any(claim =>
+                            string.Equals(claim.Type, "tid", StringComparison.Ordinal)
+                            && string.Equals(claim.Value, authenticationOptions.TenantId, StringComparison.OrdinalIgnoreCase)) == true;
+
+                        if (!hasExpectedTenant)
+                        {
+                            context.Fail("The token tenant is not allowed.");
+                        }
+
+                        return Task.CompletedTask;
+                    }
                 };
             });
     }

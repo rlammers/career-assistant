@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 
 namespace CareerAssistant.Api.Tests;
 
@@ -123,6 +124,38 @@ public class ConfigurationStartupTests
     }
 
     [Fact]
+    public async Task EnabledAuthenticationAcceptsOnlyValidTokensFromTheConfiguredTenant()
+    {
+        await WithEnvironmentVariablesAsync(
+            AuthenticatedEnvironmentVariables(),
+            async () =>
+            {
+                using var factory = new CareerAssistantApiFactory(useTestJwtBearerAuthentication: true);
+                using var client = factory.CreateClient();
+
+                var validResponse = await SendBearerRequestAsync(client, TestJwtTokens.Create());
+                var expiredResponse = await SendBearerRequestAsync(
+                    client,
+                    TestJwtTokens.Create(expires: DateTime.UtcNow.AddMinutes(-6)));
+                var wrongIssuerResponse = await SendBearerRequestAsync(
+                    client,
+                    TestJwtTokens.Create(issuer: "https://login.microsoftonline.com/other-tenant/v2.0"));
+                var wrongAudienceResponse = await SendBearerRequestAsync(
+                    client,
+                    TestJwtTokens.Create(audience: "api://other-api"));
+                var wrongTenantResponse = await SendBearerRequestAsync(
+                    client,
+                    TestJwtTokens.Create(tenantId: "33333333-3333-3333-3333-333333333333"));
+
+                Assert.Equal(HttpStatusCode.NotFound, validResponse.StatusCode);
+                Assert.Equal(HttpStatusCode.Unauthorized, expiredResponse.StatusCode);
+                Assert.Equal(HttpStatusCode.Unauthorized, wrongIssuerResponse.StatusCode);
+                Assert.Equal(HttpStatusCode.Unauthorized, wrongAudienceResponse.StatusCode);
+                Assert.Equal(HttpStatusCode.Unauthorized, wrongTenantResponse.StatusCode);
+            });
+    }
+
+    [Fact]
     public void OpenAiProviderWithoutApiKeyFailsClearlyOnStartup()
     {
         var exception = Assert.ThrowsAny<Exception>(() => WithEnvironmentVariables(
@@ -204,6 +237,14 @@ public class ConfigurationStartupTests
         ["Authentication__RequiredAppRole"] = "CareerAssistant.Demo.Access",
         ["Database__MigrateOnStartup"] = "false"
     };
+
+    private static async Task<HttpResponseMessage> SendBearerRequestAsync(HttpClient client, string token)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/profile");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        return await client.SendAsync(request);
+    }
 
     private static Dictionary<string, string?> SetEnvironmentVariables(IReadOnlyDictionary<string, string?> variables)
     {
