@@ -77,9 +77,11 @@ public class ConfigurationStartupTests
                 using var factory = new CareerAssistantApiFactory(useConfiguredJobAnalysisService: true);
                 using var client = factory.CreateClient();
 
-                var response = await client.GetAsync("/health");
+                var healthResponse = await client.GetAsync("/health");
+                var profileResponse = await client.GetAsync("/api/profile");
 
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                Assert.Equal(HttpStatusCode.OK, healthResponse.StatusCode);
+                Assert.Equal(HttpStatusCode.Unauthorized, profileResponse.StatusCode);
             });
     }
 

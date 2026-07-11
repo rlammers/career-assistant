@@ -1,6 +1,7 @@
 using CareerAssistant.Api.Data;
 using CareerAssistant.Api.Options;
 using CareerAssistant.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -26,7 +27,15 @@ internal static class ServiceCollectionExtensions
             options.UseSqlite(configuration.GetConnectionString("DefaultConnection")));
         services.AddCareerAssistantOptions(configuration);
         services.AddConfiguredAuthentication(authenticationOptions);
-        services.AddAuthorization();
+        services.AddAuthorization(options =>
+        {
+            if (authenticationOptions.Enabled)
+            {
+                options.FallbackPolicy = new AuthorizationPolicyBuilder()
+                    .RequireAuthenticatedUser()
+                    .Build();
+            }
+        });
         services.AddJobAnalysisService(configuration, aiOptions, aiProvider);
         services.AddConfiguredCors(configuration);
         services.AddControllers();
