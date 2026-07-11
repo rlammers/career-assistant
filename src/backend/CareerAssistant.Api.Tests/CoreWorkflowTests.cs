@@ -253,6 +253,9 @@ public class CoreWorkflowTests
         var analysisResponse = await client.PostAsync($"/api/jobs/{job.Id}/analyse", content: null);
 
         Assert.Equal(HttpStatusCode.InternalServerError, analysisResponse.StatusCode);
+        var errorContent = await analysisResponse.Content.ReadAsStringAsync();
+        Assert.Contains("The job analysis could not be generated. Please try again.", errorContent);
+        Assert.DoesNotContain("Analysis provider returned malformed content.", errorContent);
 
         var jobResponse = await client.GetAsync($"/api/jobs/{job.Id}");
         jobResponse.EnsureSuccessStatusCode();

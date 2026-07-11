@@ -74,6 +74,7 @@ internal static class ServiceCollectionExtensions
             .AddJwtBearer(options =>
             {
                 options.Authority = $"https://login.microsoftonline.com/{authenticationOptions.TenantId}/v2.0";
+                options.IncludeErrorDetails = false;
                 options.MapInboundClaims = false;
                 options.TokenValidationParameters = new TokenValidationParameters
                 {

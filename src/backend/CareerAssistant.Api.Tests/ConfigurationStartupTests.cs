@@ -152,6 +152,10 @@ public class ConfigurationStartupTests
                 Assert.Equal(HttpStatusCode.Unauthorized, wrongIssuerResponse.StatusCode);
                 Assert.Equal(HttpStatusCode.Unauthorized, wrongAudienceResponse.StatusCode);
                 Assert.Equal(HttpStatusCode.Unauthorized, wrongTenantResponse.StatusCode);
+                Assert.DoesNotContain(
+                    "error_description",
+                    string.Join(", ", wrongIssuerResponse.Headers.WwwAuthenticate.Select(header => header.ToString())),
+                    StringComparison.OrdinalIgnoreCase);
             });
     }
 

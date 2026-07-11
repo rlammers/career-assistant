@@ -26,17 +26,20 @@ public class JobApplicationsController : ControllerBase
     private readonly IJobAnalysisService _jobAnalysisService;
     private readonly DemoOptions _demoOptions;
     private readonly DemoQuotaGate _demoQuotaGate;
+    private readonly ILogger<JobApplicationsController> _logger;
 
     public JobApplicationsController(
         ApplicationDbContext dbContext,
         IJobAnalysisService jobAnalysisService,
         IOptions<DemoOptions> demoOptions,
-        DemoQuotaGate demoQuotaGate)
+        DemoQuotaGate demoQuotaGate,
+        ILogger<JobApplicationsController> logger)
     {
         _dbContext = dbContext;
         _jobAnalysisService = jobAnalysisService;
         _demoOptions = demoOptions.Value;
         _demoQuotaGate = demoQuotaGate;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -227,11 +230,13 @@ public class JobApplicationsController : ControllerBase
         {
             analysisResult = await _jobAnalysisService.AnalyseAsync(profile, job, HttpContext.RequestAborted);
         }
-        catch (InvalidOperationException ex)
+        catch (InvalidOperationException exception)
         {
+            _logger.LogError(exception, "Job analysis request failed.");
+
             return Problem(
                 title: "Job analysis failed.",
-                detail: ex.Message,
+                detail: "The job analysis could not be generated. Please try again.",
                 statusCode: StatusCodes.Status500InternalServerError);
         }
 
