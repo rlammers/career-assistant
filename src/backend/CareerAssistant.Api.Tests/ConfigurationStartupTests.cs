@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 
 namespace CareerAssistant.Api.Tests;
 
@@ -70,6 +71,7 @@ public class ConfigurationStartupTests
                 ["Authentication__ClientId"] = "22222222-2222-2222-2222-222222222222",
                 ["Authentication__Audience"] = "api://22222222-2222-2222-2222-222222222222",
                 ["Authentication__Issuer"] = "https://login.microsoftonline.com/11111111-1111-1111-1111-111111111111/v2.0",
+                ["Authentication__RequiredAppRole"] = "CareerAssistant.Demo.Access",
                 ["Database__MigrateOnStartup"] = "false"
             },
             async () =>
@@ -77,9 +79,83 @@ public class ConfigurationStartupTests
                 using var factory = new CareerAssistantApiFactory(useConfiguredJobAnalysisService: true);
                 using var client = factory.CreateClient();
 
-                var response = await client.GetAsync("/health");
+                var healthResponse = await client.GetAsync("/health");
+                var profileResponse = await client.GetAsync("/api/profile");
 
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                Assert.Equal(HttpStatusCode.OK, healthResponse.StatusCode);
+                Assert.Equal(HttpStatusCode.Unauthorized, profileResponse.StatusCode);
+            });
+    }
+
+    [Fact]
+    public async Task EnabledAuthenticationRejectsUsersWithoutTheConfiguredAppRole()
+    {
+        await WithEnvironmentVariablesAsync(
+            AuthenticatedEnvironmentVariables(),
+            async () =>
+            {
+                using var factory = new CareerAssistantApiFactory(useTestAuthentication: true);
+                using var client = factory.CreateClient();
+                using var request = new HttpRequestMessage(HttpMethod.Get, "/api/profile");
+                request.Headers.Add(TestAuthenticationHandler.AppRoleHeaderName, "Other.Role");
+
+                var response = await client.SendAsync(request);
+
+                Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+            });
+    }
+
+    [Fact]
+    public async Task EnabledAuthenticationAllowsUsersWithTheConfiguredAppRole()
+    {
+        await WithEnvironmentVariablesAsync(
+            AuthenticatedEnvironmentVariables(),
+            async () =>
+            {
+                using var factory = new CareerAssistantApiFactory(useTestAuthentication: true);
+                using var client = factory.CreateClient();
+                using var request = new HttpRequestMessage(HttpMethod.Get, "/api/profile");
+                request.Headers.Add(TestAuthenticationHandler.AppRoleHeaderName, "CareerAssistant.Demo.Access");
+
+                var response = await client.SendAsync(request);
+
+                Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+            });
+    }
+
+    [Fact]
+    public async Task EnabledAuthenticationAcceptsOnlyValidTokensFromTheConfiguredTenant()
+    {
+        await WithEnvironmentVariablesAsync(
+            AuthenticatedEnvironmentVariables(),
+            async () =>
+            {
+                using var factory = new CareerAssistantApiFactory(useTestJwtBearerAuthentication: true);
+                using var client = factory.CreateClient();
+
+                var validResponse = await SendBearerRequestAsync(client, TestJwtTokens.Create());
+                var expiredResponse = await SendBearerRequestAsync(
+                    client,
+                    TestJwtTokens.Create(expires: DateTime.UtcNow.AddMinutes(-6)));
+                var wrongIssuerResponse = await SendBearerRequestAsync(
+                    client,
+                    TestJwtTokens.Create(issuer: "https://login.microsoftonline.com/other-tenant/v2.0"));
+                var wrongAudienceResponse = await SendBearerRequestAsync(
+                    client,
+                    TestJwtTokens.Create(audience: "api://other-api"));
+                var wrongTenantResponse = await SendBearerRequestAsync(
+                    client,
+                    TestJwtTokens.Create(tenantId: "33333333-3333-3333-3333-333333333333"));
+
+                Assert.Equal(HttpStatusCode.NotFound, validResponse.StatusCode);
+                Assert.Equal(HttpStatusCode.Unauthorized, expiredResponse.StatusCode);
+                Assert.Equal(HttpStatusCode.Unauthorized, wrongIssuerResponse.StatusCode);
+                Assert.Equal(HttpStatusCode.Unauthorized, wrongAudienceResponse.StatusCode);
+                Assert.Equal(HttpStatusCode.Unauthorized, wrongTenantResponse.StatusCode);
+                Assert.DoesNotContain(
+                    "error_description",
+                    string.Join(", ", wrongIssuerResponse.Headers.WwwAuthenticate.Select(header => header.ToString())),
+                    StringComparison.OrdinalIgnoreCase);
             });
     }
 
@@ -153,6 +229,25 @@ public class ConfigurationStartupTests
         {
             RestoreEnvironmentVariables(originals);
         }
+    }
+
+    private static IReadOnlyDictionary<string, string?> AuthenticatedEnvironmentVariables() => new Dictionary<string, string?>
+    {
+        ["Authentication__Enabled"] = "true",
+        ["Authentication__TenantId"] = "11111111-1111-1111-1111-111111111111",
+        ["Authentication__ClientId"] = "22222222-2222-2222-2222-222222222222",
+        ["Authentication__Audience"] = "api://22222222-2222-2222-2222-222222222222",
+        ["Authentication__Issuer"] = "https://login.microsoftonline.com/11111111-1111-1111-1111-111111111111/v2.0",
+        ["Authentication__RequiredAppRole"] = "CareerAssistant.Demo.Access",
+        ["Database__MigrateOnStartup"] = "false"
+    };
+
+    private static async Task<HttpResponseMessage> SendBearerRequestAsync(HttpClient client, string token)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/profile");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        return await client.SendAsync(request);
     }
 
     private static Dictionary<string, string?> SetEnvironmentVariables(IReadOnlyDictionary<string, string?> variables)

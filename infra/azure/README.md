@@ -17,6 +17,11 @@ These Bicep files describe the proposed public demo in Australia East. They have
 | Application | `imagePullIdentityName` | required | Foundation identity output |
 | Application | `frontendImage` | required | Commit-specific frontend image |
 | Application | `backendImage` | required | Commit-specific backend image |
+| Application | `authenticationTenantId` | required | Entra tenant ID |
+| Application | `authenticationClientId` | required | Entra API application client ID |
+| Application | `authenticationAudience` | required | Entra API token audience |
+| Application | `authenticationIssuer` | required | Entra API token issuer |
+| Application | `authenticationRequiredAppRole` | required | Entra role assigned to demo users |
 
 Compilation is safe and does not contact an Azure subscription:
 

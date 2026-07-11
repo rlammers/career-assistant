@@ -2,6 +2,8 @@ using System.Data;
 using System.Data.Common;
 using CareerAssistant.Api.Data;
 using CareerAssistant.Api.Services;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
@@ -10,6 +12,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Protocols;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace CareerAssistant.Api.Tests;
 
@@ -19,15 +23,21 @@ public class CareerAssistantApiFactory : WebApplicationFactory<Program>
     private readonly IReadOnlyDictionary<string, string?> _configuration;
     private readonly IJobAnalysisService? _jobAnalysisService;
     private readonly bool _useConfiguredJobAnalysisService;
+    private readonly bool _useTestAuthentication;
+    private readonly bool _useTestJwtBearerAuthentication;
 
     public CareerAssistantApiFactory(
         IReadOnlyDictionary<string, string?>? configuration = null,
         IJobAnalysisService? jobAnalysisService = null,
-        bool useConfiguredJobAnalysisService = false)
+        bool useConfiguredJobAnalysisService = false,
+        bool useTestAuthentication = false,
+        bool useTestJwtBearerAuthentication = false)
     {
         _configuration = configuration ?? new Dictionary<string, string?>();
         _jobAnalysisService = jobAnalysisService;
         _useConfiguredJobAnalysisService = useConfiguredJobAnalysisService;
+        _useTestAuthentication = useTestAuthentication;
+        _useTestJwtBearerAuthentication = useTestJwtBearerAuthentication;
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -63,6 +73,31 @@ public class CareerAssistantApiFactory : WebApplicationFactory<Program>
 
         builder.ConfigureServices(services =>
         {
+            if (_useTestAuthentication)
+            {
+                services.AddAuthentication(options =>
+                {
+                    options.DefaultAuthenticateScheme = TestAuthenticationHandler.SchemeName;
+                    options.DefaultChallengeScheme = TestAuthenticationHandler.SchemeName;
+                }).AddScheme<AuthenticationSchemeOptions, TestAuthenticationHandler>(
+                    TestAuthenticationHandler.SchemeName,
+                    _ => { });
+            }
+
+            if (_useTestJwtBearerAuthentication)
+            {
+                services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
+                {
+                    options.ConfigurationManager = new StaticConfigurationManager<OpenIdConnectConfiguration>(
+                        new OpenIdConnectConfiguration
+                        {
+                            Issuer = TestJwtTokens.Issuer,
+                            SigningKeys = { TestJwtTokens.SigningKey }
+                        });
+                    options.TokenValidationParameters.IssuerSigningKey = TestJwtTokens.SigningKey;
+                });
+            }
+
             if (!_useConfiguredJobAnalysisService)
             {
                 services.RemoveAll<IJobAnalysisService>();

@@ -24,6 +24,26 @@ param frontendImage string
 @description('Immutable backend image reference, including a commit-specific tag or digest.')
 param backendImage string
 
+@description('Microsoft Entra tenant ID accepted by the backend API.')
+@minLength(1)
+param authenticationTenantId string
+
+@description('Microsoft Entra API application client ID.')
+@minLength(1)
+param authenticationClientId string
+
+@description('Audience expected in Microsoft Entra access tokens.')
+@minLength(1)
+param authenticationAudience string
+
+@description('Issuer expected in Microsoft Entra access tokens.')
+@minLength(1)
+param authenticationIssuer string
+
+@description('Microsoft Entra application role required to access the demo API.')
+@minLength(1)
+param authenticationRequiredAppRole string
+
 var appName = '${namePrefix}-app'
 
 resource environment 'Microsoft.App/managedEnvironments@2025-01-01' existing = {
@@ -111,6 +131,30 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             {
               name: 'AI__Provider'
               value: 'Mock'
+            }
+            {
+              name: 'Authentication__Enabled'
+              value: 'true'
+            }
+            {
+              name: 'Authentication__TenantId'
+              value: authenticationTenantId
+            }
+            {
+              name: 'Authentication__ClientId'
+              value: authenticationClientId
+            }
+            {
+              name: 'Authentication__Audience'
+              value: authenticationAudience
+            }
+            {
+              name: 'Authentication__Issuer'
+              value: authenticationIssuer
+            }
+            {
+              name: 'Authentication__RequiredAppRole'
+              value: authenticationRequiredAppRole
             }
             {
               name: 'Database__MigrateOnStartup'

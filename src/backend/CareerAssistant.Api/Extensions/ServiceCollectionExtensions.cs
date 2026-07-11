@@ -1,6 +1,7 @@
 using CareerAssistant.Api.Data;
 using CareerAssistant.Api.Options;
 using CareerAssistant.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -26,7 +27,16 @@ internal static class ServiceCollectionExtensions
             options.UseSqlite(configuration.GetConnectionString("DefaultConnection")));
         services.AddCareerAssistantOptions(configuration);
         services.AddConfiguredAuthentication(authenticationOptions);
-        services.AddAuthorization();
+        services.AddAuthorization(options =>
+        {
+            if (authenticationOptions.Enabled)
+            {
+                options.FallbackPolicy = new AuthorizationPolicyBuilder()
+                    .RequireAuthenticatedUser()
+                    .RequireClaim("roles", authenticationOptions.RequiredAppRole)
+                    .Build();
+            }
+        });
         services.AddJobAnalysisService(configuration, aiOptions, aiProvider);
         services.AddConfiguredCors(configuration);
         services.AddControllers();
@@ -43,6 +53,7 @@ internal static class ServiceCollectionExtensions
             .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.ClientId), "Authentication:ClientId is required when authentication is enabled.")
             .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.Audience), "Authentication:Audience is required when authentication is enabled.")
             .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.Issuer), "Authentication:Issuer is required when authentication is enabled.")
+            .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.RequiredAppRole), "Authentication:RequiredAppRole is required when authentication is enabled.")
             .ValidateOnStart();
         services.AddOptions<DemoOptions>()
             .Bind(configuration.GetSection(DemoOptions.SectionName))
@@ -63,6 +74,8 @@ internal static class ServiceCollectionExtensions
             .AddJwtBearer(options =>
             {
                 options.Authority = $"https://login.microsoftonline.com/{authenticationOptions.TenantId}/v2.0";
+                options.IncludeErrorDetails = false;
+                options.MapInboundClaims = false;
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
@@ -71,6 +84,22 @@ internal static class ServiceCollectionExtensions
                     ValidAudience = authenticationOptions.Audience,
                     ValidateIssuerSigningKey = true,
                     ValidateLifetime = true
+                };
+                options.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = context =>
+                    {
+                        var hasExpectedTenant = context.Principal?.Claims.Any(claim =>
+                            string.Equals(claim.Type, "tid", StringComparison.Ordinal)
+                            && string.Equals(claim.Value, authenticationOptions.TenantId, StringComparison.OrdinalIgnoreCase)) == true;
+
+                        if (!hasExpectedTenant)
+                        {
+                            context.Fail("The token tenant is not allowed.");
+                        }
+
+                        return Task.CompletedTask;
+                    }
                 };
             });
     }
