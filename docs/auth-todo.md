@@ -65,8 +65,8 @@ The production redirect URI must use HTTPS and exactly match the URI registered 
 - [x] Require that policy for every controller/API route.
 - [x] After the demo-access policy is applied, keep only operational endpoints intentionally needed by the platform, such as `/health`, anonymous.
 - [x] Return `401 Unauthorized` for missing or invalid authentication and `403 Forbidden` for authenticated users without access.
-- [ ] Ensure direct requests to the API cannot bypass authorization through the frontend proxy or sidecar address.
-- [ ] Do not use email address or display name as the durable authorization identifier.
+- [x] Ensure direct requests to the API cannot bypass authorization through the frontend proxy or sidecar address.
+- [x] Do not use email address or display name as the durable authorization identifier.
 
 ### Frontend
 
