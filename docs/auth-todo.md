@@ -47,6 +47,7 @@ Use secure deployment configuration for the following non-secret values; do not 
     "ClientId": "<api-app-client-guid>",
     "Audience": "api://<api-app-client-guid>",
     "Issuer": "https://login.microsoftonline.com/<tenant-guid>/v2.0",
+    "RequiredAppRole": "CareerAssistant.Demo.Access",
     "SpaRedirectUri": "https://<public-frontend-host>/"
   }
 }
@@ -54,16 +55,16 @@ Use secure deployment configuration for the following non-secret values; do not 
 
 The production redirect URI must use HTTPS and exactly match the URI registered in Entra. `SpaRedirectUri` is frontend configuration only; it must not contain a secret. The SPA authorization-code-with-PKCE flow and API token validation do not require a client secret. If a future confidential credential is needed, use .NET user secrets locally and the deployment platform's secret store in deployed environments; never put it in `appsettings*.json`, frontend configuration, or source control.
 
-`TenantId` identifies the Entra tenant and determines the default Microsoft authority. The intended standard values derive `Issuer` as `https://login.microsoftonline.com/<tenant-guid>/v2.0` and `Audience` as `api://<api-app-client-guid>` from `TenantId` and `ClientId` respectively. `Issuer` and `Audience` remain independently configurable because Entra app registrations can use a different issuer format or Application ID URI. `ClientId` is retained for the eventual shared SPA/API deployment configuration, but the current backend JWT registration does not consume it; a later validation pass must verify these values are compatible rather than accepting contradictory settings.
+`TenantId` identifies the Entra tenant and determines the default Microsoft authority. The intended standard values derive `Issuer` as `https://login.microsoftonline.com/<tenant-guid>/v2.0` and `Audience` as `api://<api-app-client-guid>` from `TenantId` and `ClientId` respectively. `Issuer` and `Audience` remain independently configurable because Entra app registrations can use a different issuer format or Application ID URI. `RequiredAppRole` must exactly match the Entra application role value assigned to permitted guests; the API requires that value in the `roles` claim for every non-health route. `ClientId` is retained for the eventual shared SPA/API deployment configuration, but the current backend JWT registration does not consume it; a later validation pass must verify these values are compatible rather than accepting contradictory settings.
 
 ### Backend
 
 - [x] Add ASP.NET Core token authentication using the Microsoft identity platform configuration.
 - [ ] Validate token signature, issuer, audience, tenant, and lifetime.
-- [ ] Add a server-side authorization policy requiring the configured demo-access assignment.
-- [ ] Require that policy for every controller/API route.
-- [ ] After the demo-access policy is applied, keep only operational endpoints intentionally needed by the platform, such as `/health`, anonymous. Controllers are currently unauthenticated and must not be deployed publicly.
-- [ ] Return `401 Unauthorized` for missing or invalid authentication and `403 Forbidden` for authenticated users without access.
+- [x] Add a server-side authorization policy requiring the configured demo-access assignment.
+- [x] Require that policy for every controller/API route.
+- [x] After the demo-access policy is applied, keep only operational endpoints intentionally needed by the platform, such as `/health`, anonymous.
+- [x] Return `401 Unauthorized` for missing or invalid authentication and `403 Forbidden` for authenticated users without access.
 - [ ] Ensure direct requests to the API cannot bypass authorization through the frontend proxy or sidecar address.
 - [ ] Do not use email address or display name as the durable authorization identifier.
 

@@ -70,6 +70,7 @@ public class ConfigurationStartupTests
                 ["Authentication__ClientId"] = "22222222-2222-2222-2222-222222222222",
                 ["Authentication__Audience"] = "api://22222222-2222-2222-2222-222222222222",
                 ["Authentication__Issuer"] = "https://login.microsoftonline.com/11111111-1111-1111-1111-111111111111/v2.0",
+                ["Authentication__RequiredAppRole"] = "CareerAssistant.Demo.Access",
                 ["Database__MigrateOnStartup"] = "false"
             },
             async () =>
@@ -82,6 +83,42 @@ public class ConfigurationStartupTests
 
                 Assert.Equal(HttpStatusCode.OK, healthResponse.StatusCode);
                 Assert.Equal(HttpStatusCode.Unauthorized, profileResponse.StatusCode);
+            });
+    }
+
+    [Fact]
+    public async Task EnabledAuthenticationRejectsUsersWithoutTheConfiguredAppRole()
+    {
+        await WithEnvironmentVariablesAsync(
+            AuthenticatedEnvironmentVariables(),
+            async () =>
+            {
+                using var factory = new CareerAssistantApiFactory(useTestAuthentication: true);
+                using var client = factory.CreateClient();
+                using var request = new HttpRequestMessage(HttpMethod.Get, "/api/profile");
+                request.Headers.Add(TestAuthenticationHandler.AppRoleHeaderName, "Other.Role");
+
+                var response = await client.SendAsync(request);
+
+                Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+            });
+    }
+
+    [Fact]
+    public async Task EnabledAuthenticationAllowsUsersWithTheConfiguredAppRole()
+    {
+        await WithEnvironmentVariablesAsync(
+            AuthenticatedEnvironmentVariables(),
+            async () =>
+            {
+                using var factory = new CareerAssistantApiFactory(useTestAuthentication: true);
+                using var client = factory.CreateClient();
+                using var request = new HttpRequestMessage(HttpMethod.Get, "/api/profile");
+                request.Headers.Add(TestAuthenticationHandler.AppRoleHeaderName, "CareerAssistant.Demo.Access");
+
+                var response = await client.SendAsync(request);
+
+                Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
             });
     }
 
@@ -156,6 +193,17 @@ public class ConfigurationStartupTests
             RestoreEnvironmentVariables(originals);
         }
     }
+
+    private static IReadOnlyDictionary<string, string?> AuthenticatedEnvironmentVariables() => new Dictionary<string, string?>
+    {
+        ["Authentication__Enabled"] = "true",
+        ["Authentication__TenantId"] = "11111111-1111-1111-1111-111111111111",
+        ["Authentication__ClientId"] = "22222222-2222-2222-2222-222222222222",
+        ["Authentication__Audience"] = "api://22222222-2222-2222-2222-222222222222",
+        ["Authentication__Issuer"] = "https://login.microsoftonline.com/11111111-1111-1111-1111-111111111111/v2.0",
+        ["Authentication__RequiredAppRole"] = "CareerAssistant.Demo.Access",
+        ["Database__MigrateOnStartup"] = "false"
+    };
 
     private static Dictionary<string, string?> SetEnvironmentVariables(IReadOnlyDictionary<string, string?> variables)
     {

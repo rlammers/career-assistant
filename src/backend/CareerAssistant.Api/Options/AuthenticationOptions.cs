@@ -13,4 +13,6 @@ public class AuthenticationOptions
     public string Audience { get; set; } = string.Empty;
 
     public string Issuer { get; set; } = string.Empty;
+
+    public string RequiredAppRole { get; set; } = string.Empty;
 }

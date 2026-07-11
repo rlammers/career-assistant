@@ -2,6 +2,7 @@ using System.Data;
 using System.Data.Common;
 using CareerAssistant.Api.Data;
 using CareerAssistant.Api.Services;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
@@ -19,15 +20,18 @@ public class CareerAssistantApiFactory : WebApplicationFactory<Program>
     private readonly IReadOnlyDictionary<string, string?> _configuration;
     private readonly IJobAnalysisService? _jobAnalysisService;
     private readonly bool _useConfiguredJobAnalysisService;
+    private readonly bool _useTestAuthentication;
 
     public CareerAssistantApiFactory(
         IReadOnlyDictionary<string, string?>? configuration = null,
         IJobAnalysisService? jobAnalysisService = null,
-        bool useConfiguredJobAnalysisService = false)
+        bool useConfiguredJobAnalysisService = false,
+        bool useTestAuthentication = false)
     {
         _configuration = configuration ?? new Dictionary<string, string?>();
         _jobAnalysisService = jobAnalysisService;
         _useConfiguredJobAnalysisService = useConfiguredJobAnalysisService;
+        _useTestAuthentication = useTestAuthentication;
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -63,6 +67,17 @@ public class CareerAssistantApiFactory : WebApplicationFactory<Program>
 
         builder.ConfigureServices(services =>
         {
+            if (_useTestAuthentication)
+            {
+                services.AddAuthentication(options =>
+                {
+                    options.DefaultAuthenticateScheme = TestAuthenticationHandler.SchemeName;
+                    options.DefaultChallengeScheme = TestAuthenticationHandler.SchemeName;
+                }).AddScheme<AuthenticationSchemeOptions, TestAuthenticationHandler>(
+                    TestAuthenticationHandler.SchemeName,
+                    _ => { });
+            }
+
             if (!_useConfiguredJobAnalysisService)
             {
                 services.RemoveAll<IJobAnalysisService>();

@@ -33,6 +33,7 @@ internal static class ServiceCollectionExtensions
             {
                 options.FallbackPolicy = new AuthorizationPolicyBuilder()
                     .RequireAuthenticatedUser()
+                    .RequireClaim("roles", authenticationOptions.RequiredAppRole)
                     .Build();
             }
         });
@@ -52,6 +53,7 @@ internal static class ServiceCollectionExtensions
             .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.ClientId), "Authentication:ClientId is required when authentication is enabled.")
             .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.Audience), "Authentication:Audience is required when authentication is enabled.")
             .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.Issuer), "Authentication:Issuer is required when authentication is enabled.")
+            .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.RequiredAppRole), "Authentication:RequiredAppRole is required when authentication is enabled.")
             .ValidateOnStart();
         services.AddOptions<DemoOptions>()
             .Bind(configuration.GetSection(DemoOptions.SectionName))
