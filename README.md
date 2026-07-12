@@ -99,7 +99,7 @@ Configure the backend from `src/backend/CareerAssistant.Api`:
 dotnet user-secrets set "Authentication:Enabled" "true"
 dotnet user-secrets set "Authentication:TenantId" "<tenant-guid>"
 dotnet user-secrets set "Authentication:ClientId" "<api-app-client-guid>"
-dotnet user-secrets set "Authentication:Audience" "api://<api-app-client-guid>"
+dotnet user-secrets set "Authentication:Audience" "<api-app-client-guid>"
 dotnet user-secrets set "Authentication:Issuer" "https://login.microsoftonline.com/<tenant-guid>/v2.0"
 dotnet user-secrets set "Authentication:RequiredAppRole" "<required-app-role>"
 ```
@@ -113,6 +113,8 @@ VITE_ENTRA_SPA_CLIENT_ID=<spa-client-guid>
 VITE_ENTRA_API_SCOPE=api://<api-app-client-guid>/<delegated-scope>
 VITE_ENTRA_REDIRECT_URI=http://localhost:5173/
 ```
+
+The API app registration is configured to issue Microsoft Entra v2 access tokens (`api.requestedAccessTokenVersion = 2`). The delegated scope continues to use the API Application ID URI, while the API validates the v2 issuer and the API client-ID GUID as its audience.
 
 From the repository root, start the backend and frontend in separate terminals:
 
