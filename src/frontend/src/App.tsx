@@ -3,9 +3,11 @@ import { ProfilePage } from './pages/ProfilePage';
 import { JobListPage } from './pages/JobListPage';
 import { JobDetailPage } from './pages/JobDetailPage';
 import { ToastProvider } from './components/Toast';
+import { AuthGate } from './components/AuthGate';
+import { authenticationEnabled } from './auth/authConfig';
 import './App.css';
 
-function App() {
+function ApplicationContent() {
   return (
     <ToastProvider>
     <BrowserRouter>
@@ -58,6 +60,11 @@ function App() {
     </BrowserRouter>
     </ToastProvider>
   );
+}
+
+function App() {
+  const application = <ApplicationContent />;
+  return authenticationEnabled ? <AuthGate>{application}</AuthGate> : application;
 }
 
 export default App;

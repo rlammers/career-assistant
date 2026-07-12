@@ -51,6 +51,20 @@ Output is in the `dist/` directory.
 
 All API calls are made via the Fetch API to `http://localhost:5117/api` by default. Set `VITE_API_BASE_URL` to override it.
 
+## Microsoft Entra authentication
+
+Authentication is disabled unless `VITE_AUTH_ENABLED` is explicitly set to `true`. For local Entra testing, create an ignored `.env.local` file:
+
+```dotenv
+VITE_AUTH_ENABLED=true
+VITE_ENTRA_TENANT_ID=<tenant-guid>
+VITE_ENTRA_SPA_CLIENT_ID=<spa-client-guid>
+VITE_ENTRA_API_SCOPE=api://<api-client-guid>/access_as_user
+VITE_ENTRA_REDIRECT_URI=http://localhost:5173/
+```
+
+These identifiers are safe frontend configuration, but environment-specific production values should be supplied by the deployment platform. The SPA uses authorization code with PKCE and does not use a client secret.
+
 Endpoints consumed:
 
 - `GET /api/profile`
