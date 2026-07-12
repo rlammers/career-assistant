@@ -78,7 +78,7 @@ The production redirect URI must use HTTPS and exactly match the URI registered 
 
 ### Verification
 
-- [ ] Verify an unauthenticated browser and direct API request cannot read or modify demo data.
+- [x] Verify an unauthenticated browser and direct API request cannot read or modify demo data.
 - [ ] Verify a valid but unassigned Microsoft account receives no application access.
 - [ ] Verify an invited Microsoft organizational account can sign in.
 - [ ] Verify an invited personal Microsoft account can sign in.
