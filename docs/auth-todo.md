@@ -73,8 +73,8 @@ The production redirect URI must use HTTPS and exactly match the URI registered 
 - [x] Add Microsoft identity-platform sign-in using the authorization-code flow with PKCE through the supported React library.
 - [x] Request only the API scope needed by Career Assistant.
 - [x] Attach access tokens to API requests without storing tokens in long-lived browser storage.
-- [ ] Add sign-in, sign-out, access-denied, expired-session, and retry states without causing layout shifts.
-- [ ] Treat frontend route guards as user experience only; the API remains the security boundary.
+- [x] Add sign-in, sign-out, access-denied, expired-session, and retry states without causing layout shifts.
+- [x] Treat frontend route guards as user experience only; the API remains the security boundary.
 
 ### Verification
 

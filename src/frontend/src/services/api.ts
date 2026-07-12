@@ -1,6 +1,7 @@
 // API service layer for backend communication
 
 import { getApiAccessToken } from '../auth/authClient';
+import { publishAuthFailure } from '../auth/authFailures';
 
 const trimTrailingSlashes = (value: string) => value.replace(/\/+$/, '');
 
@@ -14,7 +15,11 @@ const apiFetch = async (input: string, init: RequestInit = {}): Promise<Response
   const headers = new Headers(init.headers);
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
 
-  return fetch(input, { ...init, headers });
+  const response = await fetch(input, { ...init, headers });
+  if (response.status === 401) publishAuthFailure('session-expired');
+  if (response.status === 403) publishAuthFailure('access-denied');
+
+  return response;
 };
 
 // Types

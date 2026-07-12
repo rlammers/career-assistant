@@ -281,6 +281,7 @@
 }
 
 .auth-card h1 { margin: 0; font-size: 36px; }
+.auth-card p { max-width: 350px; }
 .auth-button { min-width: 210px; min-height: 44px; cursor: pointer; }
 .auth-feedback-slot { min-height: 48px; }
 .auth-feedback-slot--session { min-height: 0; background: #333; }
