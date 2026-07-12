@@ -31,11 +31,25 @@ describe('page action feedback', () => {
       .mockResolvedValueOnce({ id: 1, summary: '', skills: '', experience: '' });
     render(<ToastProvider><ProfilePage /></ToastProvider>);
 
+    fireEvent.change(screen.getByLabelText('Professional Summary'), { target: { value: 'Summary' } });
+    fireEvent.change(screen.getByLabelText('Skills (comma-separated)'), { target: { value: 'React' } });
+    fireEvent.change(screen.getByLabelText('Experience'), { target: { value: 'Engineer' } });
     fireEvent.click(await screen.findByRole('button', { name: 'Save Profile' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Profile could not be saved');
     fireEvent.click(screen.getByRole('button', { name: 'Save Profile' }));
     expect(await screen.findByText('Profile saved successfully.')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('requires all profile fields before saving', async () => {
+    vi.mocked(profileAPI.getProfile).mockRejectedValue(new Error('No profile'));
+    render(<ToastProvider><ProfilePage /></ToastProvider>);
+
+    const saveButton = await screen.findByRole('button', { name: 'Save Profile' });
+    fireEvent.submit(saveButton.closest('form')!);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Summary, skills, and experience are required');
+    expect(profileAPI.saveProfile).not.toHaveBeenCalled();
   });
 
   it('uses a toast for status success and reverts the selection after an inline failure', async () => {

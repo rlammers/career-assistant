@@ -53,6 +53,11 @@ export const ProfilePage = ({ initialProfile, onProfileSaved }: ProfilePageProps
     e.preventDefault();
     setLoading(true);
     setError(null);
+    if (Object.values(formData).some((value) => value.trim().length === 0)) {
+      setError('Summary, skills, and experience are required before continuing.');
+      setLoading(false);
+      return;
+    }
     try {
       const savedProfile = await profileAPI.saveProfile(formData);
       setProfile(savedProfile);
@@ -77,6 +82,7 @@ export const ProfilePage = ({ initialProfile, onProfileSaved }: ProfilePageProps
             name="summary"
             value={formData.summary}
             onChange={handleChange}
+            required
             placeholder="Brief overview of your professional background"
             rows={4}
           />
@@ -90,6 +96,7 @@ export const ProfilePage = ({ initialProfile, onProfileSaved }: ProfilePageProps
             name="skills"
             value={formData.skills}
             onChange={handleChange}
+            required
             placeholder="e.g., JavaScript, React, TypeScript, etc."
             rows={3}
           />
@@ -103,6 +110,7 @@ export const ProfilePage = ({ initialProfile, onProfileSaved }: ProfilePageProps
             name="experience"
             value={formData.experience}
             onChange={handleChange}
+            required
             placeholder="Your professional experience and background"
             rows={4}
           />

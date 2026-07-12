@@ -24,13 +24,18 @@ public class ProfileController : ControllerBase
             .OrderBy(p => p.Id)
             .FirstOrDefaultAsync();
 
-        if (profile == null)
+        if (profile == null || !HasRequiredProfileFields(profile))
         {
             return NotFound();
         }
 
         return Ok(ProfileResponse.FromEntity(profile));
     }
+
+    private static bool HasRequiredProfileFields(Profile profile) =>
+        !string.IsNullOrWhiteSpace(profile.Summary)
+        && !string.IsNullOrWhiteSpace(profile.Skills)
+        && !string.IsNullOrWhiteSpace(profile.Experience);
 
     [HttpPost]
     public async Task<ActionResult<ProfileResponse>> Post(ProfileRequest request)

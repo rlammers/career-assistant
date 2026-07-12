@@ -36,6 +36,9 @@ describe('profile-first workflow gate', () => {
     render(<BrowserRouter><ToastProvider><ProfileGate /></ToastProvider></BrowserRouter>);
 
     await screen.findByRole('heading', { name: 'My Profile' });
+    fireEvent.change(screen.getByLabelText('Professional Summary'), { target: { value: 'Summary' } });
+    fireEvent.change(screen.getByLabelText('Skills (comma-separated)'), { target: { value: 'React' } });
+    fireEvent.change(screen.getByLabelText('Experience'), { target: { value: 'Engineer' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save Profile' }));
 
     expect(await screen.findByRole('heading', { name: 'Job Applications' })).toBeInTheDocument();
