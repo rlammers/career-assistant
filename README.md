@@ -89,6 +89,75 @@ $env:VITE_API_BASE_URL="http://localhost:5117/api"
 npm run dev
 ```
 
+### Verify Microsoft Entra authentication locally
+
+The local Entra flow uses backend user secrets and the frontend's ignored `.env.local` file. Keep real tenant and application identifiers out of tracked files.
+
+Configure the backend from `src/backend/CareerAssistant.Api`:
+
+```powershell
+dotnet user-secrets set "Authentication:Enabled" "true"
+dotnet user-secrets set "Authentication:TenantId" "<tenant-guid>"
+dotnet user-secrets set "Authentication:ClientId" "<api-app-client-guid>"
+dotnet user-secrets set "Authentication:Audience" "api://<api-app-client-guid>"
+dotnet user-secrets set "Authentication:Issuer" "https://login.microsoftonline.com/<tenant-guid>/v2.0"
+dotnet user-secrets set "Authentication:RequiredAppRole" "<required-app-role>"
+```
+
+Create `src/frontend/.env.local` with the matching SPA configuration. This file is ignored by Git:
+
+```dotenv
+VITE_AUTH_ENABLED=true
+VITE_ENTRA_TENANT_ID=<tenant-guid>
+VITE_ENTRA_SPA_CLIENT_ID=<spa-client-guid>
+VITE_ENTRA_API_SCOPE=api://<api-app-client-guid>/<delegated-scope>
+VITE_ENTRA_REDIRECT_URI=http://localhost:5173/
+```
+
+From the repository root, start the backend and frontend in separate terminals:
+
+```powershell
+dotnet run --project src/backend/CareerAssistant.Api/CareerAssistant.Api.csproj --launch-profile http
+```
+
+```powershell
+Set-Location src/frontend
+npm run dev
+```
+
+Confirm the backend startup output reports `AI provider: Mock` and does not print tenant, application, role, issuer, audience, token, claim, or identity values. With the backend running, verify the anonymous API boundary from a third terminal:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/Test-LocalAuthBoundary.ps1
+```
+
+Do not use `dotnet user-secrets list` while capturing diagnostics: it prints every local secret value. If configuration needs checking, verify only the expected key names or inspect application behavior; redact any diagnostic output before sharing it.
+
+Then verify the browser workflow at `http://localhost:5173/`:
+
+1. Before signing in, confirm only the invitation sign-in experience is available and no profile or job data is visible.
+2. Sign in with an account assigned the configured application role.
+3. Save a profile.
+4. Create a job, edit it, and change its status.
+5. Analyse the job and confirm the deterministic mock result appears. The backend startup output must still say `AI provider: Mock`; no paid provider key is needed or used.
+6. Delete the job.
+7. In browser developer tools, confirm protected API calls include an `Authorization: Bearer` request header. Do not copy or record its value.
+8. Inspect authentication-failure responses and backend output for token values, claims, email addresses, object or tenant identifiers, issuer, audience, client identifier, or other internal authentication configuration.
+
+After verification, remove only the authentication settings added above:
+
+```powershell
+Set-Location src/backend/CareerAssistant.Api
+dotnet user-secrets remove "Authentication:Enabled"
+dotnet user-secrets remove "Authentication:TenantId"
+dotnet user-secrets remove "Authentication:ClientId"
+dotnet user-secrets remove "Authentication:Audience"
+dotnet user-secrets remove "Authentication:Issuer"
+dotnet user-secrets remove "Authentication:RequiredAppRole"
+```
+
+Remove `src/frontend/.env.local` separately if local frontend authentication is no longer needed. Do not use `dotnet user-secrets clear`, because it would also remove unrelated local settings.
+
 Run tests:
 
 ```powershell

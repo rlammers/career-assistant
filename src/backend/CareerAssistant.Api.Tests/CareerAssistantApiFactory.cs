@@ -38,6 +38,7 @@ public class CareerAssistantApiFactory : WebApplicationFactory<Program>
         _useConfiguredJobAnalysisService = useConfiguredJobAnalysisService;
         _useTestAuthentication = useTestAuthentication;
         _useTestJwtBearerAuthentication = useTestJwtBearerAuthentication;
+        ConfigureTestEnvironment();
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -54,6 +55,7 @@ public class CareerAssistantApiFactory : WebApplicationFactory<Program>
                 ["AI:Provider"] = "Mock",
                 ["AI:Model"] = "test-mock",
                 ["OpenAI:ApiKey"] = string.Empty,
+                ["Authentication:Enabled"] = "false",
                 ["Database:MigrateOnStartup"] = "false",
                 ["Demo:Enabled"] = "false"
             };
@@ -144,5 +146,31 @@ public class CareerAssistantApiFactory : WebApplicationFactory<Program>
         {
             _connection.Dispose();
         }
+    }
+
+    private void ConfigureTestEnvironment()
+    {
+        SetTestEnvironmentVariable("AI:Provider", "Mock");
+        SetTestEnvironmentVariable("AI:Model", "test-mock");
+        SetTestEnvironmentVariable("OpenAI:ApiKey", " ");
+        SetTestEnvironmentVariable("OpenAI:ApiKeyFile", " ");
+        SetTestEnvironmentVariable("Authentication:Enabled", "false");
+        SetTestEnvironmentVariable("Authentication:TenantId", " ");
+        SetTestEnvironmentVariable("Authentication:ClientId", " ");
+        SetTestEnvironmentVariable("Authentication:Audience", " ");
+        SetTestEnvironmentVariable("Authentication:Issuer", " ");
+        SetTestEnvironmentVariable("Authentication:RequiredAppRole", " ");
+        SetTestEnvironmentVariable("Database:MigrateOnStartup", "false");
+        SetTestEnvironmentVariable("Demo:Enabled", "false");
+        SetTestEnvironmentVariable("Demo:MaxJobs", "100");
+        SetTestEnvironmentVariable("Demo:MaxAnalyses", "200");
+    }
+
+    private void SetTestEnvironmentVariable(string configurationKey, string defaultValue)
+    {
+        var value = _configuration.TryGetValue(configurationKey, out var configuredValue)
+            ? configuredValue
+            : defaultValue;
+        Environment.SetEnvironmentVariable(configurationKey.Replace(":", "__"), value);
     }
 }

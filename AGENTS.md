@@ -480,6 +480,14 @@ If a feature adds complexity without improving the core analysis workflow:
 
 Do not implement it.
 
+Automated test hosts must not inherit developer user secrets. Test authentication and provider configuration must be supplied explicitly by the test.
+
+Local secret-safety rule:
+
+- Never run `dotnet user-secrets list` (or any equivalent command that prints secret values) in agent/tool output, CI logs, screenshots, or committed documentation.
+- Verify secret configuration by checking required key names, startup behavior, or redacted prefixes only; never display complete tokens, API keys, passwords, or connection strings.
+- If a secret is printed, treat it as compromised, revoke or rotate it, and scan the repository for accidental copies before continuing.
+
 ---
 
 ## Guidance Maintenance
