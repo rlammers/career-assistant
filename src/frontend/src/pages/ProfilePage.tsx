@@ -4,9 +4,14 @@ import type { Profile } from '../services/api';
 import { InlineError } from '../components/InlineError';
 import { useToast } from '../components/ToastContext';
 
-export const ProfilePage = () => {
+interface ProfilePageProps {
+  initialProfile?: Profile | null;
+  onProfileSaved?: (profile: Profile) => void;
+}
+
+export const ProfilePage = ({ initialProfile, onProfileSaved }: ProfilePageProps) => {
   const { showToast } = useToast();
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(initialProfile ?? null);
   const [formData, setFormData] = useState({
     summary: '',
     skills: '',
@@ -16,8 +21,9 @@ export const ProfilePage = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (initialProfile !== undefined) return;
     fetchProfile();
-  }, []);
+  }, [initialProfile]);
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -50,6 +56,7 @@ export const ProfilePage = () => {
     try {
       const savedProfile = await profileAPI.saveProfile(formData);
       setProfile(savedProfile);
+      onProfileSaved?.(savedProfile);
       showToast({ message: 'Profile saved successfully.', variant: 'success' });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save profile');

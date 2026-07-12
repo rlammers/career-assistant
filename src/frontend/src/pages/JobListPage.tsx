@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { jobAPI, analysisAPI } from '../services/api';
 import type { JobApplication } from '../services/api';
 import { InlineError } from '../components/InlineError';
@@ -13,6 +13,7 @@ export const JobListPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [jobErrors, setJobErrors] = useState<Record<number, string>>({});
+  const [profileRequiredJobId, setProfileRequiredJobId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     company: '',
     role: '',
@@ -75,6 +76,7 @@ export const JobListPage = () => {
       delete next[jobId];
       return next;
     });
+    setProfileRequiredJobId(null);
     try {
       await analysisAPI.analyzeJob(jobId);
       showToast({ message: 'Job analyzed. View its details to see the analysis.', variant: 'success' });
@@ -83,7 +85,13 @@ export const JobListPage = () => {
         showToast({ message: 'The analysis was saved, but the job list could not refresh. Displayed data may be stale.', variant: 'warning' });
       }
     } catch (err) {
+      const apiError = err as { status?: number; detail?: string };
+      if (apiError.status === 400 && apiError.detail?.includes('Profile must be created')) {
+        setProfileRequiredJobId(jobId);
+        setJobErrors((current) => ({ ...current, [jobId]: 'Create your profile before analyzing a job.' }));
+      } else {
       setJobErrors((current) => ({ ...current, [jobId]: err instanceof Error ? err.message : 'Failed to analyze job' }));
+      }
     } finally {
       setAnalyzingJobId(null);
     }
@@ -258,6 +266,9 @@ export const JobListPage = () => {
                 </div>
               )}
               <InlineError message={jobErrors[job.id] ?? null} />
+              {profileRequiredJobId === job.id && (
+                <p><Link to="/profile">Go to Profile</Link> to create your profile, then try analysis again.</p>
+              )}
               <div
                 role="status"
                 aria-live="polite"

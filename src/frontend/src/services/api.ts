@@ -3,6 +3,32 @@
 import { getApiAccessToken } from '../auth/authClient';
 import { publishAuthFailure } from '../auth/authFailures';
 
+export class ApiError extends Error {
+  readonly status: number;
+  readonly detail: string;
+
+  constructor(
+    message: string,
+    status: number,
+    detail = '',
+  ) {
+    super(message);
+    this.status = status;
+    this.detail = detail;
+    this.name = 'ApiError';
+  }
+}
+
+const getApiError = async (message: string, response: Response): Promise<ApiError> => {
+  let detail = '';
+  try {
+    detail = (await response.text()).trim();
+  } catch {
+    // Keep the status-based error when the response body cannot be read.
+  }
+  return new ApiError(message, response.status, detail);
+};
+
 const trimTrailingSlashes = (value: string) => value.replace(/\/+$/, '');
 
 const API_BASE_URL = trimTrailingSlashes(import.meta.env.VITE_API_BASE_URL || 'http://localhost:5117/api');
@@ -56,7 +82,7 @@ export interface JobAnalysisResult {
 export const profileAPI = {
   getProfile: async (): Promise<Profile> => {
     const response = await apiFetch(`${API_BASE_URL}/profile`);
-    if (!response.ok) throw new Error(`Failed to fetch profile: ${response.statusText}`);
+    if (!response.ok) throw await getApiError(`Failed to fetch profile: ${response.statusText}`, response);
     return response.json();
   },
 
@@ -133,7 +159,7 @@ export const analysisAPI = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });
-    if (!response.ok) throw new Error(`Failed to analyze job: ${response.statusText}`);
+    if (!response.ok) throw await getApiError(`Failed to analyze job: ${response.statusText}`, response);
     return response.json();
   },
 };
