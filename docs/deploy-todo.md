@@ -30,14 +30,23 @@ Follow this checklist in order. Do not mark Azure or live-verification items com
 - Foundation, reusable application, and private wrapper Bicep templates compiled with Azure CLI/Bicep `0.45.6` without Azure authentication.
 - No Azure resources were provisioned, no registry was authenticated, and no image was published.
 
+### Azure preflight evidence (2026-07-13)
+
+- The Azure CLI session is authenticated to the intended enabled subscription; the operator identity resolved successfully. Subscription and identity identifiers are intentionally omitted.
+- The selected region is `australiaeast`, which is recognized by the subscription. Resource-group name is `career-assistant-private` and Bicep `namePrefix` remains `career-assistant-demo`, matching the repository defaults.
+- The current templates require `Microsoft.App`, `Microsoft.ContainerRegistry`, `Microsoft.Storage`, `Microsoft.OperationalInsights`, `Microsoft.ManagedIdentity`, and `Microsoft.Authorization`. All six providers report `Registered`.
+- A subscription-scope Owner assignment is visible for the operator, so resource-group creation, foundation resource deployment, and the foundation `Microsoft.Authorization/roleAssignments/write` operation are **verified** for preflight purposes. No resource group or role assignment was created.
+- Region recognition does not prove resource-type support, SKU or quota availability, naming availability, policy compliance, or live capacity; those checks remain deferred to Bicep `what-if` and deployment.
+- The foundation, reusable application, and private wrapper Bicep templates compiled successfully with Azure CLI/Bicep. No `what-if` or deployment was run.
+
 ## 2. Workstation and Azure preflight
 
 - [x] Install or enable Azure CLI with Bicep support; verify both tools without printing credentials or subscription secrets.
 - [x] Start Docker Desktop and confirm Linux container builds run successfully.
-- [ ] Sign in to Azure CLI interactively and select the intended subscription.
-- [ ] Choose and record the private deployment region, dedicated resource-group name, and Bicep `namePrefix`; keep the current `australiaeast` default unless availability or cost requires a documented change.
-- [ ] Confirm the operator can create resources and role assignments in the target scope. The foundation deployment creates an `AcrPull` assignment, so Contributor access alone may be insufficient without role-assignment permissions.
-- [ ] Confirm required Azure resource providers are registered for Container Apps, Container Registry, Storage, Log Analytics, and Managed Identity.
+- [x] Sign in to Azure CLI interactively and select the intended subscription.
+- [x] Choose and record the private deployment region, dedicated resource-group name, and Bicep `namePrefix`; keep the current `australiaeast` default unless availability or cost requires a documented change.
+- [x] Confirm the operator can create resources and role assignments in the target scope. The foundation deployment creates an `AcrPull` assignment, so Contributor access alone may be insufficient without role-assignment permissions.
+- [x] Confirm required Azure resource providers are registered for Container Apps, Container Registry, Storage, Log Analytics, and Managed Identity.
 - [ ] Confirm the selected region supports the Bicep resource types and API versions used by the repository.
 - [ ] Recheck current Azure Container Apps, Container Registry, Azure Files, Log Analytics, and Microsoft Entra External ID pricing.
 - [ ] Create a low monthly budget and alerts before or immediately after creating the dedicated resource group; record who receives the alerts.
