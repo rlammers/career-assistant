@@ -67,6 +67,20 @@ describe('JobListPage feedback', () => {
     expect(screen.queryByText(/Job analyzed/)).not.toBeInTheDocument();
   });
 
+  it('guides the user to create a profile when the API reports one is missing', async () => {
+    vi.mocked(jobAPI.getJobs).mockResolvedValue([job]);
+    vi.mocked(analysisAPI.analyzeJob).mockRejectedValue({
+      status: 400,
+      detail: 'Profile must be created before analysis.',
+    });
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Analyze Job' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Create your profile before analyzing a job.');
+    expect(screen.getByRole('link', { name: 'Go to Profile' })).toHaveAttribute('href', '/profile');
+  });
+
   it('requires an in-page decision before deleting and supports cancellation', async () => {
     vi.mocked(jobAPI.getJobs).mockResolvedValue([job]);
     vi.mocked(jobAPI.deleteJob).mockResolvedValue();

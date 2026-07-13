@@ -185,7 +185,7 @@ public class JobApplicationsController : ControllerBase
             return NotFound();
         }
 
-        if (profile == null)
+        if (profile == null || !HasRequiredProfileFields(profile))
         {
             return BadRequest("Profile must be created before analysis.");
         }
@@ -262,4 +262,9 @@ public class JobApplicationsController : ControllerBase
 
         return Ok(response);
     }
+
+    private static bool HasRequiredProfileFields(Profile profile) =>
+        !string.IsNullOrWhiteSpace(profile.Summary)
+        && !string.IsNullOrWhiteSpace(profile.Skills)
+        && !string.IsNullOrWhiteSpace(profile.Experience);
 }

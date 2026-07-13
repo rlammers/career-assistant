@@ -318,6 +318,27 @@ public class CoreWorkflowTests
     }
 
     [Theory]
+    [InlineData("Summary")]
+    [InlineData("Skills")]
+    [InlineData("Experience")]
+    public async Task BlankProfileFieldsReturnValidationErrors(string field)
+    {
+        using var factory = new CareerAssistantApiFactory();
+        using var client = factory.CreateClient();
+        var request = new Dictionary<string, string>
+        {
+            ["Summary"] = "Summary",
+            ["Skills"] = "C#",
+            ["Experience"] = "Experience",
+            [field] = " "
+        };
+
+        var response = await client.PostAsJsonAsync("/api/profile", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Theory]
     [InlineData("Company", InputLimits.CompanyMaxLength)]
     [InlineData("Role", InputLimits.RoleMaxLength)]
     [InlineData("JobDescription", InputLimits.JobDescriptionMaxLength)]

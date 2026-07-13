@@ -1,23 +1,52 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { profileAPI } from '../services/api';
 import type { Profile } from '../services/api';
 import { InlineError } from '../components/InlineError';
 import { useToast } from '../components/ToastContext';
 
-export const ProfilePage = () => {
+interface ProfilePageProps {
+  initialProfile?: Profile | null;
+  onProfileSaved?: (profile: Profile) => void;
+}
+
+const toProfileFormData = (profile: Profile | null) => ({
+  summary: profile?.summary ?? '',
+  skills: profile?.skills ?? '',
+  experience: profile?.experience ?? '',
+});
+
+export const ProfilePage = ({ initialProfile, onProfileSaved }: ProfilePageProps) => {
   const { showToast } = useToast();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [formData, setFormData] = useState({
-    summary: '',
-    skills: '',
-    experience: '',
-  });
+  const [profile, setProfile] = useState<Profile | null>(initialProfile ?? null);
+  const [formData, setFormData] = useState(() => toProfileFormData(initialProfile ?? null));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const initialProfileKind = initialProfile === undefined ? 'undefined' : initialProfile === null ? 'null' : 'profile';
+  const initialProfileId = initialProfile?.id;
+  const initialProfileSummary = initialProfile?.summary;
+  const initialProfileSkills = initialProfile?.skills;
+  const initialProfileExperience = initialProfile?.experience;
+  const initialProfileSnapshot = useMemo<Profile | null | undefined>(() => {
+    if (initialProfileKind === 'undefined') return undefined;
+    if (initialProfileKind === 'null') return null;
+    return {
+      id: initialProfileId!,
+      summary: initialProfileSummary!,
+      skills: initialProfileSkills!,
+      experience: initialProfileExperience!,
+    };
+  }, [initialProfileExperience, initialProfileId, initialProfileKind, initialProfileSkills, initialProfileSummary]);
+
   useEffect(() => {
-    fetchProfile();
-  }, []);
+    if (initialProfileSnapshot === undefined) {
+      fetchProfile();
+      return;
+    }
+
+    setProfile(initialProfileSnapshot);
+    setFormData(toProfileFormData(initialProfileSnapshot));
+  }, [initialProfileSnapshot]);
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -25,11 +54,7 @@ export const ProfilePage = () => {
     try {
       const data = await profileAPI.getProfile();
       setProfile(data);
-      setFormData({
-        summary: data.summary,
-        skills: data.skills,
-        experience: data.experience,
-      });
+      setFormData(toProfileFormData(data));
     } catch {
       // Profile doesn't exist yet, that's okay
       setError(null);
@@ -47,9 +72,15 @@ export const ProfilePage = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    if (Object.values(formData).some((value) => value.trim().length === 0)) {
+      setError('Summary, skills, and experience are required before continuing.');
+      setLoading(false);
+      return;
+    }
     try {
       const savedProfile = await profileAPI.saveProfile(formData);
       setProfile(savedProfile);
+      onProfileSaved?.(savedProfile);
       showToast({ message: 'Profile saved successfully.', variant: 'success' });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save profile');
@@ -70,6 +101,7 @@ export const ProfilePage = () => {
             name="summary"
             value={formData.summary}
             onChange={handleChange}
+            required
             placeholder="Brief overview of your professional background"
             rows={4}
           />
@@ -83,6 +115,7 @@ export const ProfilePage = () => {
             name="skills"
             value={formData.skills}
             onChange={handleChange}
+            required
             placeholder="e.g., JavaScript, React, TypeScript, etc."
             rows={3}
           />
@@ -96,6 +129,7 @@ export const ProfilePage = () => {
             name="experience"
             value={formData.experience}
             onChange={handleChange}
+            required
             placeholder="Your professional experience and background"
             rows={4}
           />
