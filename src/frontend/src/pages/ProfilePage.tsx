@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { profileAPI } from '../services/api';
 import type { Profile } from '../services/api';
 import { InlineError } from '../components/InlineError';
@@ -9,21 +9,44 @@ interface ProfilePageProps {
   onProfileSaved?: (profile: Profile) => void;
 }
 
+const toProfileFormData = (profile: Profile | null) => ({
+  summary: profile?.summary ?? '',
+  skills: profile?.skills ?? '',
+  experience: profile?.experience ?? '',
+});
+
 export const ProfilePage = ({ initialProfile, onProfileSaved }: ProfilePageProps) => {
   const { showToast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(initialProfile ?? null);
-  const [formData, setFormData] = useState({
-    summary: '',
-    skills: '',
-    experience: '',
-  });
+  const [formData, setFormData] = useState(() => toProfileFormData(initialProfile ?? null));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const initialProfileKind = initialProfile === undefined ? 'undefined' : initialProfile === null ? 'null' : 'profile';
+  const initialProfileId = initialProfile?.id;
+  const initialProfileSummary = initialProfile?.summary;
+  const initialProfileSkills = initialProfile?.skills;
+  const initialProfileExperience = initialProfile?.experience;
+  const initialProfileSnapshot = useMemo<Profile | null | undefined>(() => {
+    if (initialProfileKind === 'undefined') return undefined;
+    if (initialProfileKind === 'null') return null;
+    return {
+      id: initialProfileId!,
+      summary: initialProfileSummary!,
+      skills: initialProfileSkills!,
+      experience: initialProfileExperience!,
+    };
+  }, [initialProfileExperience, initialProfileId, initialProfileKind, initialProfileSkills, initialProfileSummary]);
+
   useEffect(() => {
-    if (initialProfile !== undefined) return;
-    fetchProfile();
-  }, [initialProfile]);
+    if (initialProfileSnapshot === undefined) {
+      fetchProfile();
+      return;
+    }
+
+    setProfile(initialProfileSnapshot);
+    setFormData(toProfileFormData(initialProfileSnapshot));
+  }, [initialProfileSnapshot]);
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -31,11 +54,7 @@ export const ProfilePage = ({ initialProfile, onProfileSaved }: ProfilePageProps
     try {
       const data = await profileAPI.getProfile();
       setProfile(data);
-      setFormData({
-        summary: data.summary,
-        skills: data.skills,
-        experience: data.experience,
-      });
+      setFormData(toProfileFormData(data));
     } catch {
       // Profile doesn't exist yet, that's okay
       setError(null);
