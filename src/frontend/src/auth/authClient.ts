@@ -3,7 +3,13 @@ import { apiTokenRequest, authenticationEnabled, msalConfig } from './authConfig
 
 export const msalInstance = new PublicClientApplication(msalConfig);
 
-export const getApiAccessToken = async (): Promise<string | null> => {
+interface ApiAccessTokenOptions {
+  forceRefresh?: boolean;
+}
+
+export const getApiAccessToken = async (
+  options: ApiAccessTokenOptions = {},
+): Promise<string | null> => {
   if (!authenticationEnabled) return null;
 
   const account = msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
@@ -13,6 +19,7 @@ export const getApiAccessToken = async (): Promise<string | null> => {
     const response = await msalInstance.acquireTokenSilent({
       ...apiTokenRequest,
       account,
+      forceRefresh: options.forceRefresh ?? false,
     });
     return response.accessToken;
   } catch (error) {

@@ -36,16 +36,49 @@ const API_HEALTH_URL = API_BASE_URL.endsWith('/api')
   ? `${API_BASE_URL.slice(0, -4)}/health`
   : `${API_BASE_URL}/health`;
 
-const apiFetch = async (input: string, init: RequestInit = {}): Promise<Response> => {
-  const accessToken = await getApiAccessToken();
+const sendApiRequest = async (
+  input: string,
+  init: RequestInit,
+  accessToken: string | null,
+): Promise<Response> => {
   const headers = new Headers(init.headers);
-  if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
+  if (accessToken) {
+    headers.set('Authorization', `Bearer ${accessToken}`);
+  } else {
+    headers.delete('Authorization');
+  }
 
-  const response = await fetch(input, { ...init, headers });
-  if (response.status === 401) publishAuthFailure('session-expired');
-  if (response.status === 403) publishAuthFailure('access-denied');
+  return fetch(input, { ...init, headers });
+};
 
-  return response;
+// All current mutating requests use JSON strings. Do not retry one-shot bodies such as streams.
+const hasReusableBody = (body: RequestInit['body']): boolean => body == null || typeof body === 'string';
+
+const apiFetch = async (input: string, init: RequestInit = {}): Promise<Response> => {
+  const initialToken = await getApiAccessToken();
+  const initialResponse = await sendApiRequest(input, init, initialToken);
+
+  if (initialResponse.status === 403) {
+    publishAuthFailure('access-denied');
+    return initialResponse;
+  }
+
+  if (initialResponse.status !== 401 || initialToken === null || !hasReusableBody(init.body)) {
+    return initialResponse;
+  }
+
+  try {
+    const refreshedToken = await getApiAccessToken({ forceRefresh: true });
+    const retryResponse = await sendApiRequest(input, init, refreshedToken);
+
+    if (retryResponse.status === 401) publishAuthFailure('session-expired');
+    if (retryResponse.status === 403) publishAuthFailure('access-denied');
+
+    return retryResponse;
+  } catch (error) {
+    publishAuthFailure('session-expired');
+    throw error;
+  }
 };
 
 // Types
