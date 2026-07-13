@@ -54,10 +54,10 @@ No remaining risk is accepted by this documentation update. Any owner-only accep
 | --- | --- | --- |
 | Authentication and authorization implementation | Automated backend coverage and completed local Entra workflow | Locally verified |
 | Frontend authentication states and token handling | Automated frontend tests and local browser workflow | Locally verified |
-| Backend suite | Most recent recorded run: 45 tests passed | Must be rerun from deployment commit |
-| Frontend lint, tests, and production build | Most recent recorded run: lint/build passed and 39 tests passed | Must be rerun from deployment commit |
-| Bicep templates | Foundation, application, and private wrapper compiled with standalone Bicep | Must be rerun from deployment commit |
-| Dependency, secret, and final-image scans | Prior readiness review reported no high/critical dependency or image finding and no repository secret leak | Must be rerun from deployment commit |
+| Backend suite | 45 tests passed at commit `2e572d3388ec0e74dbe4a54bab8e5262c7719659` | Locally verified |
+| Frontend lint, tests, and production build | Lint, 39 tests, and production build passed at the tested commit | Locally verified |
+| Bicep templates | Foundation, application, and private wrapper compiled with Azure CLI/Bicep `0.45.6` | Locally verified without Azure authentication |
+| Dependency, secret, and final-image scans | npm/NuGet audits clean, Gitleaks scanned 117 commits with no leaks, source filesystem scan clean, and both image archives had no HIGH/CRITICAL vulnerabilities | Locally verified |
 | Reverse proxy and persistence | Local container smoke evidence exists | Azure behavior unverified |
 | Entra, ingress, probes, storage, logs, and cost controls | Static configuration only | Azure behavior unverified |
 

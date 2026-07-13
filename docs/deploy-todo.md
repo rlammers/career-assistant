@@ -15,13 +15,25 @@ Follow this checklist in order. Do not mark Azure or live-verification items com
 - [x] Configure and validate authenticated frontend production-image builds without storing real Microsoft Entra identifiers.
 - [x] Configure explicit Startup, Readiness, and Liveness probes for both containers while keeping frontend health independent from temporary backend availability.
 - [x] Update the deployment security review to reflect completed authentication work; no remaining owner-only risk has been accepted without live evidence.
-- [ ] Re-run backend tests, frontend lint/tests/build, dependency audits, secret scanning, container image scans, and all three Bicep compilations from the deployment commit.
-- [ ] Confirm the deployment commit is clean, reviewed, and identified by its full Git commit SHA.
+- [x] Re-run backend tests, frontend lint/tests/build, dependency audits, secret scanning, container image scans, and all three Bicep compilations from the deployment commit.
+- [x] Confirm the deployment commit is clean, reviewed, and identified by its full Git commit SHA.
+
+### Latest local readiness evidence
+
+- Tested commit: `2e572d3388ec0e74dbe4a54bab8e5262c7719659`.
+- Backend: 45 tests passed.
+- Frontend: lint, 39 tests, and production build passed.
+- npm and NuGet audits: no vulnerable packages reported.
+- Gitleaks: 117 commits scanned, no leaks found.
+- Trivy filesystem scan: no HIGH/CRITICAL vulnerability or misconfiguration after removing stale ignored generated `.NET 8` artifacts; current generated `.NET 10` outputs were clean.
+- Backend and authenticated frontend production images built locally; Trivy archive scans reported no HIGH/CRITICAL vulnerabilities.
+- Foundation, reusable application, and private wrapper Bicep templates compiled with Azure CLI/Bicep `0.45.6` without Azure authentication.
+- No Azure resources were provisioned, no registry was authenticated, and no image was published.
 
 ## 2. Workstation and Azure preflight
 
-- [ ] Install or enable Azure CLI with Bicep support; verify both tools without printing credentials or subscription secrets.
-- [ ] Start Docker Desktop and confirm Linux container builds run successfully.
+- [x] Install or enable Azure CLI with Bicep support; verify both tools without printing credentials or subscription secrets.
+- [x] Start Docker Desktop and confirm Linux container builds run successfully.
 - [ ] Sign in to Azure CLI interactively and select the intended subscription.
 - [ ] Choose and record the private deployment region, dedicated resource-group name, and Bicep `namePrefix`; keep the current `australiaeast` default unless availability or cost requires a documented change.
 - [ ] Confirm the operator can create resources and role assignments in the target scope. The foundation deployment creates an `AcrPull` assignment, so Contributor access alone may be insufficient without role-assignment permissions.
