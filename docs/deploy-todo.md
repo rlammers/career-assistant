@@ -48,9 +48,29 @@ Follow this checklist in order. Do not mark Azure or live-verification items com
 - [x] Choose and record the private deployment region, dedicated resource-group name, and Bicep `namePrefix`; keep the current `australiaeast` default unless availability or cost requires a documented change.
 - [x] Confirm the operator can create resources and role assignments in the target scope. The foundation deployment creates an `AcrPull` assignment, so Contributor access alone may be insufficient without role-assignment permissions.
 - [x] Confirm required Azure resource providers are registered for Container Apps, Container Registry, Storage, Log Analytics, and Managed Identity.
-- [ ] Confirm the selected region supports the Bicep resource types and API versions used by the repository.
+- [x] Confirm the selected region supports the Bicep resource types and API versions used by the repository.
+  - Verified on 2026-07-13 against the currently selected and enabled Azure subscription.
+  - All directly regional resource types referenced by the repository advertise support for Australia East.
+  - All exact API versions referenced by the current Bicep templates are present in Azure provider metadata.
+  - Nested Azure Files share and Container Apps environment-storage resources were validated through their exposed parent resource metadata because Azure does not list those child types independently.
+  - No Azure resources, role assignments, deployments, or Bicep `what-if` operations were created or run during this verification.
+  - This result does not prove quota availability, SKU availability, naming availability, Azure Policy compliance, or live service capacity. Those remain deferred until Bicep `what-if` and deployment.
+
 - [x] Recheck current Azure Container Apps, Container Registry, Azure Files, Log Analytics, and Microsoft Entra External ID pricing.
-- [ ] Create a low monthly budget and alerts before or immediately after creating the dedicated resource group; record who receives the alerts.
+- [x] Create a low monthly budget and alerts before or immediately after creating the dedicated resource group; record who receives the alerts.
+  - Created on 2026-07-13 at the intended Azure subscription scope before creating the dedicated resource group.
+  - Budget name: `career-assistant-monthly`.
+  - Reset period: monthly.
+  - Budget amount: 50 in the subscription billing currency.
+  - The initial amount reflects available introductory Azure credit during the first billing month.
+  - Actual-cost alerts are configured at 50%, 80%, and 100%.
+  - A forecasted-cost alert is configured at 100%.
+  - Alerts are delivered to the subscription owner/operator.
+  - The recipient email address is configured in Azure but is intentionally not stored in the repository.
+  - The budget provides cost notifications only and does not stop resources or enforce a hard spending limit.
+  - The budget amount should be reviewed before the introductory credit expires.
+  - A resource-group-scoped budget may be added after `career-assistant-private` is created.
+
 - [ ] Decide and record whether the temporary fictional SQLite data is disposable. If it is not disposable, define a tested Azure Files snapshot/backup and restore procedure before use.
 
 ## 3. Private Microsoft Entra values
