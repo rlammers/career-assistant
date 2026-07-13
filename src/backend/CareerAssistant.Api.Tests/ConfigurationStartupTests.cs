@@ -120,6 +120,9 @@ public class ConfigurationStartupTests
         var wrongAudienceResponse = await SendBearerRequestAsync(
             client,
             TestJwtTokens.Create(audience: "api://other-api"));
+        var applicationIdUriAudienceResponse = await SendBearerRequestAsync(
+            client,
+            TestJwtTokens.Create(audience: "api://22222222-2222-2222-2222-222222222222"));
         var wrongTenantResponse = await SendBearerRequestAsync(
             client,
             TestJwtTokens.Create(tenantId: "33333333-3333-3333-3333-333333333333"));
@@ -128,11 +131,14 @@ public class ConfigurationStartupTests
         Assert.Equal(HttpStatusCode.Unauthorized, expiredResponse.StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, wrongIssuerResponse.StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, wrongAudienceResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, applicationIdUriAudienceResponse.StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, wrongTenantResponse.StatusCode);
-        Assert.DoesNotContain(
-            "error_description",
-            string.Join(", ", wrongIssuerResponse.Headers.WwwAuthenticate.Select(header => header.ToString())),
-            StringComparison.OrdinalIgnoreCase);
+
+        await AssertSafeAuthenticationFailureAsync(expiredResponse);
+        await AssertSafeAuthenticationFailureAsync(wrongIssuerResponse);
+        await AssertSafeAuthenticationFailureAsync(wrongAudienceResponse);
+        await AssertSafeAuthenticationFailureAsync(applicationIdUriAudienceResponse);
+        await AssertSafeAuthenticationFailureAsync(wrongTenantResponse);
     }
 
     [Fact]
@@ -180,7 +186,7 @@ public class ConfigurationStartupTests
         ["Authentication:Enabled"] = "true",
         ["Authentication:TenantId"] = "11111111-1111-1111-1111-111111111111",
         ["Authentication:ClientId"] = "22222222-2222-2222-2222-222222222222",
-        ["Authentication:Audience"] = "api://22222222-2222-2222-2222-222222222222",
+        ["Authentication:Audience"] = "22222222-2222-2222-2222-222222222222",
         ["Authentication:Issuer"] = "https://login.microsoftonline.com/11111111-1111-1111-1111-111111111111/v2.0",
         ["Authentication:RequiredAppRole"] = "CareerAssistant.Demo.Access",
         ["Database:MigrateOnStartup"] = "false"
@@ -192,6 +198,20 @@ public class ConfigurationStartupTests
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         return await client.SendAsync(request);
+    }
+
+    private static async Task AssertSafeAuthenticationFailureAsync(HttpResponseMessage response)
+    {
+        var body = await response.Content.ReadAsStringAsync();
+        var headers = string.Join(", ", response.Headers.WwwAuthenticate.Select(header => header.ToString()));
+        var failureText = $"{headers}\n{body}";
+
+        Assert.DoesNotContain("error_description", failureText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotMatch(@"eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+", failureText);
+        Assert.DoesNotContain(TestJwtTokens.TenantId, failureText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(TestJwtTokens.Issuer, failureText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(TestJwtTokens.Audience, failureText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("CareerAssistant.Demo.Access", failureText, StringComparison.OrdinalIgnoreCase);
     }
 
     private static void AssertExceptionContains(Exception exception, string expectedMessage)

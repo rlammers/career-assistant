@@ -8,7 +8,7 @@ public static class TestJwtTokens
 {
     public const string TenantId = "11111111-1111-1111-1111-111111111111";
     public const string Issuer = $"https://login.microsoftonline.com/{TenantId}/v2.0";
-    public const string Audience = "api://22222222-2222-2222-2222-222222222222";
+    public const string Audience = "22222222-2222-2222-2222-222222222222";
     public const string AppRole = "CareerAssistant.Demo.Access";
 
     public static readonly SymmetricSecurityKey SigningKey = new("career-assistant-test-signing-key-32"u8.ToArray());
