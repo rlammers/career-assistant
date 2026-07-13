@@ -14,7 +14,7 @@ Follow this checklist in order. Do not mark Azure or live-verification items com
 - [x] Inspect persistence code for blocking SQLite-specific coupling; none was found outside centralized provider configuration, infrastructure paths, tests, and the existing SQLite migration set.
 - [x] Configure and validate authenticated frontend production-image builds without storing real Microsoft Entra identifiers.
 - [x] Configure explicit Startup, Readiness, and Liveness probes for both containers while keeping frontend health independent from temporary backend availability.
-- [ ] Update the deployment security review to reflect completed authentication work and record any risks explicitly accepted for the owner-only milestone.
+- [x] Update the deployment security review to reflect completed authentication work; no remaining owner-only risk has been accepted without live evidence.
 - [ ] Re-run backend tests, frontend lint/tests/build, dependency audits, secret scanning, container image scans, and all three Bicep compilations from the deployment commit.
 - [ ] Confirm the deployment commit is clean, reviewed, and identified by its full Git commit SHA.
 
