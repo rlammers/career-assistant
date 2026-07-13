@@ -44,6 +44,9 @@ param authenticationIssuer string
 @minLength(1)
 param authenticationRequiredAppRole string
 
+@description('Apply EF Core migrations when the API starts. Enable only for the temporary single-replica private deployment; public production must leave this false and use a dedicated migration job.')
+param migrateOnStartup bool = false
+
 var appName = '${namePrefix}-app'
 
 resource environment 'Microsoft.App/managedEnvironments@2025-01-01' existing = {
@@ -158,7 +161,7 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             }
             {
               name: 'Database__MigrateOnStartup'
-              value: 'false'
+              value: string(migrateOnStartup)
             }
             {
               name: 'Demo__Enabled'

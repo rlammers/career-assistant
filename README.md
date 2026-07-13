@@ -284,7 +284,7 @@ Backend container:
 - Listens on HTTP port `8080`.
 - Exposes `GET /health` and `HEAD /health` for platform health probes.
 - Uses SQLite at `ConnectionStrings__DefaultConnection`; mount persistent storage when using SQLite outside local development.
-- Applies migrations on startup only when `Database__MigrateOnStartup=true`; development enables this explicitly, while deployed environments disable it.
+- Applies migrations on startup only when `Database__MigrateOnStartup=true`; development and the temporary single-replica owner-only deployment enable this explicitly, while public production disables it and uses a dedicated migration job.
 - CORS origins must be explicitly configured; Development allows `http://localhost:5173`, while deployed environments should set `Cors__AllowedOrigins__0` to the exact frontend origin.
 - Uses `AI__Provider=Mock` for the private Azure Containers deployment to avoid paid AI calls.
 - Enable `ForwardedHeaders__Enabled=true` when the API is behind a trusted reverse proxy or managed ingress that terminates TLS.

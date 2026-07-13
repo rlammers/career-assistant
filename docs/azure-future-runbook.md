@@ -2,7 +2,7 @@
 
 Status: **design only; no steps have been executed**
 
-This document is an operator checklist, not an executable deployment script. Do not begin it until the deployment decision in `security-review.md` changes from blocked to approved.
+This document is an operator checklist, not an executable deployment script. The first owner-only deployment uses the private application wrapper and startup migrations. The public-production sequence remains deferred.
 
 ## Preconditions
 
@@ -17,18 +17,18 @@ This document is an operator checklist, not an executable deployment script. Do 
 
 1. Create the dedicated demo resource group and budget alerts.
 2. Deploy `foundation.bicep` and retain its non-secret outputs.
-3. Build the frontend, backend, and reviewed one-off migration-job images from the same commit; scan them, push commit-specific tags, and record their digests.
-4. Before deploying an application revision, run the migration job once against the mounted `/app/data/CareerAssistant.db` database. The job must execute EF Core's `database update` operation using the API's checked-in migrations; it creates the database on the first deployment and applies pending migrations on later deployments.
-5. Deploy `application.bicep` using immutable image references only after the migration job succeeds. Keep `Database__MigrateOnStartup=false` in production; the API must not create or upgrade the schema while serving requests.
+3. Build and scan the frontend and backend images from the same commit, push commit-specific tags, and record their digests. Public production will additionally build and scan its future migration-job image from the application commit.
+4. For the temporary owner-only deployment, deploy `private-application.bicep`; it explicitly enables startup migrations while the app is constrained to one replica and single-revision mode.
+5. Before public production, replace SQLite and Azure Files with the selected managed relational SQL provider and run a dedicated migration job before each application revision. Deploy `application.bicep` with `migrateOnStartup=false`; the serving API must not create or upgrade the schema.
 6. Confirm the app uses one replica, Mock AI, HTTPS-only ingress, private API sidecar, the persistent mount, and invitation-only Entra authentication with server-side authorization.
 7. Verify unauthenticated and unauthorized direct API requests are rejected, then exercise health, profile, job, status, analysis, deletion, rate-limit, and persistence scenarios as an authorized user using fictional data.
 8. Record the public Azure hostname and observed cost/telemetry baseline.
 
 ## Future database migration process
 
-The migration job is a deliberately separate, short-lived deployment artifact. It must use the same API revision and Azure Files mount as the backend container, but include the .NET SDK and EF Core tooling needed to run `dotnet ef database update`. It is not implemented by the current Bicep modules.
+The future migration job is a deliberately separate, short-lived deployment artifact for the selected managed relational SQL provider. Its exact image, authentication, and execution design will be decided with that provider. It is not implemented by the current Bicep modules.
 
-For every schema change, take and verify a database backup, stop or remove public ingress from the writable application replica, run the migration job once, verify the schema and application health, then deploy the application revision. Do not run the job concurrently with the API or multiple migration-job replicas.
+For every public-production schema change, take and verify a database backup, stop or isolate the writable application revision as required by the selected provider, run the migration job once, verify the schema and application health, then deploy the application revision. Do not run the job concurrently when the provider or migration operation makes that unsafe.
 
 ## Cost controls
 

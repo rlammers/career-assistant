@@ -31,6 +31,7 @@ Target configuration:
 - React frontend privately deployed to Azure Containers
 - ASP.NET Core API privately deployed to Azure Containers
 - Database deployed and persistent
+- Temporary SQLite storage uses Azure Files, startup migrations, single-revision mode, and exactly one replica; live persistence and locking behavior must be verified
 - Mock AI provider enabled
 - Safe demo data available
 - Working invitation-only Microsoft Entra authentication and explicit user authorization
@@ -472,6 +473,7 @@ The next milestone is complete when:
 - Authorized users can exercise the main profile, job, status, and analysis workflow without causing AI usage cost
 - Personal/OpenAI usage remains available through configuration only, without code changes
 - Public deployment remains deferred to the following milestone
+- Public production replaces SQLite and Azure Files with a managed relational SQL provider selected in a future milestone and uses a dedicated migration job with startup migrations disabled
 
 ---
 

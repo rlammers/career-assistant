@@ -73,6 +73,7 @@ jobs:
           az bicep install
           az bicep build --file infra/azure/foundation.bicep --stdout > /dev/null
           az bicep build --file infra/azure/application.bicep --stdout > /dev/null
+          az bicep build --file infra/azure/private-application.bicep --stdout > /dev/null
 
   secret-scan:
     name: Scan repository secrets
