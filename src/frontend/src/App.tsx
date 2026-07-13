@@ -69,14 +69,16 @@ export function ProfileGate() {
     );
   }
 
-  return <ApplicationContent profile={profile} />;
+  if (!profile) return null;
+  return <ApplicationContent profile={profile} onProfileSaved={handleProfileSaved} />;
 }
 
 interface ApplicationContentProps {
-  profile: Profile | null;
+  profile: Profile;
+  onProfileSaved: (profile: Profile) => void;
 }
 
-function ApplicationContent({ profile }: ApplicationContentProps) {
+function ApplicationContent({ profile, onProfileSaved }: ApplicationContentProps) {
   return (
     <>
       <div style={{ minHeight: '100vh', backgroundColor: '#fafafa' }}>
@@ -121,7 +123,10 @@ function ApplicationContent({ profile }: ApplicationContentProps) {
           <Route path="/" element={<JobListPage />} />
           <Route path="/jobs" element={<JobListPage />} />
           <Route path="/jobs/:id" element={<JobDetailPage />} />
-          <Route path="/profile" element={<ProfilePage initialProfile={profile} />} />
+          <Route
+            path="/profile"
+            element={<ProfilePage initialProfile={profile} onProfileSaved={onProfileSaved} />}
+          />
           <Route path="*" element={<div style={{ padding: '20px' }}>Page not found.</div>} />
         </Routes>
       </div>
