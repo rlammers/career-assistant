@@ -38,6 +38,7 @@ Follow this checklist in order. Do not mark Azure or live-verification items com
 - A subscription-scope Owner assignment is visible for the operator, so resource-group creation, foundation resource deployment, and the foundation `Microsoft.Authorization/roleAssignments/write` operation are **verified** for preflight purposes. No resource group or role assignment was created.
 - Region recognition does not prove resource-type support, SKU or quota availability, naming availability, policy compliance, or live capacity; those checks remain deferred to Bicep `what-if` and deployment.
 - The foundation, reusable application, and private wrapper Bicep templates compiled successfully with Azure CLI/Bicep. No `what-if` or deployment was run.
+- Pricing was rechecked against the official [Azure Container Apps](https://azure.microsoft.com/en-us/pricing/details/container-apps/), [Container Registry](https://azure.microsoft.com/en-us/pricing/details/container-registry/), [Azure Files](https://azure.microsoft.com/en-us/pricing/details/storage/files/), [Azure Monitor](https://azure.microsoft.com/en-us/pricing/details/monitor/), and [Microsoft Entra External ID](https://azure.microsoft.com/en-us/pricing/details/microsoft-entra-external-id/) pricing pages. The main cost drivers are Container Apps per-second compute and requests, registry tier/storage and transfer, Azure Files storage/transactions or provisioned capacity, Log Analytics ingestion/retention, and identity MAU/add-on usage. Subscription-specific estimates remain deferred to the Azure pricing calculator and budget setup.
 
 ## 2. Workstation and Azure preflight
 
@@ -48,7 +49,7 @@ Follow this checklist in order. Do not mark Azure or live-verification items com
 - [x] Confirm the operator can create resources and role assignments in the target scope. The foundation deployment creates an `AcrPull` assignment, so Contributor access alone may be insufficient without role-assignment permissions.
 - [x] Confirm required Azure resource providers are registered for Container Apps, Container Registry, Storage, Log Analytics, and Managed Identity.
 - [ ] Confirm the selected region supports the Bicep resource types and API versions used by the repository.
-- [ ] Recheck current Azure Container Apps, Container Registry, Azure Files, Log Analytics, and Microsoft Entra External ID pricing.
+- [x] Recheck current Azure Container Apps, Container Registry, Azure Files, Log Analytics, and Microsoft Entra External ID pricing.
 - [ ] Create a low monthly budget and alerts before or immediately after creating the dedicated resource group; record who receives the alerts.
 - [ ] Decide and record whether the temporary fictional SQLite data is disposable. If it is not disposable, define a tested Azure Files snapshot/backup and restore procedure before use.
 
