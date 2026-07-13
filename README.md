@@ -186,6 +186,8 @@ The backend API is also published on loopback only at `http://localhost:5117` fo
 
 Docker Compose defaults to the deterministic mock AI provider, so running the private deployment workflow locally does not make paid AI calls.
 
+Frontend authentication settings are Vite build-time values. To reproduce an authenticated frontend container locally, set `VITE_AUTH_ENABLED=true`, `VITE_ENTRA_TENANT_ID`, `VITE_ENTRA_SPA_CLIENT_ID`, and the fully qualified `VITE_ENTRA_API_SCOPE` before running Docker Compose. These values are public client configuration, but real environment identifiers should not be committed and Docker build arguments must never be used for secrets. The redirect URI defaults to the exact browser origin and must be registered in Microsoft Entra.
+
 Common Docker environment variables:
 
 | Variable | Default | Purpose |

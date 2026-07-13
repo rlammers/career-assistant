@@ -28,6 +28,25 @@ The temporary private deployment is externally reachable through its Azure URL b
 
 The API applies configured migrations before mapping middleware or endpoints. A migration exception therefore terminates startup instead of serving requests with a missing or invalid schema. Startup logging records only the environment, AI provider, and configuration flags; it does not log the database connection string or Entra identifiers.
 
+## Authenticated frontend image
+
+Vite replaces frontend environment variables during the production build, so Microsoft Entra configuration is compiled into the immutable frontend image. Tenant IDs, application client IDs, and delegated scope names are public client configuration rather than secrets, but real environment identifiers should remain outside the repository. Docker build arguments must never carry client secrets, API keys, credentials, tokens, connection strings, certificates, or private keys.
+
+The delegated scope must be fully qualified, for example `api://<api-application-client-id>/access_as_user`. The redirect URI is not compiled into the Azure image: the application derives it from `window.location.origin`. Register that exact origin in Microsoft Entra; its scheme, hostname, and port must match, and an origin contains no path or trailing slash.
+
+From the repository root, source the public values from the operator environment:
+
+```powershell
+docker build `
+  --file src/frontend/Dockerfile `
+  --build-arg VITE_AUTH_ENABLED=true `
+  --build-arg VITE_ENTRA_TENANT_ID="$env:VITE_ENTRA_TENANT_ID" `
+  --build-arg VITE_ENTRA_SPA_CLIENT_ID="$env:VITE_ENTRA_SPA_CLIENT_ID" `
+  --build-arg VITE_ENTRA_API_SCOPE="$env:VITE_ENTRA_API_SCOPE" `
+  --tag career-assistant-frontend `
+  .
+```
+
 Compilation is safe and does not contact an Azure subscription:
 
 ```powershell

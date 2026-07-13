@@ -63,6 +63,8 @@ VITE_ENTRA_API_SCOPE=api://<api-client-guid>/access_as_user
 VITE_ENTRA_REDIRECT_URI=http://localhost:5173/
 ```
 
+Production builds validate this configuration through the same parser used by the browser. `VITE_AUTH_ENABLED` accepts only an unset/empty value, `false`, or `true`; enabled builds require the tenant ID, SPA client ID, and fully qualified delegated API scope. The production Dockerfile accepts those four public values as build arguments and never accepts client secrets or other sensitive configuration. When `VITE_ENTRA_REDIRECT_URI` is unset, the browser uses `window.location.origin`, which must exactly match an Entra redirect URI registration.
+
 These identifiers are safe frontend configuration, but environment-specific production values should be supplied by the deployment platform. The SPA uses authorization code with PKCE and does not use a client secret.
 
 Endpoints consumed:

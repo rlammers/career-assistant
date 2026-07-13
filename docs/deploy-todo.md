@@ -9,20 +9,26 @@ For this milestone, private means the Azure URL is externally reachable but acce
 - [x] Configure the private single-replica deployment to apply EF Core migrations on startup so a fresh Azure Files volume can create its schema.
 - [x] Confirm the reusable public-production template defaults startup migrations to disabled and reserves schema changes for a dedicated migration job.
 - [x] Inspect application persistence code for blocking SQLite-specific coupling; none was found outside centralized provider configuration, infrastructure paths, tests, and the existing SQLite migration set.
+- [x] Configure and validate authenticated frontend production-image builds without storing real Microsoft Entra identifiers.
 
 ## Private deployment
 
 - [ ] Provision the Azure Containers resources with external HTTPS ingress and assign application access only to the owner.
 - [ ] Configure the frontend and API containers with the same authentication settings used by the working local workflow, using secure Azure configuration for values that must not be committed.
+- [ ] Build the real frontend image with the target tenant ID, SPA client ID, and fully qualified delegated API scope.
+- [ ] Register the exact deployed browser origin as the Microsoft Entra redirect URI.
 - [ ] Configure persistent database storage and the deployed frontend/API connection.
 - [ ] Deploy the private application path with `migrateOnStartup=true`.
 - [ ] Set `AI__Provider=Mock` and do not configure an OpenAI API key or other paid-provider secret.
-- [ ] Deploy the frontend and API images.
+- [ ] Authenticate the image-publishing operator to Azure Container Registry without storing registry credentials in the repository.
+- [ ] Publish the real frontend and API images to Azure Container Registry using immutable references.
+- [ ] Deploy the frontend and API images to Azure Container Apps.
 - [ ] Configure health probes and verify both deployed containers are healthy.
 
 ## Private verification
 
 - [ ] Verify an invited user can sign in and use the core profile, job, status, and mock-analysis workflow.
+- [ ] Verify authenticated API requests, logout, and session-expiry behavior in the deployed browser workflow.
 - [ ] Verify the deployed API rejects unauthenticated direct requests on protected routes.
 - [ ] Verify the backend sidecar has no separate public ingress and API authorization cannot be bypassed through the frontend proxy.
 - [ ] Verify migrations succeed against a genuinely empty Azure Files share.
