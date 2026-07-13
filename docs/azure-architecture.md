@@ -30,6 +30,8 @@ flowchart LR
 ## Runtime invariants
 
 - The temporary SQLite deployment uses single-revision mode and exactly one replica. Its private deployment wrapper enables startup migrations; the reusable public-production template defaults them to disabled.
+- Frontend and backend containers each use internal HTTP Startup, Readiness, and Liveness probes. Both containers must become ready before the revision receives ingress traffic.
+- Frontend probes test nginx directly at `/`; backend probes test the API directly at `/health`. The public nginx `/health` route remains an end-to-end backend diagnostic and is not used for frontend container health.
 - Every non-health application route must require Entra authentication and server-side authorization for an assigned invited guest; direct API requests must not bypass access control.
 - The private deployment uses `AI__Provider=Mock`; no paid-provider secret is supplied.
 - Images must be referenced by a commit-specific tag or digest.

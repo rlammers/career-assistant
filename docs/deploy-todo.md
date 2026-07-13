@@ -10,6 +10,7 @@ For this milestone, private means the Azure URL is externally reachable but acce
 - [x] Confirm the reusable public-production template defaults startup migrations to disabled and reserves schema changes for a dedicated migration job.
 - [x] Inspect application persistence code for blocking SQLite-specific coupling; none was found outside centralized provider configuration, infrastructure paths, tests, and the existing SQLite migration set.
 - [x] Configure and validate authenticated frontend production-image builds without storing real Microsoft Entra identifiers.
+- [x] Configure explicit Startup, Readiness, and Liveness probes for both containers while keeping frontend health independent from temporary backend availability.
 
 ## Private deployment
 
@@ -23,7 +24,7 @@ For this milestone, private means the Azure URL is externally reachable but acce
 - [ ] Authenticate the image-publishing operator to Azure Container Registry without storing registry credentials in the repository.
 - [ ] Publish the real frontend and API images to Azure Container Registry using immutable references.
 - [ ] Deploy the frontend and API images to Azure Container Apps.
-- [ ] Configure health probes and verify both deployed containers are healthy.
+- [ ] Verify both deployed containers pass their Startup and Readiness probes before the revision receives traffic.
 
 ## Private verification
 
@@ -35,6 +36,8 @@ For this milestone, private means the Azure URL is externally reachable but acce
 - [ ] Verify create, read, update, and delete behavior, revision-restart persistence, and a subsequent revision deployment.
 - [ ] Verify SQLite locking and filesystem compatibility on the live Azure Files mount.
 - [ ] Inspect Azure application and system logs for migration failures and sensitive configuration exposure.
+- [ ] Verify first-deployment and replacement-revision readiness, liveness restarts, ingress routing, and the public `/health` proxy in Azure.
+- [ ] Tune final probe timings only after observing Azure Files mount and first-start migration timing.
 - [ ] Record the private deployment decision before making the application available to invited users.
 
 SQLite on Azure Files is provisional for this owner-only milestone. It must pass the unchecked live persistence and locking checks above and will not be the public-production database.

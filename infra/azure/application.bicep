@@ -104,14 +104,43 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
           }
           probes: [
             {
-              type: 'Liveness'
+              type: 'Startup'
               httpGet: {
-                path: '/health'
+                path: '/'
                 port: 8080
                 scheme: 'HTTP'
               }
-              initialDelaySeconds: 20
-              periodSeconds: 30
+              initialDelaySeconds: 5
+              periodSeconds: 5
+              timeoutSeconds: 2
+              failureThreshold: 5
+              successThreshold: 1
+            }
+            {
+              type: 'Readiness'
+              httpGet: {
+                path: '/'
+                port: 8080
+                scheme: 'HTTP'
+              }
+              initialDelaySeconds: 1
+              periodSeconds: 5
+              timeoutSeconds: 2
+              failureThreshold: 3
+              successThreshold: 1
+            }
+            {
+              type: 'Liveness'
+              httpGet: {
+                path: '/'
+                port: 8080
+                scheme: 'HTTP'
+              }
+              initialDelaySeconds: 1
+              periodSeconds: 20
+              timeoutSeconds: 3
+              failureThreshold: 3
+              successThreshold: 1
             }
           ]
         }
@@ -208,14 +237,43 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
           ]
           probes: [
             {
+              type: 'Startup'
+              httpGet: {
+                path: '/health'
+                port: 8081
+                scheme: 'HTTP'
+              }
+              initialDelaySeconds: 30
+              periodSeconds: 15
+              timeoutSeconds: 5
+              failureThreshold: 10
+              successThreshold: 1
+            }
+            {
+              type: 'Readiness'
+              httpGet: {
+                path: '/health'
+                port: 8081
+                scheme: 'HTTP'
+              }
+              initialDelaySeconds: 1
+              periodSeconds: 5
+              timeoutSeconds: 3
+              failureThreshold: 3
+              successThreshold: 1
+            }
+            {
               type: 'Liveness'
               httpGet: {
                 path: '/health'
                 port: 8081
                 scheme: 'HTTP'
               }
-              initialDelaySeconds: 20
-              periodSeconds: 30
+              initialDelaySeconds: 1
+              periodSeconds: 20
+              timeoutSeconds: 5
+              failureThreshold: 3
+              successThreshold: 1
             }
           ]
         }

@@ -20,7 +20,7 @@ This document is an operator checklist, not an executable deployment script. The
 3. Build and scan the frontend and backend images from the same commit, push commit-specific tags, and record their digests. Public production will additionally build and scan its future migration-job image from the application commit.
 4. For the temporary owner-only deployment, deploy `private-application.bicep`; it explicitly enables startup migrations while the app is constrained to one replica and single-revision mode.
 5. Before public production, replace SQLite and Azure Files with the selected managed relational SQL provider and run a dedicated migration job before each application revision. Deploy `application.bicep` with `migrateOnStartup=false`; the serving API must not create or upgrade the schema.
-6. Confirm the app uses one replica, Mock AI, HTTPS-only ingress, private API sidecar, the persistent mount, and invitation-only Entra authentication with server-side authorization.
+6. Confirm the app uses one replica, Mock AI, HTTPS-only ingress, private API sidecar, the persistent mount, invitation-only Entra authentication with server-side authorization, and passing Startup and Readiness probes for both containers.
 7. Verify unauthenticated and unauthorized direct API requests are rejected, then exercise health, profile, job, status, analysis, deletion, rate-limit, and persistence scenarios as an authorized user using fictional data.
 8. Record the public Azure hostname and observed cost/telemetry baseline.
 
