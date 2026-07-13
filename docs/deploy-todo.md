@@ -83,13 +83,23 @@ Follow this checklist in order. Do not mark Azure or live-verification items com
 
 ## 3. Private Microsoft Entra values
 
-- [ ] Confirm the existing single-tenant API and SPA app registrations will be used for this private Azure deployment.
-- [ ] Confirm the API registration issues v2 access tokens and exposes the delegated `access_as_user` scope.
-- [ ] Confirm the required application role value matches the backend `Authentication__RequiredAppRole` setting.
-- [ ] Assign only the owner's intended Microsoft identity to the enterprise application or required application role.
-- [ ] Collect the tenant ID, API client ID/audience, v2 issuer, required app-role value, SPA client ID, and fully qualified delegated scope in untracked operator environment variables or another non-repository location.
-- [ ] Confirm no client secret is required by the SPA authorization-code-with-PKCE flow and do not create or configure one for this deployment.
-- [ ] Do not add tenant IDs, client IDs, tokens, credentials, connection strings, or generated parameter files containing environment values to Git.
+- [x] Confirm the existing single-tenant API and SPA app registrations will be used for this private Azure deployment.
+- [x] Confirm the API registration issues v2 access tokens and exposes the delegated `access_as_user` scope.
+- [x] Confirm the required application role value matches the backend `Authentication__RequiredAppRole` setting.
+- [x] Assign only the owner's intended Microsoft identity to the enterprise application or required application role.
+- [x] Collect the tenant ID, API client ID/audience, v2 issuer, required app-role value, SPA client ID, and fully qualified delegated scope in untracked operator environment variables or another non-repository location.
+- [x] Confirm no client secret is required by the SPA authorization-code-with-PKCE flow and do not create or configure one for this deployment.
+- [x] Do not add tenant IDs, client IDs, tokens, credentials, connection strings, or generated parameter files containing environment values to Git.
+
+### Verification evidence (2026-07-13)
+
+- The existing `Career Assistant Demo API` and `Career Assistant Demo SPA` registrations are both single-tenant and remain the private-deployment registrations.
+- The API uses v2 access tokens, its Application ID URI follows the `api://<api-client-id>` form, and it exposes one enabled delegated `access_as_user` scope.
+- The API defines one enabled user app role with value `CareerAssistant.Demo.Access`, matching the backend deployment setting.
+- The SPA has a Single-page application platform, does not enable implicit token issuance or public-client fallback, and now declares the API's `access_as_user` delegated permission. Tenant-wide admin consent was not granted; the owner will consent interactively during the first sign-in.
+- Neither registration has a client secret or certificate. The API enterprise application has exactly one app-role assignment: the intended owner identity with the required role.
+- Required non-secret deployment values were stored as user-level environment variables outside the repository. Their relationships were validated without outputting values, and no matches were found in repository files.
+- The exact HTTPS redirect origin remains intentionally deferred until the frontend Container App hostname exists.
 
 The exact HTTPS redirect origin cannot be registered until the Container App hostname exists. Complete that step after the first application deployment.
 
