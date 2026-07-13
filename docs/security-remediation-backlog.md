@@ -6,7 +6,11 @@ The repository now has two distinct deployment gates.
 
 Authentication and server-side authorization are implemented and locally verified. Private deployment remains gated on:
 
-1. Re-running tests, audits, secret scanning, image scans, and Bicep compilation from the deployment commit.
+Repository readiness, Azure CLI authentication, region selection, required provider registration, subscription permission inspection, and Bicep compilation are complete and recorded in [`deploy-todo.md`](./deploy-todo.md). No Azure workload resources have been created.
+
+Private deployment remains gated on:
+
+1. Re-running tests, audits, secret scanning, image scans, and Bicep compilation from the final deployment commit.
 2. Reviewing Azure `what-if` output, least-privilege identity assignments, public service endpoints, and storage linkage.
 3. Verifying the live Entra assignment, direct API boundary, proxy routing, HTTPS behavior, and backend sidecar isolation.
 4. Validating SQLite migration, locking, persistence, restart, and replacement-revision behavior on Azure Files using fictional data.

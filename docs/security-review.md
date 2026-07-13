@@ -4,13 +4,13 @@ Review date: 2026-07-13
 
 Scope: application, Microsoft Entra boundary, frontend proxy, backend API, persistence, containers, CI, and proposed Azure infrastructure
 
-Deployment status: **not deployed; static and local controls are implemented, but Azure preflight and live verification remain**
+Deployment status: **not deployed; repository and subscription preflight are complete, but live Azure verification remains**
 
 ## Summary
 
 No critical or high-severity issue was identified in the current static owner-only deployment path. Invitation-only Microsoft Entra authentication and server-side app-role authorization are implemented and locally verified. The proposed Azure configuration enables authentication, exposes only the frontend container, uses Mock AI without a paid-provider secret, and constrains the provisional SQLite deployment to one replica.
 
-This is not approval to deploy or a claim that Azure controls work in production. Identity assignment, token validation against the deployed registration, ingress isolation, managed-identity image pulls, storage behavior, logs, probes, cost controls, and persistence must still be verified in Azure through [`deploy-todo.md`](./deploy-todo.md).
+This is not approval to deploy or a claim that Azure controls work in production. Identity assignment, token validation against the deployed registration, ingress isolation, managed-identity image pulls, storage behavior, logs, probes, cost controls, persistence, and Bicep `what-if` output must still be verified in Azure through [`deploy-todo.md`](./deploy-todo.md).
 
 Public production remains a separate blocked milestone. Its database, edge-hardening, guest-access, operational, and final security-review work is tracked in [`production-todo.md`](./production-todo.md).
 
@@ -33,6 +33,7 @@ Detailed tactical evidence remains in the ignored local `docs/security-review-pr
 - Both production containers run as non-root users; request sizes, supported methods, input lengths, demo record counts, and AI output parsing are bounded.
 - CI permissions are read-only, third-party GitHub actions are commit-pinned, secret scanning is redacted, and CI does not authenticate to Azure, publish images, or deploy resources.
 - Deployment images must use commit-specific tags or digests; frontend Entra build configuration is validated without accepting client secrets.
+- Azure subscription preflight is complete: `australiaeast` is recognized, the required Bicep resource providers are registered, subscription-scope deployment and role-assignment permissions were inspected, and all three Bicep templates compile successfully. No resource group, role assignment, or workload resource was created.
 
 ## Remaining owner-only risks and gates
 
@@ -56,7 +57,8 @@ No remaining risk is accepted by this documentation update. Any owner-only accep
 | Frontend authentication states and token handling | Automated frontend tests and local browser workflow | Locally verified |
 | Backend suite | 45 tests passed at commit `2e572d3388ec0e74dbe4a54bab8e5262c7719659` | Locally verified |
 | Frontend lint, tests, and production build | Lint, 39 tests, and production build passed at the tested commit | Locally verified |
-| Bicep templates | Foundation, application, and private wrapper compiled with Azure CLI/Bicep `0.45.6` | Locally verified without Azure authentication |
+| Azure subscription preflight | `australiaeast` recognized; required providers registered; subscription permissions inspected; no workload resources created | Subscription preflight verified |
+| Bicep templates | Foundation, application, and private wrapper compiled with Azure CLI/Bicep `0.45.6` | Repository preflight verified |
 | Dependency, secret, and final-image scans | npm/NuGet audits clean, Gitleaks scanned 117 commits with no leaks, source filesystem scan clean, and both image archives had no HIGH/CRITICAL vulnerabilities | Locally verified |
 | Reverse proxy and persistence | Local container smoke evidence exists | Azure behavior unverified |
 | Entra, ingress, probes, storage, logs, and cost controls | Static configuration only | Azure behavior unverified |
@@ -69,7 +71,7 @@ The current authentication, private-deployment Bicep, frontend image configurati
 
 ### Private owner-only deployment readiness
 
-Not yet approved. Complete the remaining repository checks, workstation/Azure preflight, `what-if` reviews, live identity boundary, storage, logging, cost, and rollback tasks in `deploy-todo.md`. The first deployment is a controlled validation exercise and must use fictional data only.
+Not yet approved. Complete the remaining `what-if` reviews, live identity boundary, storage, logging, cost, persistence, rollback, and teardown tasks in `deploy-todo.md`. The first deployment is a controlled validation exercise and must use fictional data only.
 
 ### Public production readiness
 
