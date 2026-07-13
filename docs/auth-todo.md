@@ -1,10 +1,10 @@
 # Authentication and authorization TODO
 
-Status: **implementation and local verification complete; deployment follow-up is tracked in [`deploy-todo.md`](./deploy-todo.md)**
+Status: **implementation and local verification complete; private deployment follow-up is tracked in [`deploy-todo.md`](./deploy-todo.md)**
 
 ## Recommended approach
 
-Use Microsoft Entra External ID B2B collaboration in a workforce tenant as the single identity system. Access remains invitation-only, but an invited recruiter can authenticate with:
+Use Microsoft Entra External ID B2B collaboration in a workforce tenant as the single identity system. Access remains invitation-only, but an invited user can authenticate with:
 
 - a Microsoft work or school account;
 - a personal Microsoft account;
@@ -18,20 +18,20 @@ Authentication proves who the visitor is. It does not grant access by itself. On
 ## Access workflow
 
 1. Keep a public portfolio page, screenshots, or video available without application access.
-2. Ask interested recruiters or hiring managers to request interactive access and provide their preferred work email address.
+2. Ask interested users to request interactive access and provide their preferred work email address.
 3. Invite that address as an Entra B2B guest.
 4. Assign the guest to the Career Assistant enterprise application or its dedicated `Career Assistant Demo Users` group/role.
 5. Remove the assignment or guest account when access is no longer required.
 
 For emergency revocation, remove the user's enterprise-application assignment and revoke their Entra sessions or refresh tokens when available. Existing access tokens may remain usable until they expire, so require sign-in again or wait for token expiry before confirming the access denial.
 
-Do not attempt to infer whether a user is a recruiter from their email domain, profile, or token claims.
+Do not attempt to infer a user's role from their email domain, profile, or token claims.
 
 ## Implementation checklist
 
 ### Entra configuration
 
-- Deployment-specific Entra registration, redirect, scope, role, assignment, and email OTP tasks are tracked in [`deploy-todo.md`](./deploy-todo.md).
+- Final public-deployment Entra registration, redirect, scope, role, assignment, and email OTP tasks are tracked in [`production-todo.md`](./production-todo.md).
 - [x] Record tenant ID, client ID, audience, issuer, and safe redirect settings as deployment configuration.
 - [x] Store any confidential credential only in secure deployment configuration; prefer flows that do not require a frontend secret.
 
@@ -82,7 +82,7 @@ The production redirect URI must use HTTPS and exactly match the URI registered 
 - [x] Verify authorization applies to profile, job, status, analysis, and deletion operations.
 - [x] Add integration coverage showing a valid configured-issuer/audience access token is accepted after a route is protected, while expired, wrong-issuer, and wrong-audience tokens receive `401 Unauthorized`.
 - [x] Verify authentication failures do not expose token contents, identity details, or internal configuration in logs or responses.
-- Deployment-only identity, ingress, pricing, security-review, and release-decision checks are tracked in [`deploy-todo.md`](./deploy-todo.md).
+- Private deployment checks are tracked in [`deploy-todo.md`](./deploy-todo.md); final public identity, ingress, pricing, security-review, and release-decision checks are tracked in [`production-todo.md`](./production-todo.md).
 
 ## Cost and scope guardrails
 
