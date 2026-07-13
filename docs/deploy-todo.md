@@ -71,7 +71,15 @@ Follow this checklist in order. Do not mark Azure or live-verification items com
   - The budget amount should be reviewed before the introductory credit expires.
   - A resource-group-scoped budget may be added after `career-assistant-private` is created.
 
-- [ ] Decide and record whether the temporary fictional SQLite data is disposable. If it is not disposable, define a tested Azure Files snapshot/backup and restore procedure before use.
+- [x] Decide and record whether the temporary fictional SQLite data is disposable. If it is not disposable, define a tested Azure Files snapshot/backup and restore procedure before use.
+  - Decision recorded on 2026-07-13: the temporary SQLite data is disposable.
+  - The database is intended only for fictional demonstration data used by the private portfolio deployment.
+  - No personal, confidential, production, or otherwise irreplaceable information may be entered or stored.
+  - Complete loss, reset, replacement, or recreation of the SQLite database is an acceptable recovery outcome.
+  - No durability, backup, restore, retention, or availability commitment is made for the demo data.
+  - Recreating the database from repository migrations and fictional seed data is the expected recovery approach.
+  - The database must not be treated as a system of record.
+  - Before storing any non-disposable data, this decision must be revisited and a tested Azure Files backup and restore procedure must be documented and verified.
 
 ## 3. Private Microsoft Entra values
 
