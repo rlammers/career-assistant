@@ -7,7 +7,7 @@ This document is an operator checklist, not an executable deployment script. The
 ## Preconditions
 
 - Resolve or explicitly accept every deployment-blocking security finding.
-- Complete `docs/auth-todo.md`, including Entra B2B guest invitations, email one-time passcode fallback, token validation, and explicit application assignment. Do not enable public ingress with anonymous application access.
+- Confirm the completed authentication baseline in [`archive/auth-todo.md`](./archive/auth-todo.md), including Entra B2B guest invitations, email one-time passcode fallback, token validation, and explicit application assignment. Do not enable public ingress with anonymous application access.
 - Re-run tests, package audits, secret scan, image scans, and Bicep compilation.
 - Confirm Australia East supports the selected resource/API versions.
 - Calculate current prices in the Azure Pricing Calculator and create a low budget alert before provisioning.

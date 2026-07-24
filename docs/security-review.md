@@ -80,7 +80,7 @@ Blocked. Public production requires the managed relational database milestone, p
 ## References
 
 - [Private deployment checklist](./deploy-todo.md)
-- [Authentication implementation and local verification](./auth-todo.md)
+- [Archived authentication implementation and local verification](./archive/auth-todo.md)
 - [Public production checklist](./production-todo.md)
 - [Azure architecture](./azure-architecture.md)
 - [Azure deployment guidance](../infra/azure/README.md)
