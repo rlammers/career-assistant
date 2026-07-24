@@ -44,6 +44,9 @@ param authenticationIssuer string
 @minLength(1)
 param authenticationRequiredAppRole string
 
+@description('Apply EF Core migrations when the API starts. Enable only for the temporary single-replica private deployment; public production must leave this false and use a dedicated migration job.')
+param migrateOnStartup bool = false
+
 var appName = '${namePrefix}-app'
 
 resource environment 'Microsoft.App/managedEnvironments@2025-01-01' existing = {
@@ -101,14 +104,43 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
           }
           probes: [
             {
-              type: 'Liveness'
+              type: 'Startup'
               httpGet: {
-                path: '/health'
+                path: '/'
                 port: 8080
                 scheme: 'HTTP'
               }
-              initialDelaySeconds: 20
-              periodSeconds: 30
+              initialDelaySeconds: 5
+              periodSeconds: 5
+              timeoutSeconds: 2
+              failureThreshold: 5
+              successThreshold: 1
+            }
+            {
+              type: 'Readiness'
+              httpGet: {
+                path: '/'
+                port: 8080
+                scheme: 'HTTP'
+              }
+              initialDelaySeconds: 1
+              periodSeconds: 5
+              timeoutSeconds: 2
+              failureThreshold: 3
+              successThreshold: 1
+            }
+            {
+              type: 'Liveness'
+              httpGet: {
+                path: '/'
+                port: 8080
+                scheme: 'HTTP'
+              }
+              initialDelaySeconds: 1
+              periodSeconds: 20
+              timeoutSeconds: 3
+              failureThreshold: 3
+              successThreshold: 1
             }
           ]
         }
@@ -158,7 +190,7 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             }
             {
               name: 'Database__MigrateOnStartup'
-              value: 'false'
+              value: string(migrateOnStartup)
             }
             {
               name: 'Demo__Enabled'
@@ -205,14 +237,43 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
           ]
           probes: [
             {
+              type: 'Startup'
+              httpGet: {
+                path: '/health'
+                port: 8081
+                scheme: 'HTTP'
+              }
+              initialDelaySeconds: 30
+              periodSeconds: 15
+              timeoutSeconds: 5
+              failureThreshold: 10
+              successThreshold: 1
+            }
+            {
+              type: 'Readiness'
+              httpGet: {
+                path: '/health'
+                port: 8081
+                scheme: 'HTTP'
+              }
+              initialDelaySeconds: 1
+              periodSeconds: 5
+              timeoutSeconds: 3
+              failureThreshold: 3
+              successThreshold: 1
+            }
+            {
               type: 'Liveness'
               httpGet: {
                 path: '/health'
                 port: 8081
                 scheme: 'HTTP'
               }
-              initialDelaySeconds: 20
-              periodSeconds: 30
+              initialDelaySeconds: 1
+              periodSeconds: 20
+              timeoutSeconds: 5
+              failureThreshold: 3
+              successThreshold: 1
             }
           ]
         }

@@ -18,25 +18,26 @@ This is NOT a job board, Customer Relationship Management system, or full Applic
 
 ## Current Milestone
 
-### Phase 1: Public Portfolio Demo
+### Phase 1: Private Azure Containers Deployment
 
 Purpose:
 
-- Show employers what was built
+- Validate the deployed application privately
 - Let authorized invited users try the core workflow without costing the owner money
 - Demonstrate clean separation between deployment configuration and application behaviour
 
 Target configuration:
 
-- React frontend deployed
-- ASP.NET Core API deployed
-- Database deployed
+- React frontend privately deployed to Azure Containers
+- ASP.NET Core API privately deployed to Azure Containers
+- Database deployed and persistent
+- Temporary SQLite storage uses Azure Files, startup migrations, single-revision mode, and exactly one replica; live persistence and locking behavior must be verified
 - Mock AI provider enabled
-- Demo data available
-- Invitation-only Microsoft Entra authentication and explicit user authorization required
-- No OpenAI API key in production demo
+- Safe demo data available
+- Working invitation-only Microsoft Entra authentication and explicit user authorization
+- No OpenAI API key in the private deployment
 
-The public demo must not use paid AI calls. It should use deterministic mock analysis and safe demo data. Public deployment must remain blocked until the invitation-only authentication and server-side authorization described in `docs/auth-todo.md` are implemented and verified.
+The private deployment must not use paid AI calls. It should use deterministic mock analysis and safe demo data. The basic authentication and server-side authorization workflow is working locally and must be verified in the deployed environment. Public deployment is the following milestone and is out of scope for now.
 
 Environment intent:
 
@@ -457,20 +458,22 @@ Interactive UI components should remain visually stable while users interact wit
 
 ---
 
-## Next Definition of Done: Public Portfolio Demo
+## Next Definition of Done: Private Azure Containers Deployment
 
 The next milestone is complete when:
 
-- React frontend is publicly deployed
-- ASP.NET Core API is publicly deployed behind the frontend or a reverse proxy
+- React frontend is privately deployed to Azure Containers
+- ASP.NET Core API is privately deployed behind the frontend or a reverse proxy
 - Database is deployed and persistent
 - Demo environment uses `AI:Provider = Mock`
-- Demo data is present and safe to show publicly
-- Entra authentication is required for every non-health application route, supporting invited Microsoft identities and email one-time passcode guests
-- Server-side authorization restricts access to explicitly assigned invited guests; frontend route guards alone do not satisfy this requirement
-- No OpenAI API key or paid provider secret is present in the demo environment
+- Safe demo data is present
+- The working Entra authentication flow is required for every non-health application route, supporting invited Microsoft identities and email one-time passcode guests
+- The working server-side authorization restricts access to explicitly assigned invited guests; frontend route guards alone do not satisfy this requirement
+- No OpenAI API key or paid provider secret is present in the private deployment environment
 - Authorized users can exercise the main profile, job, status, and analysis workflow without causing AI usage cost
 - Personal/OpenAI usage remains available through configuration only, without code changes
+- Public deployment remains deferred to the following milestone
+- Public production replaces SQLite and Azure Files with a managed relational SQL provider selected in a future milestone and uses a dedicated migration job with startup migrations disabled
 
 ---
 
