@@ -1,6 +1,6 @@
 # Private Azure Container Apps deployment TODO
 
-Status: **repository preparation is in progress; no Azure resources have been provisioned.**
+Status: **foundation predeployment validation is complete; the empty target resource group exists, but no foundation or application workload resources have been provisioned.**
 
 For this milestone, private means the Azure URL is externally reachable but Microsoft Entra application access is assigned only to the owner. It does not mean private-network-only ingress. Public deployment and broader guest access remain deferred to [`production-todo.md`](./production-todo.md).
 
@@ -28,7 +28,7 @@ Follow this checklist in order. Do not mark Azure or live-verification items com
 - Trivy filesystem scan: no HIGH/CRITICAL vulnerability or misconfiguration after removing stale ignored generated `.NET 8` artifacts; current generated `.NET 10` outputs were clean.
 - Backend and authenticated frontend production images built locally; Trivy archive scans reported no HIGH/CRITICAL vulnerabilities.
 - Foundation, reusable application, and private wrapper Bicep templates compiled with Azure CLI/Bicep `0.45.6` without Azure authentication.
-- No Azure resources were provisioned, no registry was authenticated, and no image was published.
+- No foundation or application workload resources were provisioned, no registry was authenticated, and no image was published. The empty target resource group was created later during the foundation `what-if` review recorded below.
 
 ### Azure preflight evidence (2026-07-13)
 
@@ -105,14 +105,25 @@ The exact HTTPS redirect origin cannot be registered until the Container App hos
 
 ## 4. Provision the Azure foundation
 
-- [ ] Create the dedicated resource group in the selected subscription and region.
-- [ ] Run an Azure deployment `what-if` for `infra/azure/foundation.bicep` and review every planned resource and role assignment.
+- [x] Create the dedicated resource group in the selected subscription and region.
+- [x] Run an Azure deployment `what-if` for `infra/azure/foundation.bicep` and review every planned resource and role assignment.
 - [ ] Deploy `foundation.bicep` only after the `what-if` output matches the reviewed architecture.
 - [ ] Capture its non-secret outputs: registry name/login server, Container Apps environment name, environment storage-link name, image-pull identity name/resource ID, storage-account name, and file-share name.
 - [ ] Verify Azure Container Registry uses Basic SKU, has its admin user disabled, and grants only `AcrPull` to the application image-pull identity.
 - [ ] Verify the Container Apps environment is connected to Log Analytics with the intended retention.
 - [ ] Verify the Azure Files share exists with the intended quota and is linked read-write to the Container Apps environment.
 - [ ] Confirm no Container App or public application endpoint exists yet.
+
+### Foundation what-if evidence (2026-07-24 NZST)
+
+- The review started from clean commit `495856763fb46dc9ed0c4ef6df16ba70e334ede2` and the intended enabled subscription named `Azure subscription 1`; subscription, tenant, identity, principal, role-assignment, and full resource identifiers are intentionally omitted.
+- Azure CLI `2.88.0` and Bicep CLI `0.45.6` compiled `foundation.bicep` successfully to standard output without creating a generated ARM JSON file. The CLI reported that a newer Bicep release was available; this was a tooling-update notice, not a provider-validation diagnostic, and the review retained the installed version.
+- The `career-assistant-private` resource group was created in `australiaeast` with provisioning state `Succeeded`. Resource inventory returned zero deployed Azure Resource Manager resources before and after `what-if`; this does not make a claim about inherited policy, role assignments, locks, or subscription-level controls.
+- Deployment name `career-assistant-foundation` used `location=australiaeast`, `namePrefix=career-assistant-demo`, and `logRetentionDays=30` with provider-level validation.
+- Provider validation succeeded with zero diagnostics. The result contained exactly nine `Create` changes and no `Ignore`, `Delete`, or `Modify` changes: Basic Azure Container Registry, image-pull managed identity, registry-scoped `AcrPull` assignment, Log Analytics workspace, storage account, Azure Files service, 5-GB file share, Container Apps managed environment, and environment storage link.
+- No undeclared resource type, unrelated scope, Container App workload, application ingress, or application public endpoint was present.
+- The environment storage link obtains the storage key internally through `listKeys()`, does not expose it as an output, targets the expected storage account and file share, and uses read-write access.
+- No deployment command was run. No foundation or application workload resource was provisioned, and private deployment approval remains blocked. The reviewed foundation deployment is the next incomplete increment.
 
 ## 5. Build, scan, and publish immutable images
 
