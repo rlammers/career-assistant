@@ -1,6 +1,6 @@
 # Private Azure Container Apps deployment TODO
 
-Status: **the Azure foundation, immutable deployed images, managed-identity image pulls, and owner-only Microsoft Entra configuration are verified. The initial revision is unhealthy because the backend fails after its image is pulled, so runtime, security-boundary, persistence, and operational verification are blocked pending a separate startup diagnosis.**
+Status: **the Azure foundation, immutable deployed images, managed-identity image pulls, and owner-only Microsoft Entra configuration are verified. A controlled reset of the disposable SQLite database reproduced the backend migration-start failure on a clean database. The sole revision is stopped and external ingress is disabled; runtime, security-boundary, persistence, and operational verification remain blocked pending a separate persistence-design reassessment.**
 
 For this milestone, private means the Azure URL is externally reachable but Microsoft Entra application access is assigned only to the owner. It does not mean private-network-only ingress. Public deployment and broader guest access remain deferred to [`production-todo.md`](./production-todo.md).
 
@@ -186,7 +186,7 @@ Status: **complete.** The frontend dependency findings were remediated, the fail
 
 ## 6. Deploy the private application
 
-Status: **the reviewed deployment, exact SPA origin, owner-only access configuration, deployed image digests, and managed-identity image pulls are verified. The initial revision is `ActivationFailed` because the backend enters a post-pull restart cycle; remaining runtime checks are blocked pending a separate startup diagnosis.**
+Status: **the reviewed deployment, exact SPA origin, owner-only access configuration, deployed image digests, and managed-identity image pulls are verified. A controlled reset reproduced the backend migration-start failure on a clean SQLite database. The sole revision is stopped and external ingress is disabled; remaining runtime checks are blocked pending a separate persistence-design reassessment.**
 
 - [x] Prepare and validate the `private-application.bicep` inputs from foundation outputs, digest-qualified images, and the collected non-secret API authentication values.
 - [x] Compile `private-application.bicep` without diagnostics or generated repository artifacts.
@@ -247,6 +247,16 @@ Status: **the reviewed deployment, exact SPA origin, owner-only access configura
 - Revision-correlated system events reported `ImagePulled` for both exact digest references, and no inaccessible-image, authorization, `ImagePullBackOff`, or other image-pull failure event was present.
 - Image pulling is not application readiness. The frontend runs without restarts, but the revision is `ActivationFailed` and unhealthy because the backend repeatedly fails after its image is pulled. System evidence categorizes this as container startup/backoff and probe connection failure, not registry authentication or image retrieval failure.
 - This increment did not diagnose or change the backend, restart or redeploy the revision, inspect runtime configuration or secrets, or verify probes, ingress, authentication, migrations, persistence, logs beyond the targeted system-event categories, or application workflows. Those checks remain blocked.
+
+### Controlled SQLite reset and fail-closed evidence (2026-07-25 NZST)
+
+- Recovery started from clean commit `7666bc016dd80d0d435aaee941ab30129ecaa642`. The selected account, sole application, revision and replica, immutable images, connection string, `1–1` replica limits, and Azure Files link matched the reviewed deployment without printing identifiers, digests, credentials, or raw logs.
+- Sanitized console evidence reconfirmed SQLite error 5 while EF Core attempted to create `__EFMigrationsLock`, before `InitialCreate` or HTTP listening.
+- The sole revision was deactivated and reached the stopped state with no live container state before storage was changed. The exact retained storage account and share were revalidated, and the storage credential was held only in process memory.
+- Only the approved disposable paths were inspected. `CareerAssistant.db` existed and was deleted; the rollback-journal, WAL, and shared-memory sidecars were absent. All four paths were confirmed absent afterward. No share, snapshot, unrelated file, or Azure resource was deleted.
+- The unchanged revision was activated once against the clean database. The backend again reached migration startup but not `InitialCreate` or HTTP listening, entered `CrashLoopBackOff`, and restarted twice while the frontend remained ready. The clean reset therefore did not resolve the failure, and neither Startup nor Readiness is accepted.
+- No second recovery attempt, revision restart, mount-option change, application change, infrastructure deployment, or weakened locking configuration was performed. The revision was deactivated again, external ingress was disabled, and live inventory confirmed zero active revisions with the retained revision stopped.
+- SQLite on the current Azure Files mount is not accepted for continued use. The remaining Section 6 and runtime checks stay blocked until the persistence design is reassessed; no probe, configuration, secret, authentication, workflow, write, persistence, or readiness checkbox is completed by this evidence.
 
 ## 7. Platform and access-boundary verification
 
