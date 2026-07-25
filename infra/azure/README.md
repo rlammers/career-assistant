@@ -1,6 +1,6 @@
 # Azure deployment readiness
 
-These Bicep files describe the Azure deployment in Australia East. The foundation is deployed and verified for the private milestone; no application workload has been deployed.
+These Bicep files describe the Azure deployment in Australia East. The foundation and private Container App have been deployed and verified to the extent recorded in `docs/deploy-todo.md`. The retained application revision is stopped and external ingress is disabled after the SQLite migration-start failure; it is not approved for private use.
 
 `foundation.bicep` defines the registry, managed identity, logging, persistent file share, and Container Apps environment. `application.bicep` defines the production-safe single-replica, two-container application after commit-specific images exist in the registry. `private-application.bicep` wraps it for the temporary owner-only deployment and explicitly enables startup migrations.
 

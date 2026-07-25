@@ -1,6 +1,7 @@
 [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = "High")]
 param(
     [string]$ResourceGroupName = "career-assistant-private",
+    [string]$ExpectedSubscriptionId = $env:CAREER_ASSISTANT_AZURE_SUBSCRIPTION_ID,
     [string]$ExpectedTenantId = $env:CAREER_ASSISTANT_AUTHENTICATION_TENANT_ID,
     [ValidateRange(30, 900)]
     [int]$TimeoutSeconds = 180
@@ -121,12 +122,18 @@ if ([string]::IsNullOrWhiteSpace($ExpectedTenantId)) {
     throw "ExpectedTenantId or CAREER_ASSISTANT_AUTHENTICATION_TENANT_ID is required."
 }
 
+if ([string]::IsNullOrWhiteSpace($ExpectedSubscriptionId)) {
+    throw "ExpectedSubscriptionId or CAREER_ASSISTANT_AZURE_SUBSCRIPTION_ID is required."
+}
+
 $account = Invoke-AzureJson `
     -Arguments @("account", "show") `
     -FailureMessage "Azure account lookup failed."
 
-if ($account.state -ne "Enabled" -or $account.tenantId -cne $ExpectedTenantId) {
-    throw "The selected Azure account is not the expected enabled tenant."
+if ($account.state -ne "Enabled" `
+    -or $account.tenantId -cne $ExpectedTenantId `
+    -or $account.id -cne $ExpectedSubscriptionId) {
+    throw "The selected Azure account is not the expected enabled subscription and tenant."
 }
 
 $resourceGroup = Invoke-AzureJson `
