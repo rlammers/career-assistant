@@ -9,7 +9,7 @@ Select the database provider through configuration and register it through
 dependency injection. Keep the existing `ApplicationDbContext` and current
 application architecture.
 
-Status: **Increment 1 is complete. Increments 2–4 remain before the next
+Status: **Increment 2 is complete. Increments 3–4 remain before the next
 private Azure deployment can use Azure SQL.**
 
 ## Scope
@@ -138,18 +138,24 @@ The current initial migration contains SQLite-specific types and annotations,
 so do not assume it can be applied to SQL Server unchanged. A single portable
 migration history is not required.
 
-- [ ] Review the current model and SQLite migration.
-- [ ] Generate a SQL Server migration suitable for a new empty database.
-- [ ] Start with the existing project structure.
-- [ ] Add a separate migration project or assembly only if EF Core tooling
-  proves it is needed to preserve both SQLite development and SQL Server
-  migration generation.
-- [ ] Document the exact command used to generate and apply the SQL Server
-  migration.
-- [ ] Apply the migration to a disposable SQL Server database.
-- [ ] Run a lightweight manual smoke test that creates and reads representative
-  application data.
-- [ ] Confirm existing SQLite migrations and automated tests still work.
+- [x] Review the current model and SQLite migration.
+- [x] Generate a SQL Server migration suitable for a new empty database.
+- [x] Add the separate `CareerAssistant.Api.SqlServerMigrations` assembly EF
+  Core tooling requires to preserve both provider histories.
+- [x] Document the exact secret-safe commands to generate, list, and apply the
+  SQL Server migration in [the development guide](development.md).
+- [x] Apply the migration to a disposable local SQL Server database.
+- [x] Run a lightweight manual smoke test that creates and reads representative
+  fictional profile and job data.
+- [x] Confirm existing SQLite migrations and automated tests still work.
+
+Verification: the SQL Server initial migration creates `int` identity primary
+keys, nullable `nvarchar(max)` optional fields, `datetime2` timestamps, the
+required cascade relationship and its index. It was applied to a clean local
+SQL Server 2022 Docker database and exercised with the API configured for
+`Database:MigrateOnStartup=false`. The full backend test suite continues to
+run on SQLite. The exact repeatable commands are in the development guide; no
+connection string or administrator password is recorded.
 
 Do not add a permanent full-workflow SQL Server integration test suite. If the
 disposable SQL Server database becomes invalid, delete and recreate it.

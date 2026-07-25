@@ -15,6 +15,8 @@ namespace CareerAssistant.Api.Extensions;
 
 internal static class ServiceCollectionExtensions
 {
+    private const string SqlServerMigrationsAssembly = "CareerAssistant.Api.SqlServerMigrations";
+
     public static void AddCareerAssistantServices(
         this IServiceCollection services,
         IConfiguration configuration)
@@ -87,7 +89,11 @@ internal static class ServiceCollectionExtensions
         if (string.Equals(provider, "SqlServer", StringComparison.OrdinalIgnoreCase))
         {
             services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure()));
+                options.UseSqlServer(connectionString, sql =>
+                {
+                    sql.EnableRetryOnFailure();
+                    sql.MigrationsAssembly(SqlServerMigrationsAssembly);
+                }));
             return;
         }
 
