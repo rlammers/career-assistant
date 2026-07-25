@@ -1,16 +1,16 @@
 # Security review: private Azure deployment readiness
 
-Review updated: 2026-07-24
+Review updated: 2026-07-25
 
 Scope: application, Microsoft Entra boundary, frontend proxy, backend API, persistence, containers, CI, and proposed Azure infrastructure
 
-Deployment status: **not deployed; the empty target resource group exists and the foundation provider-level what-if is reviewed, but no foundation or application workload resource has been deployed**
+Deployment status: **the Azure foundation is deployed and verified; no application workload, application ingress, or application endpoint exists**
 
 ## Summary
 
 No critical or high-severity issue was identified in the current static owner-only deployment path. Invitation-only Microsoft Entra authentication and server-side app-role authorization are implemented and locally verified. The proposed Azure configuration enables authentication, exposes only the frontend container, uses Mock AI without a paid-provider secret, and constrains the provisional SQLite deployment to one replica.
 
-This is not approval to deploy or a claim that Azure controls work in production. The foundation provider-level `what-if` has been reviewed, but identity assignment, token validation against the deployed registration, ingress isolation, managed-identity image pulls, storage behavior, logs, probes, cost controls, persistence, the application `what-if`, and all live controls must still be verified through [`deploy-todo.md`](./deploy-todo.md).
+This is not approval to deploy the application or a claim that application controls work in production. The foundation provider-level `what-if`, deployment, least-privilege image-pull identity, logging integration, and storage linkage have been verified, but token validation against the deployed registration, ingress isolation, managed-identity image pulls by the workload, application logs, probes, cost controls, persistence, the application `what-if`, and all application-level controls must still be verified through [`deploy-todo.md`](./deploy-todo.md).
 
 Public production remains a separate blocked milestone. Its database, edge-hardening, guest-access, operational, and final security-review work is tracked in [`production-todo.md`](./production-todo.md).
 
@@ -34,7 +34,7 @@ Detailed tactical evidence remains in the ignored local `docs/security-review-pr
 - CI permissions are read-only, third-party GitHub actions are commit-pinned, secret scanning is redacted, and CI does not authenticate to Azure, publish images, or deploy resources.
 - Deployment images must use commit-specific tags or digests; frontend Entra build configuration is validated without accepting client secrets.
 - Azure subscription preflight is complete: `australiaeast` is recognized, the required Bicep resource providers are registered, subscription-scope deployment and role-assignment permissions were inspected, and all three Bicep templates compile successfully.
-- The empty target resource group has been created and the foundation provider-level `what-if` has been reviewed. It proposed exactly the nine declared foundation resources, with no provider diagnostics, ignores, deletions, modifications, workload, or ingress resources. No foundation or application workload resources have been deployed.
+- The foundation provider-level `what-if` was repeated immediately before deployment and again proposed exactly the nine declared foundation creates with no other change type. The foundation deployed successfully, and live checks verified its registry, image-pull identity and role assignment, Log Analytics integration, Azure Files share, and environment storage link. No application workload or ingress exists.
 
 ## Remaining owner-only risks and gates
 
@@ -42,7 +42,7 @@ Detailed tactical evidence remains in the ignored local `docs/security-review-pr
 | --- | --- | --- |
 | Live Entra and ingress boundary | Not accepted without verification | Confirm the assigned owner can sign in, anonymous requests receive `401`, missing-role requests receive `403` when a safe test identity is available, and the backend has no separate public ingress. |
 | SQLite on Azure Files | Provisional and limited to fictional data | Validate first-start migration, sequential and limited concurrent writes, locking, restart/revision persistence, and failure recovery. Stop use if corruption or incompatible locking is observed. |
-| Azure identity and service exposure | Foundation plan reviewed; deployment review pending | Verify least-privilege identities, service access controls, observability access, storage linkage, and deployed resource configuration after foundation provisioning. |
+| Azure identity and service exposure | Foundation deployed and verified; application review pending | Foundation least-privilege identity, registry controls, observability integration, and storage linkage are verified. Recheck workload identity use and application exposure after application deployment. |
 | Proxy and browser edge behavior | Pending live validation or explicit owner-only acceptance | Verify transport security, proxy behavior, request attribution, browser-facing protections, and operational endpoint behavior at the actual Container Apps origin. |
 | Logs and configuration disclosure | Not accepted | Inspect application/system logs and error responses for tokens, identity data, connection strings, storage keys, and internal configuration before retaining the deployment. |
 | Supply chain and image state | Pending final deployment-commit checks | Re-run dependency audits, secret scan, final image scans, and Bicep compilation; publish only reviewed digest-qualified images. |
@@ -59,7 +59,7 @@ No remaining risk is accepted by this documentation update. Any owner-only accep
 | Backend suite | 45 tests passed at commit `2e572d3388ec0e74dbe4a54bab8e5262c7719659` | Locally verified |
 | Frontend lint, tests, and production build | Lint, 39 tests, and production build passed at the tested commit | Locally verified |
 | Azure subscription preflight | `australiaeast` recognized; required providers registered; subscription permissions inspected; empty target resource group created with zero deployed resources | Subscription preflight verified |
-| Foundation `what-if` | Provider validation succeeded with exactly nine expected creates and no diagnostics, ignores, deletions, modifications, workload, or ingress resources | Azure plan verified |
+| Foundation `what-if` and deployment | Provider validation repeated with exactly nine expected creates; deployment succeeded and live registry, RBAC, logging, storage, and workload-absence checks passed | Azure foundation verified |
 | Bicep templates | Foundation, application, and private wrapper compiled with Azure CLI/Bicep `0.45.6` | Repository preflight verified |
 | Dependency, secret, and final-image scans | npm/NuGet audits clean, Gitleaks scanned 117 commits with no leaks, source filesystem scan clean, and both image archives had no HIGH/CRITICAL vulnerabilities | Locally verified |
 | Reverse proxy and persistence | Local container smoke evidence exists | Azure behavior unverified |
@@ -73,7 +73,7 @@ The current authentication, private-deployment Bicep, frontend image configurati
 
 ### Private owner-only deployment readiness
 
-Not yet approved. Deploy and verify the reviewed foundation, complete the application `what-if`, and complete the live identity boundary, storage, logging, cost, persistence, rollback, and teardown tasks in `deploy-todo.md`. The first deployment is a controlled validation exercise and must use fictional data only.
+Not yet approved. The reviewed foundation is deployed and verified. Complete the application `what-if` and the live identity boundary, image-pull, application logging, cost, persistence, rollback, and teardown tasks in `deploy-todo.md`. The first application deployment is a controlled validation exercise and must use fictional data only.
 
 ### Public production readiness
 

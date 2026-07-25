@@ -1,6 +1,6 @@
 # Private Azure Container Apps deployment TODO
 
-Status: **foundation predeployment validation is complete; the empty target resource group exists, but no foundation or application workload resources have been provisioned.**
+Status: **the Azure foundation is provisioned and verified; no application workload, application ingress, or application endpoint exists yet.**
 
 For this milestone, private means the Azure URL is externally reachable but Microsoft Entra application access is assigned only to the owner. It does not mean private-network-only ingress. Public deployment and broader guest access remain deferred to [`production-todo.md`](./production-todo.md).
 
@@ -107,12 +107,12 @@ The exact HTTPS redirect origin cannot be registered until the Container App hos
 
 - [x] Create the dedicated resource group in the selected subscription and region.
 - [x] Run an Azure deployment `what-if` for `infra/azure/foundation.bicep` and review every planned resource and role assignment.
-- [ ] Deploy `foundation.bicep` only after the `what-if` output matches the reviewed architecture.
-- [ ] Capture its non-secret outputs: registry name/login server, Container Apps environment name, environment storage-link name, image-pull identity name/resource ID, storage-account name, and file-share name.
-- [ ] Verify Azure Container Registry uses Basic SKU, has its admin user disabled, and grants only `AcrPull` to the application image-pull identity.
-- [ ] Verify the Container Apps environment is connected to Log Analytics with the intended retention.
-- [ ] Verify the Azure Files share exists with the intended quota and is linked read-write to the Container Apps environment.
-- [ ] Confirm no Container App or public application endpoint exists yet.
+- [x] Deploy `foundation.bicep` only after the `what-if` output matches the reviewed architecture.
+- [x] Capture its non-secret outputs: registry name/login server, Container Apps environment name, environment storage-link name, image-pull identity name/resource ID, storage-account name, and file-share name.
+- [x] Verify Azure Container Registry uses Basic SKU, has its admin user disabled, and grants only `AcrPull` to the application image-pull identity.
+- [x] Verify the Container Apps environment is connected to Log Analytics with the intended retention.
+- [x] Verify the Azure Files share exists with the intended quota and is linked read-write to the Container Apps environment.
+- [x] Confirm no Container App or public application endpoint exists yet.
 
 ### Foundation what-if evidence (2026-07-24 NZST)
 
@@ -124,6 +124,20 @@ The exact HTTPS redirect origin cannot be registered until the Container App hos
 - No undeclared resource type, unrelated scope, Container App workload, application ingress, or application public endpoint was present.
 - The environment storage link obtains the storage key internally through `listKeys()`, does not expose it as an output, targets the expected storage account and file share, and uses read-write access.
 - No deployment command was run. No foundation or application workload resource was provisioned, and private deployment approval remains blocked. The reviewed foundation deployment is the next incomplete increment.
+
+### Foundation deployment evidence (2026-07-25 NZST)
+
+- Deployment started from clean commit `7189e1565ce391e52e0a2f51b6e9c6707520dcea`. The foundation template has no referenced modules and was unchanged from the approved `what-if`; all parameters were supplied explicitly.
+- The target subscription remained enabled, the operator identity resolved, and the `career-assistant-private` resource group remained empty and succeeded in `australiaeast` immediately before deployment. No Azure CLI debug output was enabled.
+- Bicep compilation succeeded. A new provider-level `what-if` for deployment `career-assistant-foundation`, Incremental mode, `location=australiaeast`, `namePrefix=career-assistant-demo`, and `logRetentionDays=30` again reported exactly the approved nine creates with no other change type.
+- The Incremental deployment completed with provisioning state `Succeeded`. Its timestamp was current, the selected account remained stable across the invocation, and all eight declared string outputs were present and non-empty.
+- The output values were retained outside Git as eight user-level private operator environment variables for sections 5 and 6. No complete outputs object, generated parameter file, token, storage key, Log Analytics shared key, or other credential was retained.
+- Live inventory contained exactly the five expected top-level resources: Container Apps managed environment, Basic container registry, user-assigned image-pull identity, Log Analytics workspace, and Standard LRS StorageV2 storage account. The declared file service, file share, environment storage link, and registry role assignment were verified independently.
+- The registry uses Basic SKU with its admin user disabled and anonymous pull disabled. The image-pull identity matches the deployment output, has exactly one direct registry-scoped `AcrPull` assignment using the built-in role definition, and has no direct resource-group or subscription assignment.
+- Log Analytics retention is 30 days. The Container Apps environment uses the `log-analytics` destination and references the expected workspace; no shared key was requested or displayed.
+- The live Azure Files share has a 5-GB quota and `TransactionOptimized` tier. The reviewed create contract explicitly selected SMB; Azure's post-create resource responses omitted the create-only `enabledProtocols` field, so the protocol check was corroborated by the successful reviewed SMB creation input and the live Standard LRS StorageV2 file-service configuration. Microsoft documents [`enabledProtocols` as a create-only file-share property](https://learn.microsoft.com/en-us/rest/api/storagerp/file-shares/get).
+- The environment storage link references the expected storage account and file share and uses `ReadWrite` access. Only the allow-listed name, account, share, and access-mode fields were queried; the account key was neither requested nor displayed.
+- The resource group contains zero Container Apps. No application image, application ingress, application FQDN, or application endpoint exists.
 
 ## 5. Build, scan, and publish immutable images
 
