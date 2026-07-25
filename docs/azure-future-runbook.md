@@ -1,8 +1,12 @@
 # Future Azure deployment runbook
 
-Status: **design only; no steps have been executed**
+Status: **the prior SQLite/Azure Files deployment is stopped; no Azure SQL
+cutover steps have been executed**
 
-This document is an operator checklist, not an executable deployment script. The first owner-only deployment uses the private application wrapper and startup migrations. The public-production sequence remains deferred.
+This document is an operator checklist, not an executable deployment script. The
+previous SQLite/Azure Files private deployment is stopped after its migration
+failure. The next private deployment follows [the database roadmap](db-todo.md)
+and uses Azure SQL; public production remains deferred.
 
 ## Preconditions
 
@@ -18,15 +22,19 @@ This document is an operator checklist, not an executable deployment script. The
 1. Create the dedicated demo resource group and budget alerts.
 2. Deploy `foundation.bicep` and retain its non-secret outputs.
 3. Build and scan the frontend and backend images from the same commit, push commit-specific tags, and record their digests. Public production will additionally build and scan its future migration-job image from the application commit.
-4. For the temporary owner-only deployment, deploy `private-application.bicep`; it explicitly enables startup migrations while the app is constrained to one replica and single-revision mode.
-5. Before public production, replace SQLite and Azure Files with the selected managed relational SQL provider and run a dedicated migration job before each application revision. Deploy `application.bicep` with `migrateOnStartup=false`; the serving API must not create or upgrade the schema.
-6. Confirm the app uses one replica, Mock AI, HTTPS-only ingress, private API sidecar, the persistent mount, invitation-only Entra authentication with server-side authorization, and passing Startup and Readiness probes for both containers.
+4. Complete the Azure SQL migration and infrastructure increments in [the database roadmap](db-todo.md), including a separate migration run against the empty database. Do not reuse the SQLite Azure Files mount.
+5. Deploy a revised Container App configuration with `Database__Provider=SqlServer`, `Database__MigrateOnStartup=false`, and a secret-backed Azure SQL connection string. The serving API must not create or upgrade the schema.
+6. Confirm the app uses one replica, Mock AI, HTTPS-only ingress, private API sidecar, Azure SQL persistence, invitation-only Entra authentication with server-side authorization, and passing Startup and Readiness probes for both containers.
 7. Verify unauthenticated and unauthorized direct API requests are rejected, then exercise health, profile, job, status, analysis, deletion, rate-limit, and persistence scenarios as an authorized user using fictional data.
 8. Record the public Azure hostname and observed cost/telemetry baseline.
 
 ## Future database migration process
 
-The future migration job is a deliberately separate, short-lived deployment artifact for the selected managed relational SQL provider. Its exact image, authentication, and execution design will be decided with that provider. It is not implemented by the current Bicep modules.
+The private Azure SQL cutover uses the lightweight separate migration step in
+[the database roadmap](db-todo.md). A future public-production migration job
+remains a deliberately separate, short-lived deployment artifact; its exact
+image, authentication, and execution design are not implemented by the current
+Bicep modules.
 
 For every public-production schema change, take and verify a database backup, stop or isolate the writable application revision as required by the selected provider, run the migration job once, verify the schema and application health, then deploy the application revision. Do not run the job concurrently when the provider or migration operation makes that unsafe.
 

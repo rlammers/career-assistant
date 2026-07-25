@@ -2,6 +2,13 @@
 
 These Bicep files describe the Azure deployment in Australia East. The foundation and private Container App have been deployed and verified to the extent recorded in `docs/deploy-todo.md`. The retained application revision is stopped and external ingress is disabled after the SQLite migration-start failure; it is not approved for private use.
 
+The next private deployment replaces that SQLite/Azure Files persistence path
+with Azure SQL Database serverless. The application-side provider registration
+is complete, but SQL Server migrations, Azure SQL infrastructure, and the
+Container App cutover are pending in [the database roadmap](../../docs/db-todo.md).
+The current Bicep modules still describe the stopped SQLite deployment and must
+not be reused unchanged for the Azure SQL cutover.
+
 `foundation.bicep` defines the registry, managed identity, logging, persistent file share, and Container Apps environment. `application.bicep` defines the production-safe single-replica, two-container application after commit-specific images exist in the registry. `private-application.bicep` wraps it for the temporary owner-only deployment and explicitly enables startup migrations.
 
 ## Parameters

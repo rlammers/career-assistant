@@ -73,6 +73,21 @@ npm run test
 npm run build
 ```
 
+## Database configuration
+
+`Database:Provider` is required. The tracked default is `Sqlite`, and the
+Development configuration keeps `Database:MigrateOnStartup=true`; source
+development therefore uses `ConnectionStrings:DefaultConnection` to select the
+local SQLite file.
+
+`SqlServer` is also registered and selected with `Database__Provider=SqlServer`
+plus `ConnectionStrings__DefaultConnection`. It is preparation for the Azure
+SQL cutover, not a local SQL Server migration workflow: the current migration
+set remains SQLite-specific. Do not point an application at a fresh SQL Server
+database until the migration work in [the database roadmap](db-todo.md) is
+complete. SQL Server deployments must set `Database__MigrateOnStartup=false`
+and apply their migration outside serving-API startup.
+
 ## Verify Microsoft Entra authentication locally
 
 The local Entra flow uses backend user secrets and the frontend's ignored `.env.local` file. Keep real tenant and application identifiers out of tracked files.
@@ -168,6 +183,7 @@ Common Docker environment variables:
 | `BACKEND_PORT` | `5117` | Host loopback port for direct backend testing |
 | `FRONTEND_ORIGIN` | `http://localhost:5173` | Backend CORS origin for the frontend |
 | `API_UPSTREAM` | `http://backend:8080` | Internal backend URL used by nginx |
+| `Database__Provider` | `Sqlite` from application configuration | Selects `Sqlite` or `SqlServer` |
 | `ConnectionStrings__DefaultConnection` | `Data Source=/app/data/CareerAssistant.db` | SQLite path inside the backend container |
 | `Database__MigrateOnStartup` | `true` in Compose | Applies EF Core migrations during container startup |
 | `DEMO_ENABLED` | `false` | Enables demo storage quotas |
@@ -254,8 +270,9 @@ Profile fields (`Summary`, `Skills`, `Experience`) and job fields (`Company`, `R
 
 - The backend listens on HTTP port `8080` inside its container.
 - The backend exposes `GET /health` and `HEAD /health` for health checks.
-- SQLite uses `ConnectionStrings__DefaultConnection`; persistent storage is mounted at `/app/data` in Compose.
+- Compose uses the default `Sqlite` provider and `ConnectionStrings__DefaultConnection`; persistent storage is mounted at `/app/data`.
 - Development and Compose enable startup migrations explicitly. Reusable public deployment configuration disables startup migrations and requires a dedicated migration process.
+- The next Azure deployment will switch to `SqlServer`, disable startup migrations, and use an Azure SQL connection string supplied as a secret. Track that cutover in [the database roadmap](db-todo.md); do not treat Compose's SQLite volume as its deployment design.
 - Development allows `http://localhost:5173` through CORS. Other environments must configure exact allowed origins.
 - `ForwardedHeaders__Enabled=true` is required when the API runs behind the trusted nginx proxy.
 - Authentication and API authorization must remain enabled for authenticated test workflows; frontend route protection is not the security boundary.

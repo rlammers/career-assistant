@@ -1,6 +1,6 @@
 # Private Azure Container Apps deployment TODO
 
-Status: **the Azure foundation, immutable deployed images, managed-identity image pulls, and owner-only Microsoft Entra configuration are verified. A controlled reset of the disposable SQLite database reproduced the backend migration-start failure on a clean database. The sole revision is stopped and external ingress is disabled; runtime, security-boundary, persistence, and operational verification remain blocked pending a separate persistence-design reassessment.**
+Status: **the Azure foundation, immutable deployed images, managed-identity image pulls, and owner-only Microsoft Entra configuration are verified. A controlled reset of the disposable SQLite database reproduced the backend migration-start failure on a clean database. The sole revision is stopped and external ingress is disabled; runtime, security-boundary, persistence, and operational verification remain blocked until the Azure SQL migration, infrastructure, and cutover increments in [db-todo.md](db-todo.md) are complete.**
 
 For this milestone, private means the Azure URL is externally reachable but Microsoft Entra application access is assigned only to the owner. It does not mean private-network-only ingress. Public deployment and broader guest access remain deferred to [`production-todo.md`](./production-todo.md).
 
@@ -186,7 +186,7 @@ Status: **complete.** The frontend dependency findings were remediated, the fail
 
 ## 6. Deploy the private application
 
-Status: **the reviewed deployment, exact SPA origin, owner-only access configuration, deployed image digests, and managed-identity image pulls are verified. A controlled reset reproduced the backend migration-start failure on a clean SQLite database. The sole revision is stopped and external ingress is disabled; remaining runtime checks are blocked pending a separate persistence-design reassessment.**
+Status: **the reviewed deployment, exact SPA origin, owner-only access configuration, deployed image digests, and managed-identity image pulls are verified. A controlled reset reproduced the backend migration-start failure on a clean SQLite database. The sole revision is stopped and external ingress is disabled; remaining runtime checks are blocked until the Azure SQL cutover tracked in [db-todo.md](db-todo.md) is complete.**
 
 - [x] Prepare and validate the `private-application.bicep` inputs from foundation outputs, digest-qualified images, and the collected non-secret API authentication values.
 - [x] Compile `private-application.bicep` without diagnostics or generated repository artifacts.
@@ -256,7 +256,7 @@ Status: **the reviewed deployment, exact SPA origin, owner-only access configura
 - Only the approved disposable paths were inspected. `CareerAssistant.db` existed and was deleted; the rollback-journal, WAL, and shared-memory sidecars were absent. All four paths were confirmed absent afterward. No share, snapshot, unrelated file, or Azure resource was deleted.
 - The unchanged revision was activated once against the clean database. The backend again reached migration startup but not `InitialCreate` or HTTP listening, entered `CrashLoopBackOff`, and restarted twice while the frontend remained ready. The clean reset therefore did not resolve the failure, and neither Startup nor Readiness is accepted.
 - No second recovery attempt, revision restart, mount-option change, application change, infrastructure deployment, or weakened locking configuration was performed. The revision was deactivated again, external ingress was disabled, and live inventory confirmed zero active revisions with the retained revision stopped.
-- SQLite on the current Azure Files mount is not accepted for continued use. The remaining Section 6 and runtime checks stay blocked until the persistence design is reassessed; no probe, configuration, secret, authentication, workflow, write, persistence, or readiness checkbox is completed by this evidence.
+- SQLite on the current Azure Files mount is not accepted for continued use. The remaining Section 6 and runtime checks stay blocked until the Azure SQL cutover in [db-todo.md](db-todo.md) is complete; no probe, configuration, secret, authentication, workflow, write, persistence, or readiness checkbox is completed by this evidence.
 
 ## 7. Platform and access-boundary verification
 
@@ -272,22 +272,23 @@ Status: **the reviewed deployment, exact SPA origin, owner-only access configura
 
 ## 8. Database and workflow verification
 
-- [ ] Confirm first-start migrations succeed against a genuinely empty Azure Files share and the API does not serve requests before migration completion.
+- [ ] Confirm the SQL Server migration succeeds against a genuinely empty Azure SQL database before the serving revision starts; the API must use `Database__MigrateOnStartup=false`.
 - [ ] Using fictional data only, create and update the profile; create, view, edit, status-update, analyse, and delete a job.
 - [ ] Confirm analysis is deterministic Mock output and causes no paid AI call.
 - [ ] Restart the active revision and confirm profile, job, and analysis data persist.
 - [ ] Deploy a subsequent revision using new immutable image references and confirm data persists through the replacement.
 - [ ] Confirm the previous healthy revision continues serving until the replacement passes Startup and Readiness probes.
-- [ ] Exercise representative sequential and limited concurrent writes and inspect for SQLite locking, corruption, latency, or Azure Files compatibility failures.
-- [ ] If persistence or locking fails, stop the application or remove ingress before investigation; do not add replicas or continue using the database.
+- [ ] Exercise representative sequential and limited concurrent writes and inspect for Azure SQL persistence, latency, or connection failures.
+- [ ] If persistence or connectivity fails, stop the application or remove ingress before investigation; do not add replicas or continue using the database.
 
-SQLite on Azure Files is provisional for this owner-only milestone. It must pass these live checks and will be replaced before public production.
+SQLite on Azure Files is rejected for this milestone. These checks apply only
+after the Azure SQL cutover tracked in [db-todo.md](db-todo.md) is complete.
 
 ## 9. Logs, cost, rollback, and handoff
 
-- [ ] Inspect Container App application/system logs and Log Analytics for startup, migration, probe, image-pull, authentication, proxy, storage, and SQLite errors.
+- [ ] Inspect Container App application/system logs and Log Analytics for startup, migration, probe, image-pull, authentication, proxy, and Azure SQL errors.
 - [ ] Confirm logs and error responses contain no tokens, claims, email addresses, tenant/client identifiers, role values, connection strings, storage keys, or other sensitive configuration.
-- [ ] Record observed startup and Azure Files mount timing; tune probe values only if live evidence requires it.
+- [ ] Record observed startup and Azure SQL connection timing; tune probe values only if live evidence requires it.
 - [ ] Confirm budget alerts are active and record the initial daily cost/telemetry baseline.
 - [ ] Record the deployed resource group, application origin, revision, image digests, non-secret Bicep outputs, and verification date in an approved private operator record.
 - [ ] Retain the previous known-good image digests and document the single-revision rollback command/process before the next update.

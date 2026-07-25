@@ -9,6 +9,9 @@ Select the database provider through configuration and register it through
 dependency injection. Keep the existing `ApplicationDbContext` and current
 application architecture.
 
+Status: **Increment 1 is complete. Increments 2–4 remain before the next
+private Azure deployment can use Azure SQL.**
+
 ## Scope
 
 Support:
@@ -56,8 +59,10 @@ behaviour. Keep it enabled for local SQLite development and disable it for
 Azure SQL. Azure SQL migrations must run as a separate manual or lightweight
 deployment step before the application starts using the database.
 
-The application must fail clearly at startup when `Database:Provider` or
-`DefaultConnection` is missing, blank, or invalid.
+The application fails clearly during service registration when
+`Database:Provider` or `DefaultConnection` is missing or blank, or when the
+provider is unsupported. Provider-specific connection-string parsing and
+connectivity validation are deferred until the provider uses the connection.
 
 ## Application design
 
@@ -72,58 +77,58 @@ The application must fail clearly at startup when `Database:Provider` or
 - Do not add provider checks to controllers, business services, or the
   DbContext.
 
-Expected registration:
+Implemented registration:
 
 ```csharp
-var provider = configuration["Database:Provider"]
-    ?? throw new InvalidOperationException(
-        "Database:Provider is required.");
-
-var connectionString =
-    configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException(
-        "DefaultConnection is required.");
-
-services.AddDbContext<ApplicationDbContext>(options =>
+var provider = configuration["Database:Provider"];
+if (string.IsNullOrWhiteSpace(provider))
 {
-    if (provider.Equals("Sqlite", StringComparison.OrdinalIgnoreCase))
-    {
-        options.UseSqlite(connectionString);
-        return;
-    }
+    throw new InvalidOperationException("Database:Provider is required.");
+}
 
-    if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
-    {
-        options.UseSqlServer(
-            connectionString,
-            sql => sql.EnableRetryOnFailure());
-        return;
-    }
+var connectionString = configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException("DefaultConnection is required.");
+}
 
-    throw new InvalidOperationException(
-        $"Unsupported database provider: {provider}");
-});
+provider = provider.Trim();
+
+if (provider.Equals("Sqlite", StringComparison.OrdinalIgnoreCase))
+{
+    services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite(connectionString));
+}
+else if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
+{
+    services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure()));
+}
+else
+{
+    throw new InvalidOperationException($"Unsupported database provider: {provider}");
+}
 ```
-
-The implementation should also reject blank values, not only `null` values.
 
 ## Increment 1: Application provider selection
 
-Implement only provider configuration and registration.
+Completed 2026-07-25. This increment changed only provider configuration and
+registration; it did not create Azure resources or change deployment
+configuration.
 
-- [ ] Add the SQL Server EF Core provider.
-- [ ] Add `Database:Provider=Sqlite` to the default configuration.
-- [ ] Register SQLite or SQL Server through dependency injection.
-- [ ] Keep existing startup migration behaviour for local SQLite.
-- [ ] Add focused tests for:
+- [x] Add the SQL Server EF Core provider.
+- [x] Add `Database:Provider=Sqlite` to the default configuration.
+- [x] Register SQLite or SQL Server through dependency injection.
+- [x] Keep existing startup migration behaviour for local SQLite.
+- [x] Add focused tests for:
   - SQLite registration.
   - SQL Server registration.
   - Missing or invalid database configuration.
-- [ ] Keep all existing automated application tests on SQLite.
-- [ ] Confirm the application still starts locally with SQLite.
+- [x] Keep all existing automated application tests on SQLite.
+- [x] Confirm the application starts locally with SQLite.
 
-Do not create Azure resources or change deployment configuration in this
-increment.
+Verification: the backend suite passed with 51 tests, and a Development
+startup smoke check applied SQLite migrations to a disposable local database
+and returned `200` from `/health`.
 
 ## Increment 2: SQL Server migration
 

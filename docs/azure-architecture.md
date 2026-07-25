@@ -29,7 +29,7 @@ flowchart LR
 
 ## Runtime invariants
 
-- The temporary SQLite deployment uses single-revision mode and exactly one replica. Its private deployment wrapper enables startup migrations; the reusable public-production template defaults them to disabled.
+- The next private deployment uses Azure SQL Database serverless with `Database__Provider=SqlServer` and startup migrations disabled. The SQL Server migration runs before the serving revision starts; see [the database roadmap](db-todo.md).
 - Frontend and backend containers each use internal HTTP Startup, Readiness, and Liveness probes. Both containers must become ready before the revision receives ingress traffic.
 - Frontend probes test nginx directly at `/`; backend probes test the API directly at `/health`. The public nginx `/health` route remains an end-to-end backend diagnostic and is not used for frontend container health.
 - Every non-health application route must require Entra authentication and server-side authorization for an assigned invited guest; direct API requests must not bypass access control.
@@ -37,5 +37,5 @@ flowchart LR
 - Images must be referenced by a commit-specific tag or digest.
 - Only safe fictional demo content may be stored.
 - Demo storage is bounded through configuration; seed and reset behavior remains future work.
-- SQLite on Azure Files is provisional and requires live migration, persistence, locking, restart, and filesystem-compatibility verification.
-- Public production will replace SQLite and Azure Files with a managed relational SQL provider selected in a future milestone and will use a dedicated migration job.
+- SQLite on Azure Files was rejected after its clean-database migration-start failure. Local development and Docker Compose retain SQLite only as their local persistence option.
+- Public production will reassess its managed relational database requirements and use a dedicated migration job; it does not inherit the temporary Azure Files design.

@@ -18,7 +18,7 @@ The MVP and its core backend/frontend workflow are complete. Invitation-only Mic
 The next milestone is a private Azure Container Apps deployment with:
 
 - a React frontend and ASP.NET Core API;
-- persistent temporary SQLite storage;
+- Azure SQL Database serverless persistent storage, while local development remains on SQLite;
 - deterministic Mock AI analysis with no paid-provider secret;
 - safe fictional demo data; and
 - Microsoft Entra authentication restricted to explicitly authorized users.
@@ -27,7 +27,7 @@ Public deployment is deferred until the private deployment has been verified.
 
 ## Tech stack
 
-- Backend: C# 14, .NET 10, ASP.NET Core Web API, Entity Framework Core, SQLite
+- Backend: C# 14, .NET 10, ASP.NET Core Web API, Entity Framework Core, SQLite for local development, and SQL Server provider support for Azure SQL
 - Frontend: React, TypeScript, Vite, Fetch API
 - Authentication: Microsoft Entra ID with server-side app-role authorization
 - Containers: Docker Compose and nginx
@@ -65,6 +65,7 @@ See the [development guide](docs/development.md) for full setup, authentication,
 - [Frontend guide](src/frontend/README.md) — frontend structure and component-level development
 - [Azure infrastructure](infra/azure/README.md) — Bicep modules, parameters, probes, and authenticated image builds
 - [Private deployment checklist](docs/deploy-todo.md) — current Azure deployment milestone
+- [Database roadmap](docs/db-todo.md) — SQLite-to-Azure-SQL cutover increments
 - [Azure architecture](docs/azure-architecture.md) — proposed topology and trust boundaries
 - [Security review](docs/security-review.md) — current private-deployment security assessment
 - [Public production backlog](docs/production-todo.md) — deferred public-release work
