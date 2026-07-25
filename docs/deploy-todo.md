@@ -1,6 +1,6 @@
 # Private Azure Container Apps deployment TODO
 
-Status: **the Azure foundation is provisioned and verified, immutable application images are published, and the private application inputs and compiled template are statically reviewed; no application workload, application ingress, or application endpoint exists yet.**
+Status: **the Azure foundation and immutable images are verified, and the private application template has passed static review, Provider validation, and Azure `what-if`; no application workload, application ingress, or application endpoint exists yet.**
 
 For this milestone, private means the Azure URL is externally reachable but Microsoft Entra application access is assigned only to the owner. It does not mean private-network-only ingress. Public deployment and broader guest access remain deferred to [`production-todo.md`](./production-todo.md).
 
@@ -186,14 +186,14 @@ Status: **complete.** The frontend dependency findings were remediated, the fail
 
 ## 6. Deploy the private application
 
-Status: **input validation and static compiled-template review are complete. The next gated increment is to revalidate the live foundation and published images, run provider-level validation and Azure `what-if`, and require exactly one intended Container App creation with no unexpected Azure changes. No application workload or endpoint exists yet.**
+Status: **live dependency revalidation, Provider validation, and the private application `what-if` review are complete. The next gated task is the controlled private application deployment. No application workload or endpoint exists yet.**
 
 - [x] Prepare and validate the `private-application.bicep` inputs from foundation outputs, digest-qualified images, and the collected non-secret API authentication values.
 - [x] Compile `private-application.bicep` without diagnostics or generated repository artifacts.
 - [x] Statically review the compiled template and confirm the intended single Container App workload, two-container configuration, and deployment boundaries.
-- [ ] Revalidate the live Azure foundation and published image state immediately before provider validation.
-- [ ] Run an Azure deployment `what-if` for `private-application.bicep` and confirm it creates one Container App with frontend and backend containers.
-- [ ] Confirm the `what-if` keeps external HTTPS ingress on frontend port `8080`, exposes no separate backend ingress, uses Mock AI, mounts Azure Files at `/app/data`, enables startup migrations through the private wrapper, uses single-revision mode, and keeps replicas at `1–1`.
+- [x] Revalidate the live Azure foundation and published image state immediately before provider validation.
+- [x] Run an Azure deployment `what-if` for `private-application.bicep` and confirm it creates one Container App with frontend and backend containers.
+- [x] Confirm the `what-if` keeps external HTTPS ingress on frontend port `8080`, exposes no separate backend ingress, uses Mock AI, mounts Azure Files at `/app/data`, enables startup migrations through the private wrapper, uses single-revision mode, and keeps replicas at `1–1`.
 - [ ] Deploy `private-application.bicep` only after reviewing the `what-if` output.
 - [ ] Capture the application name, revision name, and generated HTTPS origin without recording tokens or sensitive configuration.
 - [ ] Register the exact generated origin as the SPA redirect URI in Microsoft Entra. Match scheme, hostname, and port; do not add a path or trailing slash.
@@ -209,7 +209,17 @@ Status: **input validation and static compiled-template review are complete. The
 - Static assertions confirmed one intended Container App workload with exactly the frontend and backend containers, digest-qualified images, managed-identity registry authentication without credentials, frontend-only HTTPS ingress, the backend-only Azure Files mount, startup migrations, single-revision mode, `1–1` replicas, approved probes, enabled authentication, and Mock AI without paid-provider configuration.
 - The compiled wrapper contains the existing module-generated nested deployment used to invoke `application.bicep`. This structure is expected, understood, and accepted. Flattening the wrapper would duplicate the application definition solely to satisfy the earlier zero-nested-deployment assertion, so the review rule now allows this specific expected wrapper while continuing to reject unexpected or unexpanded nested deployments.
 - This increment ran no provider validation, Azure `what-if`, or deployment and created, modified, or deleted no Azure resource. A read-only inventory check confirmed that no Container App, application ingress, or application endpoint exists.
-- The next gated increment is to revalidate the live foundation and published images, run provider-level validation and Azure `what-if`, and require exactly one intended Container App creation with no unexpected Azure changes.
+- At that point, live dependency revalidation and Provider `what-if` were the next gate; that gate is completed in the evidence below.
+
+### Live dependency revalidation and application what-if evidence (2026-07-25 NZST)
+
+- Review started from clean commit `bd201871983c818207ecdd2bbeb4adfc505f3d9e` with Azure CLI `2.88.0` and Bicep CLI `0.45.6`. The selected subscription remained enabled, the target resource group remained succeeded in Australia East, and required private operator values were loaded without being printed or persisted.
+- Live foundation inventory contained exactly the five expected top-level resources and zero Container Apps. Targeted checks reconfirmed the retained Container Apps environment and Log Analytics integration, 30-day log retention, Basic registry controls, the single registry-scoped `AcrPull` assignment, the Standard LRS storage account, the 5-GB `TransactionOptimized` file share, and the read-write environment storage link without requesting or displaying a storage key.
+- Registry inventory contained exactly the approved frontend and backend repositories. Each contained one expected Linux `amd64` manifest with one full-source-SHA tag; the retained digest references resolved, and both manifest and tag layers remained write-disabled and delete-disabled. Registry admin access and anonymous pull remained disabled.
+- Bicep compilation and resource-group Provider validation succeeded. The Incremental `what-if` expanded the expected module wrapper and returned six entries: one `Create` for the intended Container App and five `Ignore` entries for the existing foundation resources. In Incremental mode those known foundation entries are not deployed or modified; no module remained unexpanded, and no unexpected create, modify, delete, ignore, or unsupported result was present.
+- The predicted Container App uses the approved managed identity and registry reference, exactly the frontend and backend digest-qualified images, frontend-only HTTPS ingress on port `8080`, the backend-only Azure Files mount at `/app/data`, startup migrations, single-revision mode, `1–1` replicas, the approved probes, enabled authentication, and Mock AI without a paid-provider credential.
+- All 37 sanitized assertions passed. Raw templates, parameters, identifiers, image references, digests, and provider payloads were not printed or retained. A final read-only inventory check confirmed zero Container Apps and no application endpoint; no Azure resource was created, modified, or deleted.
+- The next gated task is to deploy the reviewed private application template, then capture its non-secret outputs and complete the remaining live platform, access-boundary, persistence, restart, and observability checks.
 
 ## 7. Platform and access-boundary verification
 
