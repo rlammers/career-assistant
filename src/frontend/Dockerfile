@@ -1,4 +1,4 @@
-FROM node:26-alpine AS build
+FROM node:26-alpine@sha256:e88a35be04478413b7c71c455cd9865de9b9360e1f43456be5951032d7ac1a66 AS build
 WORKDIR /app
 
 COPY src/frontend/package*.json ./
@@ -19,7 +19,7 @@ ENV VITE_ENTRA_API_SCOPE=$VITE_ENTRA_API_SCOPE
 
 RUN npm run build
 
-FROM nginxinc/nginx-unprivileged:1.31.3-alpine AS runtime
+FROM nginxinc/nginx-unprivileged:1.31.3-alpine@sha256:18d67281256ded39ff65e010ae4f831be18f19356f83c60bc546492c7eb6dd23 AS runtime
 USER root
 RUN apk upgrade --no-cache
 USER 101

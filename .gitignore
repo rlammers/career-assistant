@@ -55,3 +55,5 @@ Thumbs.db
 
 # Local-only detailed security assessment
 docs/security-review-private.md
+
+/infra/azure/private-application.json

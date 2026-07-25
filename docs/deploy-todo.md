@@ -269,10 +269,11 @@ Status: **the reviewed deployment, exact SPA origin, owner-only access configura
 - [ ] Verify signing in with the assigned owner account succeeds and an authenticated API request carries a bearer token without exposing or recording it.
 - [ ] Verify an authenticated identity without the required assignment receives `403 Forbidden` if a safe test identity is available; otherwise record this as deferred rather than manufacturing an account.
 - [ ] Verify logout, fresh sign-in, expired-session handling, access-denied handling, and retry behavior in the deployed browser.
+- [ ] Run the rate-limit attribution check from two independent client networks without recording addresses or tokens: send a bounded `/api/` request burst from each, confirm one client's limit does not throttle the other, and record only pass/fail. If Container Apps presents one shared direct peer, retain `$binary_remote_addr` rather than trusting forwarded headers and obtain explicit owner-only acceptance of the shared-limit limitation.
 
 ## 8. Database and workflow verification
 
-- [ ] Confirm the SQL Server migration succeeds against a genuinely empty Azure SQL database before the serving revision starts; the API must use `Database__MigrateOnStartup=false`.
+- [x] Confirm the SQL Server migration succeeds against a genuinely empty Azure SQL database before the serving revision starts; the API must use `Database__MigrateOnStartup=false`.
 - [ ] Using fictional data only, create and update the profile; create, view, edit, status-update, analyse, and delete a job.
 - [ ] Confirm analysis is deterministic Mock output and causes no paid AI call.
 - [ ] Restart the active revision and confirm profile, job, and analysis data persist.
@@ -301,6 +302,6 @@ after the Azure SQL cutover tracked in [db-todo.md](db-todo.md) is complete.
 - [ ] The owner can open the Azure HTTPS origin, sign in, and complete the profile, job, status, and Mock-analysis workflow.
 - [ ] Anonymous and unassigned access cannot reach protected data or operations.
 - [ ] The backend has no separate public ingress, and the deployed configuration uses one replica and Mock AI with no paid-provider secret.
-- [ ] Data survives a restart and replacement revision without observed SQLite/Azure Files locking or corruption failures.
+- [ ] Data survives a restart and replacement revision without observed Azure SQL connectivity, locking, or corruption failures.
 - [ ] Probes, logs, rollback, teardown, and budget controls have been verified and documented.
 - [ ] All remaining limitations are explicitly accepted for private owner-only use; public deployment remains blocked and tracked separately.

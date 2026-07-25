@@ -496,6 +496,10 @@ Release dependency-safety rule:
 
 - Run current full and production-only frontend dependency audits before building or publishing release images; final container scans do not replace audits of JavaScript bundled into the frontend.
 
+Browser-edge safety rule:
+
+- The browser-facing nginx configuration must suppress version disclosure and set security headers, including a CSP that explicitly permits only the external identity-provider origins required by the configured authentication flow. Verify those headers from the final container image before deployment.
+
 ---
 
 ## Guidance Maintenance
