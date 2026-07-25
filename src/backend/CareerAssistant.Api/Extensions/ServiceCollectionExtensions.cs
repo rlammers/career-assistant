@@ -23,8 +23,7 @@ internal static class ServiceCollectionExtensions
         var aiOptions = configuration.GetSection("AI").Get<AiOptions>() ?? new();
         var aiProvider = string.IsNullOrWhiteSpace(aiOptions.Provider) ? "Mock" : aiOptions.Provider;
 
-        services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlite(configuration.GetConnectionString("DefaultConnection")));
+        services.AddConfiguredDatabase(configuration);
         services.AddCareerAssistantOptions(configuration);
         services.AddConfiguredAuthentication(authenticationOptions);
         services.AddAuthorization(options =>
@@ -61,6 +60,38 @@ internal static class ServiceCollectionExtensions
             .Validate(options => options.MaxAnalyses > 0, "Demo:MaxAnalyses must be greater than zero.")
             .ValidateOnStart();
         services.AddSingleton<DemoQuotaGate>();
+    }
+
+    private static void AddConfiguredDatabase(this IServiceCollection services, IConfiguration configuration)
+    {
+        var provider = configuration["Database:Provider"];
+        if (string.IsNullOrWhiteSpace(provider))
+        {
+            throw new InvalidOperationException("Database:Provider is required.");
+        }
+
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException("DefaultConnection is required.");
+        }
+
+        provider = provider.Trim();
+
+        if (string.Equals(provider, "Sqlite", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite(connectionString));
+            return;
+        }
+
+        if (string.Equals(provider, "SqlServer", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddDbContext<ApplicationDbContext>(options =>
+                options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure()));
+            return;
+        }
+
+        throw new InvalidOperationException($"Unsupported database provider: {provider}");
     }
 
     private static void AddConfiguredAuthentication(this IServiceCollection services, AuthenticationOptions authenticationOptions)
