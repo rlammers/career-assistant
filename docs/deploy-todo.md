@@ -1,6 +1,6 @@
 # Private Azure Container Apps deployment TODO
 
-Status: **the Azure foundation and immutable images are verified, the reviewed private application deployment has succeeded, and its Microsoft Entra SPA redirect and owner-only access configuration are verified. Runtime workload, security-boundary, persistence, and operational checks remain incomplete.**
+Status: **the Azure foundation, immutable deployed images, managed-identity image pulls, and owner-only Microsoft Entra configuration are verified. The initial revision is unhealthy because the backend fails after its image is pulled, so runtime, security-boundary, persistence, and operational verification are blocked pending a separate startup diagnosis.**
 
 For this milestone, private means the Azure URL is externally reachable but Microsoft Entra application access is assigned only to the owner. It does not mean private-network-only ingress. Public deployment and broader guest access remain deferred to [`production-todo.md`](./production-todo.md).
 
@@ -186,7 +186,7 @@ Status: **complete.** The frontend dependency findings were remediated, the fail
 
 ## 6. Deploy the private application
 
-Status: **the reviewed private application deployment succeeded, its exact HTTPS origin is registered for the SPA, and the owner-only role assignment and delegated API consent are verified. The next gated task is deployed image and managed-identity pull verification; no runtime control is claimed as verified yet.**
+Status: **the reviewed deployment, exact SPA origin, owner-only access configuration, deployed image digests, and managed-identity image pulls are verified. The initial revision is `ActivationFailed` because the backend enters a post-pull restart cycle; remaining runtime checks are blocked pending a separate startup diagnosis.**
 
 - [x] Prepare and validate the `private-application.bicep` inputs from foundation outputs, digest-qualified images, and the collected non-secret API authentication values.
 - [x] Compile `private-application.bicep` without diagnostics or generated repository artifacts.
@@ -198,7 +198,7 @@ Status: **the reviewed private application deployment succeeded, its exact HTTPS
 - [x] Capture the application name, revision name, and generated HTTPS origin without recording tokens or sensitive configuration.
 - [x] Register the exact generated origin as the SPA redirect URI in Microsoft Entra. Match scheme, hostname, and port; do not add a path or trailing slash.
 - [x] Confirm the owner assignment is active and the SPA has consent for only the required delegated API scope.
-- [ ] Verify the deployed revision uses the expected image digests and the managed identity successfully pulls both images.
+- [x] Verify the deployed revision uses the expected image digests and the managed identity successfully pulls both images.
 - [ ] Verify runtime configuration reports `AI provider: Mock`, authentication enabled, and startup migrations enabled without logging tenant, client, audience, issuer, role, token, claim, connection-string, or identity values.
 - [ ] Confirm no OpenAI API key or other paid-provider secret is configured in the Container App.
 
@@ -237,6 +237,16 @@ Status: **the reviewed private application deployment succeeded, its exact HTTPS
 - The API service principal has exactly one app-role assignment: the signed-in owner with the enabled required role. The SPA has exactly one owner-principal grant to the API containing only `access_as_user`, and no tenant-wide grant exists.
 - The existing owner-principal `openid`, `profile`, and `offline_access` grants were preserved for the MSAL sign-in and token-renewal flow. No consent grant or role assignment was created, updated, or removed.
 - This increment did not perform an interactive sign-in, inspect the deployed revision's images or runtime configuration, test workload identity pulls, probes, ingress, authorization responses, migrations, persistence, logs, or workflows, or claim readiness for private use.
+
+### Deployed image and managed-identity pull evidence (2026-07-25 NZST)
+
+- Verification started from clean commit `baea7385b9b307a16fc86a652d6aa63d674c7c24`. The selected subscription and application deployment remained enabled and succeeded, and exactly one retained revision with one replica was inspected without printing resource identifiers, image references, digests, replica names, addresses, or raw logs.
+- The revision contains exactly the frontend and backend containers. Each deployed image reference matched its privately retained digest-qualified release reference byte-for-byte.
+- The Container App has only the expected user-assigned identity and one credential-free registry entry that targets the expected registry through that identity. No registry username or password-secret reference is configured.
+- The identity retains exactly one direct registry-scoped `AcrPull` assignment. Registry admin and anonymous pull remain disabled, and ARM-audience authentication for managed-identity pulls is enabled.
+- Revision-correlated system events reported `ImagePulled` for both exact digest references, and no inaccessible-image, authorization, `ImagePullBackOff`, or other image-pull failure event was present.
+- Image pulling is not application readiness. The frontend runs without restarts, but the revision is `ActivationFailed` and unhealthy because the backend repeatedly fails after its image is pulled. System evidence categorizes this as container startup/backoff and probe connection failure, not registry authentication or image retrieval failure.
+- This increment did not diagnose or change the backend, restart or redeploy the revision, inspect runtime configuration or secrets, or verify probes, ingress, authentication, migrations, persistence, logs beyond the targeted system-event categories, or application workflows. Those checks remain blocked.
 
 ## 7. Platform and access-boundary verification
 
