@@ -209,7 +209,7 @@ advanced monitoring in this increment.
 ## Increment 4: Private deployment cutover
 
 - [x] Provision the empty Azure SQL database.
-- [ ] Apply the SQL Server migration outside normal Container App startup.
+- [x] Apply the SQL Server migration outside normal Container App startup.
 - [x] If provisioning or migration fails, delete and recreate the empty
   disposable database.
 - [ ] Set `Database__Provider=SqlServer`.
@@ -250,6 +250,13 @@ restored to `Default` and the temporary firewall rule was removed. The blocker
 was a manually interpolated connection string that did not escape a reserved
 character in the administrator password; provider connection-string builders
 must construct any secret-bearing connection string. No migration was run.
+
+Migration verification (2026-07-26): the standalone SQL Server EF Core command
+applied `20260725095637_InitialCreate` with
+`Database__MigrateOnStartup=false`. A direct read-only check confirmed that
+migration ID in `__EFMigrationsHistory`. The temporary single-IP firewall rule
+and shell-only configuration were removed afterward; no Container App revision,
+secret, or application configuration changed.
 
 ## Acceptance criteria
 
