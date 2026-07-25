@@ -3,13 +3,18 @@
 These Bicep files describe the Azure deployment in Australia East. The foundation and private Container App have been deployed and verified to the extent recorded in `docs/deploy-todo.md`. The retained application revision is stopped and external ingress is disabled after the SQLite migration-start failure; it is not approved for private use.
 
 The next private deployment replaces that SQLite/Azure Files persistence path
-with Azure SQL Database serverless. The application-side provider registration
-is complete, but SQL Server migrations, Azure SQL infrastructure, and the
-Container App cutover are pending in [the database roadmap](../../docs/db-todo.md).
-The current Bicep modules still describe the stopped SQLite deployment and must
-not be reused unchanged for the Azure SQL cutover.
+with Azure SQL Database serverless. `azure-sql.bicep` provisions the disposable
+database infrastructure, and the application modules use a Container Apps
+secret-backed SQL Server connection string. Applying the SQL Server migration
+and deploying the revised app remain separate cutover steps in [the database
+roadmap](../../docs/db-todo.md).
 
-`foundation.bicep` defines the registry, managed identity, logging, persistent file share, and Container Apps environment. `application.bicep` defines the production-safe single-replica, two-container application after commit-specific images exist in the registry. `private-application.bicep` wraps it for the temporary owner-only deployment and explicitly enables startup migrations.
+`foundation.bicep` defines the existing registry, managed identity, logging,
+file share, and Container Apps environment. `azure-sql.bicep` defines the Azure
+SQL serverless path. `application.bicep` defines the single-replica,
+two-container application after commit-specific images exist in the registry.
+`private-application.bicep` wraps it for the temporary owner-only deployment
+with startup migrations disabled.
 
 ## Parameters
 
@@ -19,7 +24,6 @@ not be reused unchanged for the Azure SQL cutover.
 | Both | `namePrefix` | `career-assistant-demo` | Resource-name prefix |
 | Foundation | `logRetentionDays` | `30` | Log Analytics retention |
 | Application | `environmentName` | required | Foundation environment output |
-| Application | `environmentStorageName` | required | Foundation storage-link output |
 | Application | `registryName` | required | Foundation ACR output |
 | Application | `imagePullIdentityName` | required | Foundation identity output |
 | Application | `frontendImage` | required | Commit-specific frontend image |
@@ -29,9 +33,13 @@ not be reused unchanged for the Azure SQL cutover.
 | Application | `authenticationAudience` | required | Entra API token audience |
 | Application | `authenticationIssuer` | required | Entra API token issuer |
 | Application | `authenticationRequiredAppRole` | required | Entra role assigned to demo users |
+| Azure SQL | `sqlAdministratorLogin` | required | Administrator login supplied only at deployment time |
+| Azure SQL | `sqlAdministratorPassword` | required, secure | Administrator password; never persist or output it |
+| Azure SQL | `databaseName` | `careerassistant` | Disposable application database name |
+| Application | `databaseConnectionString` | required, secure | Container Apps secret value for the SQL Server connection |
 | Application | `migrateOnStartup` | `false` | Enables API startup migrations only when explicitly requested |
 
-The temporary private deployment is externally reachable through its Azure URL but restricted to the owner through Entra assignment. It is not private-network-only. Deploy `private-application.bicep` for that milestone; public production deploys `application.bicep` with `migrateOnStartup=false` and uses a dedicated migration job.
+The temporary private deployment is externally reachable through its Azure URL but restricted to the owner through Entra assignment. It is not private-network-only. Deploy `private-application.bicep` only after the separate Azure SQL migration step; its wrapper fixes `migrateOnStartup=false`, which is also the reusable application module default.
 
 The API applies configured migrations before mapping middleware or endpoints. A migration exception therefore terminates startup instead of serving requests with a missing or invalid schema. Startup logging records only the environment, AI provider, and configuration flags; it does not log the database connection string or Entra identifiers.
 
@@ -48,9 +56,9 @@ Both containers have explicit Startup, Readiness, and Liveness probes over their
 | Backend | Readiness | `/health` | `8081` | 1s | 5s | 3s | 3 | 1 |
 | Backend | Liveness | `/health` | `8081` | 1s | 20s | 5s | 3 | 1 |
 
-The backend Startup probe allows approximately 165 seconds of probing after its initial delay, or about 195 seconds from container start, for Azure Files mounting, startup validation, migrations, and endpoint mapping. The frontend Startup probe allows approximately 25 seconds after its initial delay, or about 30 seconds total.
+The backend Startup probe allows approximately 165 seconds of probing after its initial delay, or about 195 seconds from container start, for startup validation and endpoint mapping. The frontend Startup probe allows approximately 25 seconds after its initial delay, or about 30 seconds total.
 
-Frontend probes call nginx directly at `/`, so a temporary backend failure does not restart nginx. Backend probes call the API directly at `/health`; that endpoint is anonymous, returns process health without querying SQLite or another dependency, and is mapped only after startup migrations complete. The public nginx `/health` route remains an end-to-end diagnostic proxy to the backend.
+Frontend probes call nginx directly at `/`, so a temporary backend failure does not restart nginx. Backend probes call the API directly at `/health`; that endpoint is anonymous, returns process health without querying the database, and is mapped only after startup validation completes. The public nginx `/health` route remains an end-to-end diagnostic proxy to the backend.
 
 Both containers must pass Startup and Readiness before the revision is ready for traffic. In single-revision mode, a previous healthy revision should continue serving until its replacement is ready; on the first deployment, the application remains unavailable until both containers are ready. Live timings may be adjusted only after observing the private Azure deployment.
 
@@ -77,8 +85,66 @@ Compilation is safe and does not contact an Azure subscription:
 
 ```powershell
 az bicep build --file infra/azure/foundation.bicep
+az bicep build --file infra/azure/azure-sql.bicep
 az bicep build --file infra/azure/application.bicep
 az bicep build --file infra/azure/private-application.bicep
 ```
+
+## Azure SQL preflight and what-if
+
+Before deploying, confirm `Microsoft.Sql` is registered and that Australia East
+offers the `GP_S_Gen5_1` General Purpose serverless SKU:
+
+```powershell
+az provider show --namespace Microsoft.Sql --query registrationState --output tsv
+az sql db list-editions --location australiaeast --output table
+```
+
+Also confirm in the Azure portal that the subscription can apply the Azure SQL
+free offer. The template deliberately requests the offer and pauses the
+database when its free limit is exhausted. If the offer or SKU is unavailable,
+stop: do not change the template to allow billed usage without a new explicit
+cost decision.
+
+Keep secure values only in the operator environment. Do not echo them, add them
+to a parameter file, enable shell tracing, or store deployment output. The
+following commands use environment variables by name without printing their
+values:
+
+```powershell
+az deployment group what-if `
+  --resource-group career-assistant-private `
+  --name career-assistant-sql-preflight `
+  --template-file infra/azure/azure-sql.bicep `
+  --parameters `
+    sqlAdministratorLogin="$env:CAREER_ASSISTANT_SQL_ADMINISTRATOR_LOGIN" `
+    sqlAdministratorPassword="$env:CAREER_ASSISTANT_SQL_ADMINISTRATOR_PASSWORD"
+
+az deployment group what-if `
+  --resource-group career-assistant-private `
+  --name career-assistant-app-sql-preflight `
+  --template-file infra/azure/private-application.bicep `
+  --parameters `
+    environmentName="$env:CAREER_ASSISTANT_AZURE_ENVIRONMENT_NAME" `
+    registryName="$env:CAREER_ASSISTANT_AZURE_REGISTRY_NAME" `
+    imagePullIdentityName="$env:CAREER_ASSISTANT_AZURE_IMAGE_PULL_IDENTITY_NAME" `
+    frontendImage="$env:CAREER_ASSISTANT_RELEASE_FRONTEND_IMAGE" `
+    backendImage="$env:CAREER_ASSISTANT_RELEASE_BACKEND_IMAGE" `
+    authenticationTenantId="$env:VITE_ENTRA_TENANT_ID" `
+    authenticationClientId="$env:CAREER_ASSISTANT_AUTHENTICATION_CLIENT_ID" `
+    authenticationAudience="$env:CAREER_ASSISTANT_AUTHENTICATION_AUDIENCE" `
+    authenticationIssuer="$env:CAREER_ASSISTANT_AUTHENTICATION_ISSUER" `
+    authenticationRequiredAppRole="$env:CAREER_ASSISTANT_AUTHENTICATION_REQUIRED_APP_ROLE" `
+    databaseConnectionString="$env:CAREER_ASSISTANT_SQL_CONNECTION_STRING"
+```
+
+Review the SQL `what-if` for one logical server, one database, and only the
+`AllowAzureServices` firewall rule. Review the application `what-if` for the
+intended Container App modification: SQL Server configuration, one secret
+reference, no Azure Files volume, and disabled startup migrations. The special
+`0.0.0.0` firewall rule is required because this Container Apps environment has
+no fixed egress IP; it does not authorize a workstation. Add any temporary
+migration workstation rule outside this template and remove it immediately
+after migration.
 
 Do not deploy these modules until all deployment-blocking findings in `docs/security-review.md` are accepted or remediated.

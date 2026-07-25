@@ -177,6 +177,19 @@ Add:
 Keep credentials and connection strings out of source control and deployment
 outputs. Build the Bicep templates and review Azure `what-if` before deployment.
 
+Implementation is prepared in `infra/azure/azure-sql.bicep` and the revised
+application templates. Increment 3 remains unchecked until the operator has
+compiled the templates, confirmed the Australia East serverless SKU and free
+offer, and reviewed both guarded `what-if` results. The Bicep module requests
+the Azure SQL free offer and `AutoPause` at its monthly limit; unavailable offer
+or SKU support is a deployment blocker, not permission to use billed capacity.
+
+The SQL server uses the special `0.0.0.0` Azure-services firewall rule because
+the current Container Apps environment has no fixed egress IP and private
+networking is out of scope. It does not permit workstation access. Any
+temporary migration IP rule must be added outside the template and removed once
+the migration is complete.
+
 Do not add private networking, managed identity database authentication, or
 advanced monitoring in this increment.
 
