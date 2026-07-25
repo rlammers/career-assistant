@@ -141,16 +141,30 @@ The exact HTTPS redirect origin cannot be registered until the Container App hos
 
 ## 5. Build, scan, and publish immutable images
 
-- [ ] Use the full deployment commit SHA as the frontend and backend image tag; do not use `latest` for deployment.
-- [ ] Build the backend production image from the deployment commit.
-- [ ] Build the frontend production image with `VITE_AUTH_ENABLED=true` and the collected tenant ID, SPA client ID, and fully qualified API scope supplied as build arguments.
-- [ ] Confirm the frontend build uses `window.location.origin` for its redirect URI and contains no secret-bearing build arguments.
-- [ ] Run the repository's high/critical vulnerability scans against both final images and resolve or explicitly accept findings before publication.
-- [ ] Run both images locally when Docker is available and verify nginx `/`, proxied `/health`, backend `/health`, and the anonymous protected-API boundary.
-- [ ] Authenticate the operator to Azure Container Registry without storing registry credentials in the repository.
-- [ ] Push both commit-tagged images to the foundation registry.
-- [ ] Resolve and record both pushed image digests, then use digest-qualified references for the application deployment.
-- [ ] Verify the registry contains only the intended repositories/tags for this deployment and that anonymous pull is not enabled.
+- [x] Use the full deployment commit SHA as the frontend and backend image tag; do not use `latest` for deployment.
+- [x] Build the backend production image from the deployment commit.
+- [x] Build the frontend production image with `VITE_AUTH_ENABLED=true` and the collected tenant ID, SPA client ID, and fully qualified API scope supplied as build arguments.
+- [x] Confirm the frontend build uses `window.location.origin` for its redirect URI and contains no secret-bearing build arguments.
+- [x] Run the repository's high/critical vulnerability scans against both final images and resolve or explicitly accept findings before publication.
+- [x] Run both images locally when Docker is available and verify nginx `/`, proxied `/health`, backend `/health`, and the anonymous protected-API boundary.
+- [x] Authenticate the operator to Azure Container Registry without storing registry credentials in the repository.
+- [x] Push both commit-tagged images to the foundation registry.
+- [x] Resolve and record both pushed image digests, then use digest-qualified references for the application deployment.
+- [x] Verify the registry contains only the intended repositories/tags for this deployment and that anonymous pull is not enabled.
+- [x] Write-lock and delete-protect both full-SHA tags after digest and inventory verification.
+
+### Immutable image publication evidence (2026-07-25 NZST)
+
+- The successful release started from clean deployment source commit `c08ad5ec8c0b74249bdb5fceac10eb5007aa437f`. Both final images were built once from that commit for Linux `amd64`, used refreshed base images, and received only the full source SHA tag. No `latest`, short-SHA, branch, or environment tag was created.
+- An earlier unpublished local attempt was abandoned before registry authentication because the default Buildx provenance output would have added an attestation manifest. Its containers, network, archives, local release tags, and temporary metadata were removed. The successful release restarted from the unchanged clean source commit with provenance disabled, producing the required single manifest per repository.
+- The authenticated frontend build supplied only `/api`, the enabled-authentication flag, and the retained public Entra tenant, SPA client, and fully qualified API-scope values. Source verification confirmed the redirect defaults to `window.location.origin`; final image configuration and sanitized history inspection found no secret-bearing environment or build values. Public Entra identifiers remain omitted from repository evidence.
+- Both exact final images were saved to separate archives with SHA-256 checksums retained in private user-level operator variables. Trivy `0.69.3`, pinned as `aquasec/trivy@sha256:bcc376de8d77cfe086a917230e818dc9f8528e3c852f7b1aff648949b6258d1c`, scanned both archives in image-archive mode with the repository's `HIGH,CRITICAL` vulnerability gate. The database update was timestamped `2026-07-25T01:18:30.55519048Z`; both scans reported zero matching findings.
+- The unchanged scanned image tags passed isolated local smoke tests with disposable storage, Mock AI, authentication enabled, and no paid-provider configuration. The SPA `/`, direct backend `/health`, and nginx-proxied `/health` succeeded. The complete anonymous boundary script passed directly and through nginx, including protected `/api` requests reaching the backend and returning `401` without application data.
+- The operator authenticated with the existing Azure identity and pushed exactly the backend and frontend full-SHA tags on 2026-07-25 NZST. Docker push output, targeted Azure Container Registry metadata, and independent registry manifest inspection agreed on each SHA-256 digest and Linux `amd64` platform.
+- Both digest-qualified deployment references, push metadata, archive checksums, local image identifiers, and the deployment source commit are retained outside Git in private user-level operator variables for section 6. The separate documentation evidence commit is recorded there after this evidence is committed.
+- Final registry inventory contains exactly `career-assistant-backend` and `career-assistant-frontend`, each with the single expected full-SHA tag and one manifest. No other repository, manifest, or tag exists; anonymous pull and the registry admin account remain disabled.
+- Both full-SHA tags have `writeEnabled=false` and `deleteEnabled=false`. Re-reading their attributes confirmed write locks and delete protection without changing tags or digests, and both digest-qualified references still resolve to the independently verified manifests.
+- Docker registry authentication was removed after publication. Only the uniquely named smoke-test containers, network, disposable storage, image archives, and scan cache were removed; no broad prune or deletion of registry content was performed. No Container App, ingress, application endpoint, Bicep deployment, or CI change was created by this section.
 
 ## 6. Deploy the private application
 
