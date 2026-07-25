@@ -208,9 +208,9 @@ advanced monitoring in this increment.
 
 ## Increment 4: Private deployment cutover
 
-- [ ] Provision the empty Azure SQL database.
+- [x] Provision the empty Azure SQL database.
 - [ ] Apply the SQL Server migration outside normal Container App startup.
-- [ ] If provisioning or migration fails, delete and recreate the empty
+- [x] If provisioning or migration fails, delete and recreate the empty
   disposable database.
 - [ ] Set `Database__Provider=SqlServer`.
 - [ ] Set `Database__MigrateOnStartup=false`.
@@ -220,6 +220,36 @@ advanced monitoring in this increment.
 - [ ] Verify the main profile, job, status, and analysis workflow.
 - [ ] Restart the app and confirm data persists.
 - [ ] Remove the SQLite Azure Files mount if it is not used for anything else.
+
+Verification (2026-07-26): `azure-sql.bicep` compiled successfully, and the
+guarded Azure `what-if` contained exactly three creates (the logical server,
+the disposable `careerassistant` database, and `AllowAzureServices`) plus six
+expected foundation-resource ignores. The incremental deployment succeeded.
+Sanitized read-only inventory confirms one Australia East logical server with
+public network access enabled and the empty database online with General
+Purpose serverless capacity of 1 vCore (0.5-vCore minimum), 60-minute
+auto-pause, local backup redundancy, the Azure SQL free offer enabled, and
+free-limit `AutoPause`. The `0.0.0.0` Azure-services firewall rule is present.
+No database connection, migration, Container Apps secret, application revision,
+or Azure Files change was made in this increment; administrator credentials,
+server identifiers, and connection details were not recorded.
+
+Recovery verification (2026-07-26): the standalone SQL Server EF Core migration
+was attempted with `Database__MigrateOnStartup=false` and a temporary
+workstation firewall rule. The migration runner failed before establishing a
+SQL data-plane connection, so the disposable database was deleted and recreated
+from `azure-sql.bicep`. The final read-only check confirmed the recreated
+database is online with the intended serverless/free settings and no temporary
+migration firewall rule remains. The migration remains pending; no Container
+App revision, secret, or application configuration was changed.
+
+Connectivity diagnosis (2026-07-26): DNS and TCP 1433 were reachable, and a
+temporary read-only `SELECT 1` diagnostic succeeded with both the original
+`Default` and temporary `Proxy` Azure SQL connection policies. The server was
+restored to `Default` and the temporary firewall rule was removed. The blocker
+was a manually interpolated connection string that did not escape a reserved
+character in the administrator password; provider connection-string builders
+must construct any secret-bearing connection string. No migration was run.
 
 ## Acceptance criteria
 

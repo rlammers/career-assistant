@@ -120,7 +120,15 @@ the `migrations add` command is included for future model changes.
 
 ```powershell
 $env:Database__Provider = "SqlServer"
-$env:ConnectionStrings__DefaultConnection = "Server=127.0.0.1,1433;Database=CareerAssistantMigrationSmoke;User Id=sa;Password=$env:SQLSERVER_SA_PASSWORD;Encrypt=True;TrustServerCertificate=True"
+$sqlConnection = [System.Data.SqlClient.SqlConnectionStringBuilder]@{
+  DataSource = "127.0.0.1,1433"
+  InitialCatalog = "CareerAssistantMigrationSmoke"
+  UserID = "sa"
+  Password = $env:SQLSERVER_SA_PASSWORD
+  Encrypt = $true
+  TrustServerCertificate = $true
+}
+$env:ConnectionStrings__DefaultConnection = $sqlConnection.ConnectionString
 
 dotnet build src/backend/CareerAssistant.Api.SqlServerMigrations
 dotnet tool run dotnet-ef migrations list --project src/backend/CareerAssistant.Api.SqlServerMigrations --startup-project src/backend/CareerAssistant.Api --context ApplicationDbContext --no-build
@@ -151,7 +159,7 @@ Stop the API, remove the container, and clear shell-only values when finished:
 ```powershell
 docker stop career-assistant-sqlserver-smoke
 Remove-Item Env:\Database__Provider, Env:\Database__MigrateOnStartup, Env:\ConnectionStrings__DefaultConnection, Env:\SQLSERVER_SA_PASSWORD -ErrorAction SilentlyContinue
-Remove-Variable credential, securePassword -ErrorAction SilentlyContinue
+Remove-Variable credential, securePassword, sqlConnection -ErrorAction SilentlyContinue
 ```
 
 To inspect the independent SQLite history instead, clear the SQL Server shell

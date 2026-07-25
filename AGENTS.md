@@ -489,6 +489,7 @@ Local secret-safety rule:
 
 - Never run `dotnet user-secrets list` (or any equivalent command that prints secret values) in agent/tool output, CI logs, screenshots, or committed documentation.
 - Verify secret configuration by checking required key names, startup behavior, or redacted prefixes only; never display complete tokens, API keys, passwords, or connection strings.
+- Construct connection strings from separately held secret fields with a provider connection-string builder; never interpolate a secret password into a connection-string literal.
 - If a secret is printed, treat it as compromised, revoke or rotate it, and scan the repository for accidental copies before continuing.
 
 Release dependency-safety rule:
