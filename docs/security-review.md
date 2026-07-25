@@ -4,13 +4,13 @@ Review updated: 2026-07-25
 
 Scope: application, Microsoft Entra boundary, frontend proxy, backend API, persistence, containers, CI, and proposed Azure infrastructure
 
-Deployment status: **the Azure foundation is deployed and verified, and the private application plan has passed static review, Provider validation, and Azure `what-if`; no application workload, application ingress, or application endpoint exists**
+Deployment status: **the Azure foundation is verified, and the reviewed private application deployment has succeeded with one Container App and one initial revision. Its identifiers are retained privately; Microsoft Entra redirect registration and runtime security verification remain incomplete**
 
 ## Summary
 
 No critical or high-severity issue was identified in the current static owner-only deployment path. Invitation-only Microsoft Entra authentication and server-side app-role authorization are implemented and locally verified. The proposed Azure configuration enables authentication, exposes only the frontend container, uses Mock AI without a paid-provider secret, and constrains the provisional SQLite deployment to one replica.
 
-This is not a claim that application controls work in production. The foundation provider-level `what-if`, deployment, least-privilege image-pull identity, logging integration, and storage linkage have been verified. The private application inputs and compiled template are statically reviewed, and Provider validation plus Azure `what-if` predict exactly the intended Container App creation with no unexpected Azure change. Token validation against the deployed registration, ingress isolation, managed-identity image pulls by the workload, application logs, probes, cost controls, persistence, and all runtime application controls must still be verified through [`deploy-todo.md`](./deploy-todo.md).
+This is not a claim that application controls work in production. The foundation provider-level `what-if`, deployment, least-privilege image-pull identity, logging integration, and storage linkage have been verified. The private application inputs and compiled template were statically reviewed, Provider validation and Azure `what-if` predicted exactly the intended Container App creation, and the controlled deployment succeeded. Token validation against the deployed registration, ingress isolation, managed-identity image pulls by the workload, application logs, probes, cost controls, persistence, and all runtime application controls must still be verified through [`deploy-todo.md`](./deploy-todo.md).
 
 Public production remains a separate blocked milestone. Its database, edge-hardening, guest-access, operational, and final security-review work is tracked in [`production-todo.md`](./production-todo.md).
 
@@ -34,8 +34,9 @@ Detailed tactical evidence remains in the ignored local `docs/security-review-pr
 - CI permissions are read-only, third-party GitHub actions are commit-pinned, secret scanning is redacted, and CI does not authenticate to Azure, publish images, or deploy resources.
 - Deployment images must use commit-specific tags or digests; frontend Entra build configuration is validated without accepting client secrets.
 - Azure subscription preflight is complete: `australiaeast` is recognized, the required Bicep resource providers are registered, subscription-scope deployment and role-assignment permissions were inspected, and all three Bicep templates compile successfully.
-- The foundation provider-level `what-if` was repeated immediately before deployment and again proposed exactly the nine declared foundation creates with no other change type. The foundation deployed successfully, and live checks verified its registry, image-pull identity and role assignment, Log Analytics integration, Azure Files share, and environment storage link. No application workload or ingress exists.
-- The private application inputs and compiled template are statically reviewed. Provider validation succeeded, and the application `what-if` expanded the understood module wrapper and predicted one intended Container App creation. Its five additional entries were the existing foundation resources ignored by the Incremental deployment, not resource changes. No unexpected or unexpanded nested deployment was present; runtime controls remain unverified.
+- The foundation provider-level `what-if` was repeated immediately before deployment and again proposed exactly the nine declared foundation creates with no other change type. The foundation deployed successfully, and live checks verified its registry, image-pull identity and role assignment, Log Analytics integration, Azure Files share, and environment storage link. No application workload or ingress existed during that foundation-only verification.
+- The private application inputs and compiled template are statically reviewed. Provider validation succeeded, and the application `what-if` expanded the understood module wrapper and predicted one intended Container App creation. Its five additional entries were the existing foundation resources ignored by the Incremental deployment, not resource changes.
+- The controlled Incremental application deployment succeeded and produced one Container App and one initial revision. The exact application name, revision name, and HTTPS origin are retained privately; Microsoft Entra redirect registration and every runtime control remain unverified.
 
 ## Remaining owner-only risks and gates
 
@@ -43,7 +44,7 @@ Detailed tactical evidence remains in the ignored local `docs/security-review-pr
 | --- | --- | --- |
 | Live Entra and ingress boundary | Not accepted without verification | Confirm the assigned owner can sign in, anonymous requests receive `401`, missing-role requests receive `403` when a safe test identity is available, and the backend has no separate public ingress. |
 | SQLite on Azure Files | Provisional and limited to fictional data | Validate first-start migration, sequential and limited concurrent writes, locking, restart/revision persistence, and failure recovery. Stop use if corruption or incompatible locking is observed. |
-| Azure identity and service exposure | Foundation deployed and verified; application plan Provider-validated and reviewed | Foundation least-privilege identity, registry controls, observability integration, and storage linkage are verified. Provider prediction matches the intended application plan; workload identity use and application exposure remain unverified at runtime. |
+| Azure identity and service exposure | Foundation verified; reviewed application deployment succeeded | Foundation least-privilege identity, registry controls, observability integration, and storage linkage are verified. One application workload now exists; its identity use and exposure remain unverified at runtime. |
 | Proxy and browser edge behavior | Pending live validation or explicit owner-only acceptance | Verify transport security, proxy behavior, request attribution, browser-facing protections, and operational endpoint behavior at the actual Container Apps origin. |
 | Logs and configuration disclosure | Not accepted | Inspect application/system logs and error responses for tokens, identity data, connection strings, storage keys, and internal configuration before retaining the deployment. |
 | Supply chain and image state | Pending final deployment-commit checks | Re-run dependency audits, secret scan, final image scans, and Bicep compilation; publish only reviewed digest-qualified images. |
@@ -63,10 +64,11 @@ No remaining risk is accepted by this documentation update. Any owner-only accep
 | Foundation `what-if` and deployment | Provider validation repeated with exactly nine expected creates; deployment succeeded and live registry, RBAC, logging, storage, and workload-absence checks passed | Azure foundation verified |
 | Bicep templates | Foundation, application, and private wrapper compiled with Azure CLI/Bicep `0.45.6` | Repository preflight verified |
 | Private application compiled template | Inputs validated; intended Container App configuration statically reviewed; expected module-generated nested deployment understood and accepted | Statically reviewed, not live-verified |
-| Private application Provider validation and `what-if` | Live dependencies revalidated; Provider validation succeeded; exactly one intended Container App create predicted with only the five existing foundation resources ignored in Incremental mode | Provider prediction verified, not deployed |
+| Private application Provider validation and `what-if` | Live dependencies revalidated; Provider validation succeeded; exactly one intended Container App create predicted with only the five existing foundation resources ignored in Incremental mode | Provider prediction verified before deployment |
+| Private application deployment | Incremental deployment succeeded; exactly one Container App and one initial revision were identified, with outputs retained privately | Azure resource creation verified; runtime behavior unverified |
 | Dependency, secret, and final-image scans | npm/NuGet audits clean, Gitleaks scanned 117 commits with no leaks, source filesystem scan clean, and both image archives had no HIGH/CRITICAL vulnerabilities | Locally verified |
 | Reverse proxy and persistence | Local container smoke evidence exists | Azure behavior unverified |
-| Entra, ingress, probes, storage, logs, and cost controls | Static configuration only | Azure behavior unverified |
+| Entra, ingress, probes, storage, logs, and cost controls | Application resource exists; controls have not been inspected or exercised | Azure behavior unverified |
 
 ## Readiness decisions
 
@@ -76,7 +78,7 @@ The current authentication, private-deployment Bicep, frontend image configurati
 
 ### Private owner-only deployment readiness
 
-Not yet approved for private use. The foundation is deployed and verified, live dependencies were revalidated, and the private application plan passed static review, Provider validation, and `what-if`. The next controlled task is application deployment, followed by the live identity boundary, image-pull, application logging, cost, persistence, rollback, and teardown checks in `deploy-todo.md`. The first application deployment must use fictional data only.
+Not yet approved for private use. The foundation is verified and the reviewed private application deployment succeeded, but no runtime control has been verified. The next controlled task is registering the exact captured HTTPS origin as the Microsoft Entra SPA redirect URI, followed by the remaining Section 6 configuration checks and the live identity boundary, image-pull, logging, cost, persistence, rollback, and teardown checks in `deploy-todo.md`. Only fictional data may be used.
 
 ### Public production readiness
 
