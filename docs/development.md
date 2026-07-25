@@ -7,7 +7,7 @@ This guide covers full-stack local development, Microsoft Entra verification, Do
 For source development:
 
 - .NET 10 SDK
-- Node.js and npm
+- Node.js 22.22.0 or later and npm
 
 For the containerized workflow:
 

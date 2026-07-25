@@ -45,7 +45,7 @@ docker compose up --build
 
 Open `http://localhost:5173`. The backend is also published on loopback at `http://localhost:5117` for direct local testing. Docker Compose uses deterministic Mock AI by default, so this workflow does not make paid AI calls.
 
-For source development, install the .NET 10 SDK plus Node.js and npm, then run the backend and frontend in separate terminals:
+For source development, install the .NET 10 SDK plus Node.js 22.22.0 or later and npm, then run the backend and frontend in separate terminals:
 
 ```powershell
 dotnet run --project src/backend/CareerAssistant.Api/CareerAssistant.Api.csproj --launch-profile http

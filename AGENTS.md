@@ -491,6 +491,10 @@ Local secret-safety rule:
 - Verify secret configuration by checking required key names, startup behavior, or redacted prefixes only; never display complete tokens, API keys, passwords, or connection strings.
 - If a secret is printed, treat it as compromised, revoke or rotate it, and scan the repository for accidental copies before continuing.
 
+Release dependency-safety rule:
+
+- Run current full and production-only frontend dependency audits before building or publishing release images; final container scans do not replace audits of JavaScript bundled into the frontend.
+
 ---
 
 ## Guidance Maintenance
