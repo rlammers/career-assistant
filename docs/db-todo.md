@@ -1,0 +1,201 @@
+# Database TODO
+
+## Goal
+
+Use SQLite for local development and Azure SQL Database serverless for the
+deployed Azure Container App.
+
+Select the database provider through configuration and register it through
+dependency injection. Keep the existing `ApplicationDbContext` and current
+application architecture.
+
+## Scope
+
+Support:
+
+- `Sqlite` as the default local provider.
+- `SqlServer` as the deployed provider.
+- A fresh, empty Azure SQL database.
+- Disposable demo data.
+
+Do not add:
+
+- Production data migration.
+- Private endpoints or virtual network integration.
+- Managed identity database authentication.
+- Advanced SQL monitoring.
+- Separate migration projects or assemblies unless EF Core tooling proves they
+  are required.
+
+## Configuration
+
+Local configuration:
+
+```json
+{
+  "Database": {
+    "Provider": "Sqlite",
+    "MigrateOnStartup": true
+  },
+  "ConnectionStrings": {
+    "DefaultConnection": "Data Source=CareerAssistant.db"
+  }
+}
+```
+
+Azure Container App configuration:
+
+```text
+Database__Provider=SqlServer
+Database__MigrateOnStartup=false
+ConnectionStrings__DefaultConnection=<Container Apps secret reference>
+```
+
+`Database:MigrateOnStartup` already controls existing startup migration
+behaviour. Keep it enabled for local SQLite development and disable it for
+Azure SQL. Azure SQL migrations must run as a separate manual or lightweight
+deployment step before the application starts using the database.
+
+The application must fail clearly at startup when `Database:Provider` or
+`DefaultConnection` is missing, blank, or invalid.
+
+## Application design
+
+- Keep `Microsoft.EntityFrameworkCore.Sqlite`.
+- Add `Microsoft.EntityFrameworkCore.SqlServer` at the same version as the
+  existing EF Core packages.
+- Register the existing `ApplicationDbContext` according to
+  `Database:Provider`.
+- Enable SQL Server transient retry handling with
+  `EnableRetryOnFailure()`.
+- Keep all provider selection in dependency injection setup.
+- Do not add provider checks to controllers, business services, or the
+  DbContext.
+
+Expected registration:
+
+```csharp
+var provider = configuration["Database:Provider"]
+    ?? throw new InvalidOperationException(
+        "Database:Provider is required.");
+
+var connectionString =
+    configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException(
+        "DefaultConnection is required.");
+
+services.AddDbContext<ApplicationDbContext>(options =>
+{
+    if (provider.Equals("Sqlite", StringComparison.OrdinalIgnoreCase))
+    {
+        options.UseSqlite(connectionString);
+        return;
+    }
+
+    if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
+    {
+        options.UseSqlServer(
+            connectionString,
+            sql => sql.EnableRetryOnFailure());
+        return;
+    }
+
+    throw new InvalidOperationException(
+        $"Unsupported database provider: {provider}");
+});
+```
+
+The implementation should also reject blank values, not only `null` values.
+
+## Increment 1: Application provider selection
+
+Implement only provider configuration and registration.
+
+- [ ] Add the SQL Server EF Core provider.
+- [ ] Add `Database:Provider=Sqlite` to the default configuration.
+- [ ] Register SQLite or SQL Server through dependency injection.
+- [ ] Keep existing startup migration behaviour for local SQLite.
+- [ ] Add focused tests for:
+  - SQLite registration.
+  - SQL Server registration.
+  - Missing or invalid database configuration.
+- [ ] Keep all existing automated application tests on SQLite.
+- [ ] Confirm the application still starts locally with SQLite.
+
+Do not create Azure resources or change deployment configuration in this
+increment.
+
+## Increment 2: SQL Server migration
+
+Create the simplest migration path for a fresh, empty Azure SQL database.
+
+The current initial migration contains SQLite-specific types and annotations,
+so do not assume it can be applied to SQL Server unchanged. A single portable
+migration history is not required.
+
+- [ ] Review the current model and SQLite migration.
+- [ ] Generate a SQL Server migration suitable for a new empty database.
+- [ ] Start with the existing project structure.
+- [ ] Add a separate migration project or assembly only if EF Core tooling
+  proves it is needed to preserve both SQLite development and SQL Server
+  migration generation.
+- [ ] Document the exact command used to generate and apply the SQL Server
+  migration.
+- [ ] Apply the migration to a disposable SQL Server database.
+- [ ] Run a lightweight manual smoke test that creates and reads representative
+  application data.
+- [ ] Confirm existing SQLite migrations and automated tests still work.
+
+Do not add a permanent full-workflow SQL Server integration test suite. If the
+disposable SQL Server database becomes invalid, delete and recreate it.
+
+## Increment 3: Azure SQL infrastructure
+
+Add:
+
+- [ ] An Azure SQL logical server.
+- [ ] One General Purpose serverless Azure SQL database.
+- [ ] Automatic pause.
+- [ ] Conservative compute limits.
+- [ ] Azure SQL free offer configuration where supported.
+- [ ] A secure administrator credential input.
+- [ ] A Container Apps secret containing the connection string.
+- [ ] Only the minimum public network access needed for the Container App to
+  connect.
+
+Keep credentials and connection strings out of source control and deployment
+outputs. Build the Bicep templates and review Azure `what-if` before deployment.
+
+Do not add private networking, managed identity database authentication, or
+advanced monitoring in this increment.
+
+## Increment 4: Private deployment cutover
+
+- [ ] Provision the empty Azure SQL database.
+- [ ] Apply the SQL Server migration outside normal Container App startup.
+- [ ] If provisioning or migration fails, delete and recreate the empty
+  disposable database.
+- [ ] Set `Database__Provider=SqlServer`.
+- [ ] Set `Database__MigrateOnStartup=false`.
+- [ ] Supply `ConnectionStrings__DefaultConnection` from the Container Apps
+  secret.
+- [ ] Deploy the Container App revision.
+- [ ] Verify the main profile, job, status, and analysis workflow.
+- [ ] Restart the app and confirm data persists.
+- [ ] Remove the SQLite Azure Files mount if it is not used for anything else.
+
+## Acceptance criteria
+
+- Local development runs with SQLite by default.
+- Existing automated tests continue to run on SQLite.
+- The deployed Container App uses Azure SQL Database serverless.
+- Provider selection is configuration-driven and registered through dependency
+  injection.
+- Existing application code continues to use the same
+  `ApplicationDbContext`.
+- A fresh Azure SQL database can be created with the documented migration
+  command.
+- Azure SQL migration runs outside normal application startup.
+- The SQL Server path passes a lightweight disposable-database smoke test.
+- Azure SQL credentials are supplied through a Container Apps secret.
+- The deployed app no longer uses an Azure Files-mounted SQLite database.
