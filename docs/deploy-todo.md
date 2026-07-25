@@ -1,6 +1,6 @@
 # Private Azure Container Apps deployment TODO
 
-Status: **the Azure foundation and immutable images are verified, and the reviewed private application deployment has succeeded. One Container App and its initial revision now exist, and their non-secret identifiers are retained privately; Microsoft Entra redirect registration and runtime verification remain incomplete.**
+Status: **the Azure foundation and immutable images are verified, the reviewed private application deployment has succeeded, and its Microsoft Entra SPA redirect and owner-only access configuration are verified. Runtime workload, security-boundary, persistence, and operational checks remain incomplete.**
 
 For this milestone, private means the Azure URL is externally reachable but Microsoft Entra application access is assigned only to the owner. It does not mean private-network-only ingress. Public deployment and broader guest access remain deferred to [`production-todo.md`](./production-todo.md).
 
@@ -101,7 +101,7 @@ Follow this checklist in order. Do not mark Azure or live-verification items com
 - Required non-secret deployment values were stored as user-level environment variables outside the repository. Their relationships were validated without outputting values, and no matches were found in repository files.
 - The exact HTTPS redirect origin remains intentionally deferred until the frontend Container App hostname exists.
 
-The exact HTTPS redirect origin cannot be registered until the Container App hostname exists. Complete that step after the first application deployment.
+The exact HTTPS redirect origin was registered after the first application deployment. Sanitized evidence is recorded in section 6.
 
 ## 4. Provision the Azure foundation
 
@@ -186,7 +186,7 @@ Status: **complete.** The frontend dependency findings were remediated, the fail
 
 ## 6. Deploy the private application
 
-Status: **the reviewed private application deployment succeeded, and the application name, initial revision name, and exact HTTPS origin are retained in the private operator record. The next gated task is Microsoft Entra redirect registration; no runtime control is claimed as verified yet.**
+Status: **the reviewed private application deployment succeeded, its exact HTTPS origin is registered for the SPA, and the owner-only role assignment and delegated API consent are verified. The next gated task is deployed image and managed-identity pull verification; no runtime control is claimed as verified yet.**
 
 - [x] Prepare and validate the `private-application.bicep` inputs from foundation outputs, digest-qualified images, and the collected non-secret API authentication values.
 - [x] Compile `private-application.bicep` without diagnostics or generated repository artifacts.
@@ -196,8 +196,8 @@ Status: **the reviewed private application deployment succeeded, and the applica
 - [x] Confirm the `what-if` keeps external HTTPS ingress on frontend port `8080`, exposes no separate backend ingress, uses Mock AI, mounts Azure Files at `/app/data`, enables startup migrations through the private wrapper, uses single-revision mode, and keeps replicas at `1–1`.
 - [x] Deploy `private-application.bicep` only after reviewing the `what-if` output.
 - [x] Capture the application name, revision name, and generated HTTPS origin without recording tokens or sensitive configuration.
-- [ ] Register the exact generated origin as the SPA redirect URI in Microsoft Entra. Match scheme, hostname, and port; do not add a path or trailing slash.
-- [ ] Confirm the owner assignment is active and the SPA has consent for only the required delegated API scope.
+- [x] Register the exact generated origin as the SPA redirect URI in Microsoft Entra. Match scheme, hostname, and port; do not add a path or trailing slash.
+- [x] Confirm the owner assignment is active and the SPA has consent for only the required delegated API scope.
 - [ ] Verify the deployed revision uses the expected image digests and the managed identity successfully pulls both images.
 - [ ] Verify runtime configuration reports `AI provider: Mock`, authentication enabled, and startup migrations enabled without logging tenant, client, audience, issuer, role, token, claim, connection-string, or identity values.
 - [ ] Confirm no OpenAI API key or other paid-provider secret is configured in the Container App.
@@ -228,6 +228,15 @@ Status: **the reviewed private application deployment succeeded, and the applica
 - The single Incremental deployment completed with provisioning state `Succeeded`. Its two declared outputs were present and non-empty, and the generated URL was validated as an exact HTTPS origin without a path or trailing slash.
 - Post-deployment inventory contained exactly one Container App and one initial revision. The exact application name, revision name, HTTPS origin, and deployment timestamp were retained only as private user-level operator values; they were not printed or added to the repository.
 - This increment did not change Microsoft Entra, inspect runtime environment values or secrets, test image pulls or probes, exercise authentication, run migrations or workflow checks, or claim that the application is ready for private use. Those checklist items remain open.
+
+### Private SPA redirect and access-configuration evidence (2026-07-25 NZST)
+
+- The change started from clean commit `c45f65e01d538dfe08c34dc69c1e0778bae6612d`. The selected account remained in the intended tenant, the application deployment still reported `Succeeded`, the retained application and revision identities matched live state, and the captured origin was validated without printing any identifier or URL.
+- The existing single SPA redirect was preserved and the exact captured HTTPS origin was added once with no path or trailing slash. The registration remains single-tenant and SPA-only, implicit token issuance and public-client fallback remain disabled, and it still has no password or certificate credential.
+- The unused Microsoft Graph `User.Read` declaration was removed. The SPA now declares only the Career Assistant API's enabled `access_as_user` delegated permission; no `User.Read` grant was active before or after the change.
+- The API service principal has exactly one app-role assignment: the signed-in owner with the enabled required role. The SPA has exactly one owner-principal grant to the API containing only `access_as_user`, and no tenant-wide grant exists.
+- The existing owner-principal `openid`, `profile`, and `offline_access` grants were preserved for the MSAL sign-in and token-renewal flow. No consent grant or role assignment was created, updated, or removed.
+- This increment did not perform an interactive sign-in, inspect the deployed revision's images or runtime configuration, test workload identity pulls, probes, ingress, authorization responses, migrations, persistence, logs, or workflows, or claim readiness for private use.
 
 ## 7. Platform and access-boundary verification
 
