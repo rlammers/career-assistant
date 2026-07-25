@@ -51,7 +51,7 @@ resource database 'Microsoft.Sql/servers/databases@2025-01-01' = {
   name: databaseName
   location: location
   sku: {
-    name: 'GP_S_Gen5_1'
+    name: 'GP_S_Gen5'
     tier: 'GeneralPurpose'
     family: 'Gen5'
     capacity: 1

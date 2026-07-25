@@ -93,7 +93,7 @@ az bicep build --file infra/azure/private-application.bicep
 ## Azure SQL preflight and what-if
 
 Before deploying, confirm `Microsoft.Sql` is registered and that Australia East
-offers the `GP_S_Gen5_1` General Purpose serverless SKU:
+offers the `GP_S_Gen5` General Purpose serverless SKU with one vCore:
 
 ```powershell
 az provider show --namespace Microsoft.Sql --query registrationState --output tsv
@@ -128,8 +128,8 @@ az deployment group what-if `
     environmentName="$env:CAREER_ASSISTANT_AZURE_ENVIRONMENT_NAME" `
     registryName="$env:CAREER_ASSISTANT_AZURE_REGISTRY_NAME" `
     imagePullIdentityName="$env:CAREER_ASSISTANT_AZURE_IMAGE_PULL_IDENTITY_NAME" `
-    frontendImage="$env:CAREER_ASSISTANT_RELEASE_FRONTEND_IMAGE" `
-    backendImage="$env:CAREER_ASSISTANT_RELEASE_BACKEND_IMAGE" `
+    frontendImage="$env:CAREER_ASSISTANT_RELEASE_FRONTEND_DIGEST_REFERENCE" `
+    backendImage="$env:CAREER_ASSISTANT_RELEASE_BACKEND_DIGEST_REFERENCE" `
     authenticationTenantId="$env:VITE_ENTRA_TENANT_ID" `
     authenticationClientId="$env:CAREER_ASSISTANT_AUTHENTICATION_CLIENT_ID" `
     authenticationAudience="$env:CAREER_ASSISTANT_AUTHENTICATION_AUDIENCE" `

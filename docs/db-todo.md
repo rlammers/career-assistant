@@ -9,8 +9,8 @@ Select the database provider through configuration and register it through
 dependency injection. Keep the existing `ApplicationDbContext` and current
 application architecture.
 
-Status: **Increment 2 is complete. Increments 3–4 remain before the next
-private Azure deployment can use Azure SQL.**
+Status: **Increment 3 is complete. Increment 4 remains before the next private
+Azure deployment can use Azure SQL.**
 
 ## Scope
 
@@ -164,14 +164,14 @@ disposable SQL Server database becomes invalid, delete and recreate it.
 
 Add:
 
-- [ ] An Azure SQL logical server.
-- [ ] One General Purpose serverless Azure SQL database.
-- [ ] Automatic pause.
-- [ ] Conservative compute limits.
-- [ ] Azure SQL free offer configuration where supported.
-- [ ] A secure administrator credential input.
-- [ ] A Container Apps secret containing the connection string.
-- [ ] Only the minimum public network access needed for the Container App to
+- [x] An Azure SQL logical server.
+- [x] One General Purpose serverless Azure SQL database.
+- [x] Automatic pause.
+- [x] Conservative compute limits.
+- [x] Azure SQL free offer configuration where supported.
+- [x] A secure administrator credential input.
+- [x] A Container Apps secret containing the connection string.
+- [x] Only the minimum public network access needed for the Container App to
   connect.
 
 Keep credentials and connection strings out of source control and deployment
@@ -189,6 +189,19 @@ the current Container Apps environment has no fixed egress IP and private
 networking is out of scope. It does not permit workstation access. Any
 temporary migration IP rule must be added outside the template and removed once
 the migration is complete.
+
+Verification (2026-07-25): `Microsoft.Sql` was registered in the selected
+subscription. The Australia East capability response confirmed the available
+`GP_S_Gen5` General Purpose serverless SKU at one vCore, a 0.5-vCore minimum,
+60-minute auto-pause, and free-limit `AutoPause`. All four Bicep templates
+compiled. Azure `what-if` for the SQL template showed exactly three creates
+(logical server, database, and `AllowAzureServices` firewall rule) and six
+existing foundation resources ignored. The application `what-if` showed one
+Container App modification and five foundation resources ignored: it removes
+the Azure Files volume and mount, adds the secret-backed connection string and
+`SqlServer` provider, and disables startup migrations. Validation-only secure
+values were supplied to `what-if`; no database, application revision, secret,
+or migration was deployed.
 
 Do not add private networking, managed identity database authentication, or
 advanced monitoring in this increment.
