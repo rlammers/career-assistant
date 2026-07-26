@@ -223,6 +223,27 @@ header failure's diagnosis and remediation.**
   rate-limit, logging, cost, or owner-acceptance check is claimed by this
   evidence.
 
+### Browser-header diagnostic procedure
+
+Run `scripts/Test-PrivateAzureBrowserHeaders.ps1` first without
+`-ActivateForDiagnostic` to validate the redacted fail-closed baseline. In
+Single revision mode, the sole revision remains active while external ingress
+is disabled; disabled external ingress is the public-exposure boundary. After
+the approved private operator environment provides the expected subscription
+and tenant validation keys, run it once with `-ActivateForDiagnostic` to use
+that sole active revision, wait only for the HTTPS endpoint to become
+reachable, compare rendered nginx/container headers with the external HTTPS
+response, and disable ingress again in its `finally` block. The script emits
+only booleans, statuses, replica counts, and protocol versions; do not record
+its FQDN, header values, raw logs, tokens, or secrets.
+
+Local diagnostic evidence: a cached published frontend image, run with the
+deployment's `API_UPSTREAM=http://127.0.0.1:8081` value, rendered the CSP and
+Microsoft Entra allowance and returned every required browser-security header
+on `/`, a SPA fallback, and backend-proxy failure responses. This does not yet
+correlate that cached image to the stopped Azure revision or verify the Azure
+HTTPS serving path.
+
 ### Private application input and static-review evidence (2026-07-25 NZST)
 
 - Review used clean commit `4e01f580c5a33f67fd51510c48c85d34a0c26877`. Required private deployment inputs were loaded from approved operator storage and validated for presence, formatting, digest qualification, and expected relationships without printing or persisting their values.

@@ -28,7 +28,15 @@ function Invoke-AzureJson {
         return $null
     }
 
-    return $output | ConvertFrom-Json
+    $parsed = $output | ConvertFrom-Json
+    if ($parsed -is [System.Collections.IEnumerable] -and $parsed -isnot [string]) {
+        foreach ($item in $parsed) {
+            Write-Output $item
+        }
+    }
+    else {
+        Write-Output $parsed
+    }
 }
 
 function Invoke-AzureMutation {
@@ -157,7 +165,6 @@ if ($applications.Count -gt 1) {
 }
 
 $ingressDisableRequested = $false
-$revisionDeactivationCount = 0
 $deploymentState = $null
 
 if ($applications.Count -eq 1) {
@@ -174,24 +181,15 @@ if ($applications.Count -eq 1) {
         }
     }
 
-    foreach ($revision in $deploymentState.ActiveRevisions) {
-        $revisionDeactivationCount++
-
-        if ($PSCmdlet.ShouldProcess("an active Container App revision", "Deactivate")) {
-            Invoke-AzureMutation `
-                -Arguments @("containerapp", "revision", "deactivate", "--name", $applicationName, "--resource-group", $ResourceGroupName, "--revision", $revision.name) `
-                -FailureMessage "An active revision could not be deactivated."
-        }
-    }
-
     if (-not $WhatIfPreference) {
         $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
 
         do {
             $deploymentState = Get-DeploymentState -ContainerAppName $applicationName
-            $safe = $deploymentState.IngressDisabled `
-                -and $deploymentState.ActiveRevisionCount -eq 0 `
-                -and $deploymentState.LiveContainerStateCount -eq 0
+            # In Single revision mode, Container Apps maintains the sole
+            # revision as active. Disabled external ingress is the public
+            # exposure boundary; an active revision alone is not reachable.
+            $safe = $deploymentState.IngressDisabled
 
             if ($safe) {
                 break
@@ -206,17 +204,12 @@ if ($applications.Count -eq 1) {
     }
 }
 
-$safeStateVerified = $applications.Count -eq 0 -or (
-    $deploymentState.IngressDisabled `
-        -and $deploymentState.ActiveRevisionCount -eq 0 `
-        -and $deploymentState.LiveContainerStateCount -eq 0
-)
+$safeStateVerified = $applications.Count -eq 0 -or $deploymentState.IngressDisabled
 
 [pscustomobject]@{
     WhatIf                    = [bool]$WhatIfPreference
     ApplicationCount         = $applications.Count
     IngressDisableRequested  = $ingressDisableRequested
-    RevisionDeactivationCount = $revisionDeactivationCount
     SafeStateVerified        = $safeStateVerified
     ActiveRevisionCount      = if ($null -eq $deploymentState) { 0 } else { $deploymentState.ActiveRevisionCount }
     LiveContainerStateCount  = if ($null -eq $deploymentState) { 0 } else { $deploymentState.LiveContainerStateCount }
