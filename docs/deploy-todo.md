@@ -8,8 +8,9 @@ verification.
 
 Status: **the infrastructure, Azure SQL cutover, immutable images, managed
 identity pulls, and owner-only Entra configuration are deployed. External
-ingress is disabled. Live owner workflow, restart persistence, and final
-operational checks remain.**
+ingress is disabled. HTTPS readiness and the anonymous authorization boundary
+passed live verification; the owner workflow is blocked by the deployed
+frontend authentication redirect.**
 
 For this milestone, "private" means the Azure URL is enabled only during a
 bounded test and application access is assigned only to the owner. It does not
@@ -47,11 +48,11 @@ failure.
 
 ### Access and runtime
 
-- [ ] Confirm both containers become ready and `/` plus proxied `/health`
+- [x] Confirm both containers become ready and `/` plus proxied `/health`
   respond over HTTPS.
-- [ ] Confirm anonymous requests cannot read or change protected API data.
+- [x] Confirm anonymous requests cannot read or change protected API data.
 - [ ] Sign in as the assigned owner and confirm authenticated API access.
-- [ ] Confirm the backend has no independent public endpoint.
+- [x] Confirm the backend has no independent public endpoint.
 - [ ] If a safe unassigned identity is already available, confirm it receives
   `403`; otherwise leave this as a public-deployment follow-up.
 - [ ] Confirm logout and fresh sign-in work. Treat detailed expired-session and
@@ -77,6 +78,20 @@ the owner accepts the bounded test and external ingress is disabled afterward.
 - [ ] Retain the current immutable image references needed for rollback.
 - [ ] Confirm teardown remains straightforward: delete the dedicated resource
   group and remove obsolete Entra redirect URIs or assignments.
+
+Verification attempt on 2026-07-26 at 10:15 UTC: the HTTPS and anonymous
+checks passed, including `401` responses for every protected API method.
+Owner authentication returned to `localhost:5173`; an inspection of the
+deployed frontend bundle confirmed that it contains a localhost literal even
+though the current source derives the redirect from the browser origin. The
+test stopped before application writes or a revision restart, and external
+ingress was disabled and verified afterward. Publish and deploy a corrected
+immutable frontend image before retrying the owner workflow.
+
+The safe-state helper's mutation path also raised a Windows PowerShell native
+command error while invoking Azure CLI. Direct Azure CLI cleanup disabled
+ingress successfully, and the final state was verified. Keep the helper item
+open until its mutation path is corrected and exercised in a bounded window.
 
 ## Follow-ups that do not block database completion
 

@@ -7,7 +7,7 @@ private Azure deployment without changing application architecture.
 
 Status: **provider support, migrations, Azure SQL infrastructure, and the
 Container App cutover are complete. Live workflow and restart-persistence
-verification remain.**
+verification remain blocked by the deployed frontend authentication redirect.**
 
 Browser headers, ingress diagnostics, and other public-edge work are tracked in
 [`deploy-todo.md`](deploy-todo.md). They do not block database completion while
@@ -75,6 +75,13 @@ The exact local SQL Server migration commands are in
 Mark an item complete from direct live behavior. If a check fails, leave it
 open, record the failure category briefly, and restore disabled external
 ingress before investigation.
+
+Verification attempt on 2026-07-26 at 10:15 UTC: HTTPS readiness and the
+anonymous `401` boundary passed, but owner sign-in returned to
+`localhost:5173`. The deployed frontend bundle contains a localhost literal,
+contrary to the current source configuration. No application data was changed,
+the revision was not restarted, both database items remain open, and external
+ingress was disabled and verified afterward.
 
 ## Acceptance criteria
 
