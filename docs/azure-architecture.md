@@ -1,13 +1,14 @@
-# Proposed Azure deployment architecture
+# Azure deployment architecture
 
-Status: **static design only; never deployed**  
+Status: **private owner-only infrastructure and the Azure SQL-backed Container
+App are deployed; external ingress is disabled outside bounded verification**
 Region: Australia East
 
 The temporary private milestone uses an externally reachable Azure URL with Microsoft Entra application access assigned only to the owner. It does not use private-network-only ingress. Public production remains a later milestone.
 
 ```mermaid
 flowchart LR
-    Visitor[Authorized invited guest] -->|HTTPS + authenticated session| Ingress[Azure Container Apps ingress]
+    Owner[Assigned owner] -->|Bounded HTTPS + authenticated session| Ingress[Azure Container Apps ingress]
     Entra[Microsoft Entra External ID] -->|Microsoft identity or email OTP tokens| Ingress
     Ingress --> Proxy[Frontend proxy container]
     Proxy --> Api[ASP.NET Core API sidecar]
@@ -29,7 +30,7 @@ flowchart LR
 
 ## Runtime invariants
 
-- The next private deployment uses Azure SQL Database serverless with `Database__Provider=SqlServer` and startup migrations disabled. The SQL Server migration runs before the serving revision starts; see [the database roadmap](db-todo.md).
+- The private deployment uses Azure SQL Database serverless with `Database__Provider=SqlServer` and startup migrations disabled. The SQL Server migration runs before the serving revision starts; see [the database checklist](db-todo.md).
 - Frontend and backend containers each use internal HTTP Startup, Readiness, and Liveness probes. Both containers must become ready before the revision receives ingress traffic.
 - Frontend probes test nginx directly at `/`; backend probes test the API directly at `/health`. The public nginx `/health` route remains an end-to-end backend diagnostic and is not used for frontend container health.
 - Every non-health application route must require Entra authentication and server-side authorization for an assigned invited guest; direct API requests must not bypass access control.
@@ -38,4 +39,7 @@ flowchart LR
 - Only safe fictional demo content may be stored.
 - Demo storage is bounded through configuration; seed and reset behavior remains future work.
 - SQLite on Azure Files was rejected after its clean-database migration-start failure. Local development and Docker Compose retain SQLite only as their local persistence option.
-- Public production will reassess its managed relational database requirements and use a dedicated migration job; it does not inherit the temporary Azure Files design.
+- External ingress is disabled outside bounded owner verification. One active
+  revision is valid in Single revision mode while ingress is disabled.
+- Public production will reassess networking, availability, and migration
+  requirements rather than inheriting private-demo trade-offs.

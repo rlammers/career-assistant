@@ -13,15 +13,10 @@ Do not create, amend, stage, reset, or push commits unless the user explicitly a
 
 Separate changes when they have independent purposes, can be reviewed independently, or would be useful to revert independently.
 
-Common separate commits include:
-
-- A functional feature or bug fix
-- Tests that verify that feature or fix
-- A refactor that prepares for, but does not itself implement, behavior
-- Documentation or configuration changes unrelated to implementation
-- CI or dependency changes
-
-Keep tightly coupled implementation, migration, configuration, and tests together when separating them would leave an intermediate commit broken or misleading.
+Keep implementation, focused tests, configuration, migrations, and
+documentation together when they deliver one outcome. Separate only independent
+changes that are useful to review or revert on their own, such as an unrelated
+refactor, documentation topic, CI change, or dependency update.
 
 If the working tree contains unrelated user changes, identify them and propose a safe split. Do not assume authority to stage or alter those changes.
 
@@ -66,11 +61,8 @@ Add a body only when the subject cannot safely convey an important rationale, co
 
 ## Output
 
-When asked to prepare commits, provide:
-
-1. Proposed commit boundaries and the files or change categories in each
-2. One Conventional Commit message per proposed commit
-3. A brief reason for any non-obvious split or grouping
-4. Any risks, unstaged unrelated changes, or verification gaps
+When asked to prepare commits, provide the smallest useful set of commit
+boundaries and one message for each. Explain only non-obvious splits, unrelated
+working-tree changes, or material verification gaps.
 
 When asked only for a message, provide the best message and, if needed, one concise alternative.

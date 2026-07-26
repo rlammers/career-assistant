@@ -5,7 +5,9 @@ description: Implement or modify Entity Framework Core models, mappings, migrati
 
 # Build persistence changes
 
-Prioritize data integrity, readable data access, and portability across SQLite, SQL Server, Azure SQL, and PostgreSQL. Follow established repository patterns and make the smallest coherent change.
+Prioritize data integrity, readable data access, and portability across the
+repository's supported SQLite and SQL Server/Azure SQL providers. Follow
+established patterns and make the smallest coherent change.
 
 ## Provider portability
 
@@ -38,39 +40,20 @@ Create an EF Core migration for every intentional schema change. Review the gene
 
 Apply the migration to a disposable local or test database when feasible. Do not modify a shared or production database without explicit authorization.
 
-Keep migrations portable where possible. Some operations differ between database providers, especially SQLite schema alterations. When target providers require different migration behavior:
-
-1. Keep the model portable.
-2. Document the incompatibility and why it exists.
-3. Use provider-specific migration configuration or migration assemblies only when needed.
-4. Validate the migration against each affected provider before considering the change production-ready.
+Keep migrations portable where possible. Some operations differ between
+providers, especially SQLite schema alterations. Keep the model portable and
+use the existing provider-specific migration histories when needed. Document
+only the durable incompatibility.
 
 Never use `EnsureCreated` as a replacement for migrations outside disposable tests or explicitly temporary development scenarios.
 
-## Implementation workflow
-
-1. Inspect the DbContext, existing entities, configurations, migrations, database configuration, and affected API behavior.
-2. Identify data-integrity rules, query shape, provider compatibility, and migration risks.
-3. Make the smallest coherent model, configuration, query, and migration change.
-4. Add or update tests according to risk, especially for core workflows, data integrity, query behavior, and past regressions.
-5. Run feasible verification before handoff.
-
 ## Verification
 
-Run the relevant backend build and tests. For schema changes, also generate the migration and apply it to a disposable local or test database when feasible.
+Inspect the affected model, queries, migrations, configuration, and API
+behavior. Keep related model, migration, tests, and documentation in one
+increment. Run the relevant backend tests; for a schema change, apply the
+migration to a disposable database when feasible.
 
-Report:
-
-- The provider(s) checked
-- Migrations generated and applied
-- Tests and commands run
-- Any provider-specific limitations or unverified risks
-
-## Completion summary
-
-State:
-
-- Schema or query changes
-- Data-integrity and portability decisions
-- Migrations and verification performed
-- Limitations, trade-offs, or follow-up work
+Report the providers checked, migrations applied, and any material data-loss or
+compatibility risk. Do not block a safe local change on unrelated deployment
+evidence.

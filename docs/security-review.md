@@ -1,97 +1,81 @@
-# Security review: private Azure deployment readiness
+# Security review: private Azure deployment
 
 Review updated: 2026-07-26
 
-Scope: application, Microsoft Entra boundary, frontend proxy, backend API,
-Azure SQL persistence, containers, CI, and proposed Azure infrastructure.
-
 ## Decision
 
-**Not approved for private use.** The Azure SQL migration has succeeded, the
-failed SQLite/Azure Files persistence path is retired, and the SQL-backed
-revision was deployed from final digest-qualified images. Runtime browser
-verification did not observe the required CSP or other nginx security headers,
-so ingress was disabled and the active revision was deactivated. Private use
-remains blocked until that failure is resolved and all runtime, operational,
-and owner-only acceptance checks pass.
+The deployed design is suitable for bounded owner-only verification with
+external ingress disabled before and after each test window.
 
-Public production remains blocked. The narrow Azure SQL public-network exposure
-described below is not a public-production decision.
+It is not approved for unattended public availability. Public production
+requires the follow-up work in [`production-todo.md`](production-todo.md).
 
 ## Verified controls
 
-- The server-side fallback authorization policy requires both authentication and
-  the configured application role for controller routes; `/health` is the sole
-  intentional anonymous backend endpoint.
-- The frontend uses MSAL authorization code with PKCE and session storage. The
-  API token scope is attached by the client without exposing a credential in
-  frontend configuration.
-- Authentication and analysis failures are sanitized; controllers do not return
-  token contents, identity configuration, or provider exception details.
-- The application template exposes only the frontend container. The backend is
-  a sidecar with no independent ingress, uses Mock AI, and accepts no paid AI
-  provider secret.
-- Azure Container Registry has admin and anonymous pull disabled. The workload
-  uses a registry-scoped managed identity rather than registry credentials.
-- The serving template supplies the Azure SQL connection only through the
-  `database-connection-string` Container Apps secret, sets
-  `Database__Provider=SqlServer`, and fixes
-  `Database__MigrateOnStartup=false`.
-- The standalone SQL Server migration `20260725095637_InitialCreate` was
-  applied to the empty disposable Azure SQL database and confirmed in
-  `__EFMigrationsHistory`. The temporary migration firewall rule and
-  session-only configuration were removed afterward.
-- The frontend nginx configuration now suppresses version disclosure and sets
-  HSTS, CSP, MIME-sniffing, frame, referrer, and permissions-policy headers.
-  Its CSP permits only same-origin content and the Microsoft Entra authority
-  required for redirect and silent token acquisition.
-- Local release-gate checks passed: 51 backend tests; frontend lint, 39 tests,
-  and production build; full and production-only npm audits; transitive NuGet
-  vulnerability audit; Gitleaks with no finding; and temporary-output Bicep
-  compilation. Local frontend and backend images built from the pinned bases;
-  their HIGH/CRITICAL archive scans reported no finding. The local images are
-  verification artifacts only, not publishable releases.
-- The final release images were built from the committed remediation revision,
-  scanned, published under full-SHA tags, resolved to private digest-qualified
-  references, and used in a guarded Azure deployment. The deployed definition
-  contains the SQL secret reference, `SqlServer`, disabled startup migrations,
-  single-revision mode, and no Azure Files volume or backend mount.
+- Every non-health API route requires Microsoft Entra authentication and the
+  configured application role.
+- `/health` is the only intentional anonymous backend route.
+- The frontend uses authorization code with PKCE and contains no client secret.
+- Authentication and provider failures are sanitized.
+- Only the frontend container has ingress; the API is a sidecar.
+- The deployment uses Mock AI and contains no paid-provider secret.
+- A managed identity with registry-scoped `AcrPull` retrieves immutable images.
+- Azure SQL is supplied through a Container Apps secret, startup migrations are
+  disabled, and the provider-specific migration was applied separately.
+- The deployed application uses one replica in Single revision mode and no
+  Azure Files database mount.
+- Local and release checks covered backend and frontend tests, dependency
+  audits, secret scanning, Bicep compilation, and HIGH/CRITICAL image scans.
+- External ingress is currently disabled.
 
-## Accepted boundary for this private milestone
+## Accepted private-demo boundary
 
-The logical Azure SQL server uses the Azure-services firewall rule because the
+The Azure SQL logical server allows Azure services because the current
 Container Apps environment has no fixed egress IP and private networking is out
-of scope. This is acceptable only for the disposable database, fictional data,
-invited authorized users, and owner-only private evaluation. It does not permit
-workstation access and must not be carried into public production. A private
-endpoint or a reviewed public-edge/networking design is required before public
-release.
+of scope. Accept this only for the disposable database, fictional data, and
+owner-only testing. Do not carry the decision into public production without a
+fresh network review.
 
-## Remaining gates
+One active revision while external ingress is disabled is a valid fail-closed
+state in Container Apps Single revision mode.
 
-| Risk area | Required evidence before private use |
-| --- | --- |
-| Browser security headers | The deployed HTTPS root did not expose the nginx CSP, HSTS, or other configured browser-security headers, although the exact published image exposes them locally. Diagnose the Azure serving path and redeploy only after the final external response includes all required headers. |
-| Runtime boundary | After the header failure is resolved, verify probes, Entra sign-in, anonymous `401`, safe missing-role `403`, backend-sidecar isolation, Mock-only analysis, Azure SQL persistence, and log redaction. Keep ingress disabled on any authentication, persistence, or secret-disclosure failure. |
-| Rate limiting | Keep nginx limiting by its direct peer until two independent deployed client networks prove that request attribution is distinct. Do not trust arbitrary forwarded headers. If attribution is shared, record the owner-only shared-limit limitation and obtain explicit acceptance. |
-| Operations | Inspect application and Azure logs; record rollback/stop/teardown procedures, budget controls, observed rate-limit behavior, and a final owner-only decision. |
+## Genuine blockers
 
-## Readiness states
+Stop a bounded test and disable ingress if any of these occur:
 
-| Scope | State |
-| --- | --- |
-| Repository remediation | Final commit-specific image build, scan, publication, and guarded deployment completed. |
-| Deployment of a verification revision | Failed closed: two containers became ready, but nginx security headers were absent from the public response; ingress is disabled and no revision is active. |
-| Private owner-only use | Blocked pending a corrected header deployment, successful runtime and operational evidence, and final acceptance of the narrowly scoped Azure SQL exposure and any rate-limit limitation. |
-| Public production | Blocked pending private networking/public-edge decisions, broader guest validation, and a fresh production security review. |
+- owner authentication or server-side authorization cannot be confirmed;
+- a token, credential, connection string, or sensitive identity value is
+  exposed;
+- Azure SQL writes fail or data appears at risk;
+- resource behavior creates unexpected cost; or
+- a material public attack path is observed.
 
-Detailed tactical identifiers, connection data, and raw diagnostic evidence remain
-in the ignored private assessment. Do not commit or reproduce them in public
-artifacts.
+## Non-blocking follow-ups
+
+- Diagnose the mismatch between nginx headers in the image and the external
+  Azure response. This must be resolved before leaving the endpoint publicly
+  reachable, but it does not block Azure SQL verification followed by disabled
+  ingress.
+- Validate client-address attribution before depending on nginx per-client rate
+  limiting for multiple users.
+- Exercise unassigned and broader guest identities when safe test accounts are
+  available.
+- Review public networking, recovery, availability, and logging requirements
+  before public production.
+
+## Private milestone acceptance
+
+The private milestone is complete when the owner-authenticated fictional
+workflow succeeds, data survives an application restart, logs show no material
+security or database failure, the budget control is active, and external
+ingress is disabled afterward.
+
+Detailed identifiers and raw diagnostics belong in ignored local operator
+records, not committed documentation.
 
 ## References
 
-- [Private deployment checklist](./deploy-todo.md)
-- [Azure SQL cutover checklist](./db-todo.md)
-- [Public production checklist](./production-todo.md)
-- [Azure deployment guidance](../infra/azure/README.md)
+- [Private deployment checklist](deploy-todo.md)
+- [Database checklist](db-todo.md)
+- [Public production backlog](production-todo.md)
+- [Azure infrastructure guide](../infra/azure/README.md)

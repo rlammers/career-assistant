@@ -351,7 +351,9 @@ Profile fields (`Summary`, `Skills`, `Experience`) and job fields (`Company`, `R
 - The backend exposes `GET /health` and `HEAD /health` for health checks.
 - Compose uses the default `Sqlite` provider and `ConnectionStrings__DefaultConnection`; persistent storage is mounted at `/app/data`.
 - Development and Compose enable startup migrations explicitly. Reusable public deployment configuration disables startup migrations and requires a dedicated migration process.
-- The next Azure deployment will switch to `SqlServer`, disable startup migrations, and use an Azure SQL connection string supplied as a secret. Track that cutover in [the database roadmap](db-todo.md); do not treat Compose's SQLite volume as its deployment design.
+- The Azure deployment uses `SqlServer`, disables startup migrations, and
+  receives its Azure SQL connection string as a secret. Local Compose continues
+  to use its SQLite volume; see [the database checklist](db-todo.md).
 - Development allows `http://localhost:5173` through CORS. Other environments must configure exact allowed origins.
 - `ForwardedHeaders__Enabled=true` is required when the API runs behind the trusted nginx proxy.
 - Authentication and API authorization must remain enabled for authenticated test workflows; frontend route protection is not the security boundary.

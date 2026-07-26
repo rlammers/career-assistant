@@ -13,15 +13,17 @@ Career Assistant provides a small, linear workflow for:
 
 ## Status
 
-The MVP and its core backend/frontend workflow are complete. Invitation-only Microsoft Entra authentication and server-side authorization are working locally.
+The MVP and its core backend/frontend workflow are complete. The private Azure
+infrastructure and Azure SQL-backed Container App are deployed with external
+ingress disabled outside bounded owner verification.
 
-The next milestone is a private Azure Container Apps deployment with:
+The remaining private milestone work is to verify:
 
-- a React frontend and ASP.NET Core API;
-- Azure SQL Database serverless persistent storage, while local development remains on SQLite;
+- the owner-authenticated workflow;
+- persistence across an application restart;
 - deterministic Mock AI analysis with no paid-provider secret;
 - safe fictional demo data; and
-- Microsoft Entra authentication restricted to explicitly authorized users.
+- final operational cleanup with external ingress disabled.
 
 Public deployment is deferred until the private deployment has been verified.
 
@@ -31,7 +33,7 @@ Public deployment is deferred until the private deployment has been verified.
 - Frontend: React, TypeScript, Vite, Fetch API
 - Authentication: Microsoft Entra ID with server-side app-role authorization
 - Containers: Docker Compose and nginx
-- Planned hosting: Azure Container Apps
+- Hosting: Azure Container Apps with Azure SQL Database serverless
 
 ## Quick start
 
@@ -65,7 +67,7 @@ See the [development guide](docs/development.md) for full setup, authentication,
 - [Frontend guide](src/frontend/README.md) — frontend structure and component-level development
 - [Azure infrastructure](infra/azure/README.md) — Bicep modules, parameters, probes, and authenticated image builds
 - [Private deployment checklist](docs/deploy-todo.md) — current Azure deployment milestone
-- [Database roadmap](docs/db-todo.md) — SQLite-to-Azure-SQL cutover increments
-- [Azure architecture](docs/azure-architecture.md) — proposed topology and trust boundaries
+- [Database checklist](docs/db-todo.md) — Azure SQL design and remaining persistence verification
+- [Azure architecture](docs/azure-architecture.md) — deployed topology and trust boundaries
 - [Security review](docs/security-review.md) — current private-deployment security assessment
 - [Public production backlog](docs/production-todo.md) — deferred public-release work

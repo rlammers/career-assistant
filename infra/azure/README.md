@@ -1,13 +1,15 @@
 # Azure deployment readiness
 
-These Bicep files describe the Azure deployment in Australia East. The foundation and private Container App have been deployed and verified to the extent recorded in `docs/deploy-todo.md`. The retained application revision is stopped and external ingress is disabled after the SQLite migration-start failure; it is not approved for private use.
+These Bicep files describe the deployed private-demo infrastructure in
+Australia East. The foundation, Azure SQL Database serverless instance, and
+Azure SQL-backed Container App have been deployed. External ingress is disabled
+outside bounded owner verification; current status is recorded in
+[`docs/deploy-todo.md`](../../docs/deploy-todo.md).
 
-The next private deployment replaces that SQLite/Azure Files persistence path
-with Azure SQL Database serverless. `azure-sql.bicep` provisions the disposable
-database infrastructure, and the application modules use a Container Apps
-secret-backed SQL Server connection string. Applying the SQL Server migration
-and deploying the revised app remain separate cutover steps in [the database
-roadmap](../../docs/db-todo.md).
+`azure-sql.bicep` provisions the disposable database infrastructure, and the
+application modules use a Container Apps secret-backed SQL Server connection
+string. Apply SQL Server migrations separately before deploying the serving
+revision; see [`docs/db-todo.md`](../../docs/db-todo.md).
 
 `foundation.bicep` defines the existing registry, managed identity, logging,
 file share, and Container Apps environment. `azure-sql.bicep` defines the Azure
@@ -39,7 +41,12 @@ with startup migrations disabled.
 | Application | `databaseConnectionString` | required, secure | Container Apps secret value for the SQL Server connection |
 | Application | `migrateOnStartup` | `false` | Enables API startup migrations only when explicitly requested |
 
-The temporary private deployment is externally reachable through its Azure URL but restricted to the owner through Entra assignment. It is not private-network-only. Deploy `private-application.bicep` only after the separate Azure SQL migration step; its wrapper fixes `migrateOnStartup=false`, which is also the reusable application module default.
+The private deployment is externally reachable only when ingress is enabled
+for a bounded test and is restricted to the owner through Entra assignment. It
+is not private-network-only. Deploy `private-application.bicep` only after the
+separate Azure SQL migration step; its wrapper fixes
+`migrateOnStartup=false`, which is also the reusable application module
+default.
 
 The API applies configured migrations before mapping middleware or endpoints. A migration exception therefore terminates startup instead of serving requests with a missing or invalid schema. Startup logging records only the environment, AI provider, and configuration flags; it does not log the database connection string or Entra identifiers.
 
@@ -60,7 +67,10 @@ The backend Startup probe allows approximately 165 seconds of probing after its 
 
 Frontend probes call nginx directly at `/`, so a temporary backend failure does not restart nginx. Backend probes call the API directly at `/health`; that endpoint is anonymous, returns process health without querying the database, and is mapped only after startup validation completes. The public nginx `/health` route remains an end-to-end diagnostic proxy to the backend.
 
-Both containers must pass Startup and Readiness before the revision is ready for traffic. In single-revision mode, a previous healthy revision should continue serving until its replacement is ready; on the first deployment, the application remains unavailable until both containers are ready. Live timings may be adjusted only after observing the private Azure deployment.
+Both containers must pass Startup and Readiness before the revision is ready
+for traffic. In Single revision mode, one active revision may remain while
+external ingress is disabled; disabled ingress is the public-access safety
+boundary.
 
 ## Authenticated frontend image
 
@@ -68,7 +78,7 @@ Vite replaces frontend environment variables during the production build, so Mic
 
 The delegated scope must be fully qualified, for example `api://<api-application-client-id>/access_as_user`. The redirect URI is not compiled into the Azure image: the application derives it from `window.location.origin`. Register that exact origin in Microsoft Entra; its scheme, hostname, and port must match, and an origin contains no path or trailing slash.
 
-From the repository root, source the public values from the operator environment:
+From the repository root, source the public values from the current environment:
 
 ```powershell
 docker build `
@@ -106,7 +116,7 @@ database when its free limit is exhausted. If the offer or SKU is unavailable,
 stop: do not change the template to allow billed usage without a new explicit
 cost decision.
 
-Keep secure values only in the operator environment. Do not echo them, add them
+Keep secure values only in the current environment. Do not echo them, add them
 to a parameter file, enable shell tracing, or store deployment output. The
 following commands use environment variables by name without printing their
 values:
@@ -147,4 +157,7 @@ no fixed egress IP; it does not authorize a workstation. Add any temporary
 migration workstation rule outside this template and remove it immediately
 after migration.
 
-Do not deploy these modules until all deployment-blocking findings in `docs/security-review.md` are accepted or remediated.
+Stop before deployment only for an unexpected cost, missing secure input,
+authentication uncertainty, destructive database risk, secret exposure, or a
+material public security issue. Record other findings as follow-ups in
+[`docs/deploy-todo.md`](../../docs/deploy-todo.md).

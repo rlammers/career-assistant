@@ -9,12 +9,10 @@ Review the complete change in the context of the repository. Prioritize security
 
 ## Review process
 
-1. Read the relevant diff and enough surrounding code to understand its behavior.
-2. Check affected callers, consumers, configuration, tests, and integration boundaries.
-3. Compare the change with established repository patterns and documented requirements.
-4. Identify defects, security risks, regressions, maintainability concerns, and meaningful test gaps.
-5. Note positive observations when they help explain why an approach is sound.
-6. Assess whether each finding should block merge.
+Read the diff and enough surrounding code, callers, configuration, and tests to
+understand the change. Focus on plausible defects, security risks, regressions,
+and meaningful test gaps. Distinguish issues that block merge from useful
+follow-ups.
 
 Do not run builds or tests as part of a routine review. Treat GitHub Actions as the primary build and test verification mechanism. Clearly state when the review relies on CI results that have not been inspected or are unavailable.
 
@@ -49,15 +47,7 @@ Treat other useful test additions as non-blocking.
 
 ## Output
 
-Present results in this order:
-
-1. Blocking findings
-2. Non-blocking findings
-3. Test gaps
-4. Positive observations
-5. Assumptions or questions
-6. Short merge-readiness summary
-
-Order findings by impact within each section. If a section has no content, omit it.
-
-If there are no actionable findings, say so directly and mention any remaining uncertainty, such as uninspected CI results or behavior that could not be verified.
+Lead with findings ordered by impact and include file references, failure
+scenarios, and practical fixes. Separate blocking findings from non-blocking
+follow-ups. Omit empty sections. If there are no actionable findings, say so
+directly and mention only material verification gaps.

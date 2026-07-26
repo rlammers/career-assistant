@@ -30,13 +30,12 @@ Keep interactive UI visually stable. Reserve space for transient loading, succes
 
 Show validation and error messages close to the affected control or action. Use broader notifications only for application-wide outcomes or when an inline message would not be visible. Follow an existing repository feedback pattern when one exists.
 
-## Implementation workflow
+## Implementation
 
-1. Inspect relevant pages, components, styles, API calls, and tests before changing behavior.
-2. Identify loading, empty, error, and success states that the change affects.
-3. Make the smallest coherent change that fits existing conventions.
-4. Avoid inventing client-side data, exposing secrets, or duplicating backend validation.
-5. Keep user-facing copy concise and explain important design choices or trade-offs in the handoff.
+Inspect the affected page, component, styles, API call, and tests. Make the
+smallest coherent change and handle the loading, empty, error, and success
+states it actually affects. Avoid inventing client-side data, exposing secrets,
+or duplicating backend validation.
 
 ## Verification
 
@@ -44,13 +43,6 @@ Run the relevant frontend linting, tests, and production build before handoff wh
 
 For purely cosmetic changes with no behavioral effect, a production build is normally sufficient; run additional checks when the change affects interaction, accessibility, rendering logic, API behavior, or a core workflow.
 
-Report the commands run and their outcomes. If verification cannot run, explain why and state the remaining risk.
-
-## Completion summary
-
-State:
-
-- What changed
-- Accessibility and UI-state behavior considered
-- Tests or verification run
-- Important design decisions, limitations, or follow-up work
+Report the commands run and their outcomes, plus any material accessibility or
+compatibility issue. Keep minor improvements as follow-ups rather than
+expanding the current change.

@@ -1,15 +1,15 @@
 ---
-
 name: backend-api
 description: Implement or modify ASP.NET Core Web API endpoints, controllers, services, dependency injection, request and response models, validation, configuration, error handling, and API tests in this repository. Use when Codex changes backend HTTP behavior or its supporting application logic.
+---
 
-Build API changes
+# Build API changes
 
 Follow the repository's established patterns first. Prioritize security, correctness, readable code, stable API contracts, and maintainable separation of concerns over speed or cleverness.
 
 Prefer the smallest coherent change that satisfies the requirement. Avoid speculative abstractions or unnecessary infrastructure.
 
-Framework-first approach
+## Framework-first approach
 
 Prefer built-in ASP.NET Core and .NET features before introducing custom implementations.
 
@@ -26,7 +26,7 @@ Use established framework capabilities where appropriate, including:
 
 Avoid custom infrastructure when the framework already provides a clear solution.
 
-Design boundaries
+## Design boundaries
 
 Keep controllers thin. Controllers should handle HTTP concerns:
 
@@ -43,7 +43,7 @@ Use separate request and response DTOs rather than exposing Entity Framework (EF
 
 Do not introduce breaking API contract changes unless explicitly requested. Explain any compatibility impact in the handoff.
 
-Dependency injection and configuration
+## Dependency injection and configuration
 
 Use constructor injection and inject only the dependencies required by each class.
 
@@ -53,7 +53,7 @@ Use strongly typed options for application configuration and validate required c
 
 Do not commit secrets, API keys, or production credentials.
 
-Errors and validation
+## Errors and validation
 
 Use the ASP.NET Core "ProblemDetails" convention for new or changed error responses unless the repository already has a consistent, compatible response format.
 
@@ -68,7 +68,7 @@ Validate route values, request bodies, status transitions, configuration-derived
 
 Avoid exposing exception details, stack traces, secrets, internal configuration, or implementation details.
 
-Asynchronous programming
+## Asynchronous programming
 
 Prefer asynchronous APIs end-to-end.
 
@@ -76,7 +76,7 @@ Do not block asynchronous operations using ".Result", ".Wait()", or synchronous 
 
 Accept and propagate "CancellationToken" values where supported.
 
-Entity Framework Core
+## Entity Framework Core
 
 Prefer efficient queries.
 
@@ -90,7 +90,7 @@ Do not expose EF Core entities directly through API responses.
 
 Avoid database migration-on-startup by default. Enable it only for suitable development or single-instance demo environments.
 
-Logging
+## Logging
 
 Use structured logging with "ILogger<T>".
 
@@ -106,7 +106,7 @@ Do not log:
 
 Prefer structured log properties over string interpolation.
 
-AI integration
+## AI integration
 
 Treat AI responses as untrusted external input.
 
@@ -116,7 +116,7 @@ Keep provider-specific behavior behind application services.
 
 Handle timeouts, rate limits, transient failures, cancellation, and invalid model output gracefully.
 
-Security and deployment
+## Security and deployment
 
 For infrastructure and middleware changes:
 
@@ -130,17 +130,12 @@ Keep dependency injection registration and middleware configuration consistent.
 
 Do not claim a deployment control is verified solely because code or configuration exists. Distinguish implementation from verification.
 
-Implementation workflow
+## Workflow and verification
 
-1. Inspect related endpoints, services, models, configuration, and tests before changing behavior.
-2. Identify affected consumers, including frontend calls and API contracts.
-3. Make the smallest coherent change that fits established patterns.
-4. Keep provider selection and infrastructure configuration in dependency injection.
-5. Consider validation, cancellation, async behavior, null handling, persistence failure paths, and security implications.
-6. Add or update focused tests based on the risk of the change.
-7. Explain material design decisions and trade-offs in the handoff when more than one reasonable approach exists.
-
-Tests and verification
+Inspect the affected endpoint, its callers, configuration, and tests. Implement
+the smallest coherent change, including related validation and documentation in
+the same increment. Add focused tests where failure would affect a core
+workflow, security boundary, persistence, or API compatibility.
 
 Use a risk-based approach.
 
@@ -161,14 +156,6 @@ Report the commands run and their outcomes. If verification cannot run, explain 
 
 Do not claim tests passed unless they were actually executed successfully.
 
-Completion summary
-
-State:
-
-- What changed
-- Important design decisions and trade-offs
-- Public API contract changes
-- Configuration changes
-- Tests or verification run
-- Deployment considerations
-- Any limitations, follow-up work, or assumptions
+Report the relevant checks actually run and any material contract,
+configuration, deployment, or compatibility impact. Record minor unverified
+work as follow-up rather than blocking completion.
