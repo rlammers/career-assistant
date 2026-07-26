@@ -186,7 +186,11 @@ Status: **complete.** The frontend dependency findings were remediated, the fail
 
 ## 6. Deploy the private application
 
-Status: **the reviewed deployment, exact SPA origin, owner-only access configuration, deployed image digests, and managed-identity image pulls are verified. A controlled reset reproduced the backend migration-start failure on a clean SQLite database. The sole revision is stopped and external ingress is disabled; remaining runtime checks are blocked until the Azure SQL cutover tracked in [db-todo.md](db-todo.md) is complete.**
+Status: **the SQL-backed replacement revision was deployed from final
+digest-qualified images and reached two-container readiness, but the public
+browser-header check did not observe nginx security headers. Ingress is disabled and
+no revision is active. The remaining runtime checks are blocked pending that
+header failure's diagnosis and remediation.**
 
 - [x] Prepare and validate the `private-application.bicep` inputs from foundation outputs, digest-qualified images, and the collected non-secret API authentication values.
 - [x] Compile `private-application.bicep` without diagnostics or generated repository artifacts.
@@ -201,6 +205,23 @@ Status: **the reviewed deployment, exact SPA origin, owner-only access configura
 - [x] Verify the deployed revision uses the expected image digests and the managed identity successfully pulls both images.
 - [ ] Verify runtime configuration reports `AI provider: Mock`, authentication enabled, and startup migrations enabled without logging tenant, client, audience, issuer, role, token, claim, connection-string, or identity values.
 - [ ] Confirm no OpenAI API key or other paid-provider secret is configured in the Container App.
+
+### Azure SQL replacement deployment fail-closed evidence (2026-07-26 NZST)
+
+- The committed remediation release passed backend and frontend tests, package
+  audits, secret scan, Bicep compilation, and HIGH/CRITICAL archive scans. Its
+  two final images were published under full-SHA tags and used only through
+  private digest-qualified references.
+- Guarded `what-if` produced one Container App deploy and ignored existing
+  dependencies only. The deployed definition was inspected without retrieving
+  secret values and confirms the Azure SQL secret reference, `SqlServer`,
+  disabled startup migrations, single-revision mode, and no Azure Files volume
+  or backend mount.
+- One revision and replica reached two-container readiness. The public HTTPS
+  root did not include the nginx CSP, HSTS, or other configured security
+  headers, so ingress was disabled and the active revision was deactivated. No authenticated workflow, persistence, restart,
+  rate-limit, logging, cost, or owner-acceptance check is claimed by this
+  evidence.
 
 ### Private application input and static-review evidence (2026-07-25 NZST)
 

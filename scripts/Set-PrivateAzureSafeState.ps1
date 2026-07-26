@@ -58,7 +58,8 @@ function Get-DeploymentState {
     $revisions = @(
         Invoke-AzureJson `
             -Arguments @("containerapp", "revision", "list", "--name", $ContainerAppName, "--resource-group", $ResourceGroupName, "--all") `
-            -FailureMessage "Container App revision inventory failed."
+            -FailureMessage "Container App revision inventory failed." |
+            ForEach-Object { $_ }
     )
     $activeRevisions = @(
         $revisions |
@@ -73,7 +74,8 @@ function Get-DeploymentState {
         $replicas = @(
             Invoke-AzureJson `
                 -Arguments @("containerapp", "replica", "list", "--name", $ContainerAppName, "--resource-group", $ResourceGroupName, "--revision", $revision.name) `
-                -FailureMessage "Container App replica inventory failed."
+                -FailureMessage "Container App replica inventory failed." |
+                ForEach-Object { $_ }
         )
 
         foreach ($replica in $replicas) {

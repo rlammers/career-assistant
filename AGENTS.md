@@ -500,6 +500,10 @@ Browser-edge safety rule:
 
 - The browser-facing nginx configuration must suppress version disclosure and set security headers, including a CSP that explicitly permits only the external identity-provider origins required by the configured authentication flow. Verify those headers from the final container image before deployment.
 
+Emergency-stop rule:
+
+- Exercise the Container App safe-state helper with its non-mutating `-WhatIf` path whenever revision inventory handling changes; it must operate on each revision separately before it is relied on for fail-closed recovery.
+
 ---
 
 ## Guidance Maintenance

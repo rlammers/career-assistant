@@ -7,12 +7,13 @@ Azure SQL persistence, containers, CI, and proposed Azure infrastructure.
 
 ## Decision
 
-**Not approved for private use yet.** The Azure SQL migration has succeeded, and
-the failed SQLite/Azure Files persistence path is retired from the serving
-configuration. A replacement revision may be considered only after the final
-remediation images pass the release gates and the guarded deployment review.
-Private use remains blocked until the deployed runtime checks, operational
-checks, and final owner-only acceptance are recorded.
+**Not approved for private use.** The Azure SQL migration has succeeded, the
+failed SQLite/Azure Files persistence path is retired, and the SQL-backed
+revision was deployed from final digest-qualified images. Runtime browser
+verification did not observe the required CSP or other nginx security headers,
+so ingress was disabled and the active revision was deactivated. Private use
+remains blocked until that failure is resolved and all runtime, operational,
+and owner-only acceptance checks pass.
 
 Public production remains blocked. The narrow Azure SQL public-network exposure
 described below is not a public-production decision.
@@ -50,6 +51,11 @@ described below is not a public-production decision.
   compilation. Local frontend and backend images built from the pinned bases;
   their HIGH/CRITICAL archive scans reported no finding. The local images are
   verification artifacts only, not publishable releases.
+- The final release images were built from the committed remediation revision,
+  scanned, published under full-SHA tags, resolved to private digest-qualified
+  references, and used in a guarded Azure deployment. The deployed definition
+  contains the SQL secret reference, `SqlServer`, disabled startup migrations,
+  single-revision mode, and no Azure Files volume or backend mount.
 
 ## Accepted boundary for this private milestone
 
@@ -65,10 +71,8 @@ release.
 
 | Risk area | Required evidence before private use |
 | --- | --- |
-| Release provenance | Pin the Node, nginx, .NET SDK, and ASP.NET runtime bases to audited immutable digests. Build, scan, and publish new digest-qualified images from the final remediation commit; do not reuse prior release images. |
-| Release quality | Repeat the completed local checks and HIGH/CRITICAL archive scans against the final commit's images before publication. Any HIGH/CRITICAL finding blocks release. |
-| Deployment scope | Review a guarded `what-if` using the final image digests and an in-memory secure SQL connection string. It may modify only the SQL secret/reference, `SqlServer`, disabled startup migrations, and removal of the Azure Files mount. |
-| Runtime boundary | Verify probes, HTTPS and headers, Entra sign-in, anonymous `401`, safe missing-role `403`, backend-sidecar isolation, Mock-only analysis, Azure SQL persistence, and log redaction. Disable ingress immediately if an authentication, persistence, or secret-disclosure check fails. |
+| Browser security headers | The deployed HTTPS root did not expose the nginx CSP, HSTS, or other configured browser-security headers, although the exact published image exposes them locally. Diagnose the Azure serving path and redeploy only after the final external response includes all required headers. |
+| Runtime boundary | After the header failure is resolved, verify probes, Entra sign-in, anonymous `401`, safe missing-role `403`, backend-sidecar isolation, Mock-only analysis, Azure SQL persistence, and log redaction. Keep ingress disabled on any authentication, persistence, or secret-disclosure failure. |
 | Rate limiting | Keep nginx limiting by its direct peer until two independent deployed client networks prove that request attribution is distinct. Do not trust arbitrary forwarded headers. If attribution is shared, record the owner-only shared-limit limitation and obtain explicit acceptance. |
 | Operations | Inspect application and Azure logs; record rollback/stop/teardown procedures, budget controls, observed rate-limit behavior, and a final owner-only decision. |
 
@@ -76,9 +80,9 @@ release.
 
 | Scope | State |
 | --- | --- |
-| Repository remediation | Source changes and local release checks complete; final commit-specific image build, scan, and publication remain. |
-| Deployment of a verification revision | Blocked pending all release-quality and guarded-`what-if` gates. |
-| Private owner-only use | Blocked pending successful runtime and operational evidence plus final acceptance of the narrowly scoped Azure SQL exposure and any rate-limit limitation. |
+| Repository remediation | Final commit-specific image build, scan, publication, and guarded deployment completed. |
+| Deployment of a verification revision | Failed closed: two containers became ready, but nginx security headers were absent from the public response; ingress is disabled and no revision is active. |
+| Private owner-only use | Blocked pending a corrected header deployment, successful runtime and operational evidence, and final acceptance of the narrowly scoped Azure SQL exposure and any rate-limit limitation. |
 | Public production | Blocked pending private networking/public-edge decisions, broader guest validation, and a fresh production security review. |
 
 Detailed tactical identifiers, connection data, and raw diagnostic evidence remain

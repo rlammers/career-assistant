@@ -212,14 +212,14 @@ advanced monitoring in this increment.
 - [x] Apply the SQL Server migration outside normal Container App startup.
 - [x] If provisioning or migration fails, delete and recreate the empty
   disposable database.
-- [ ] Set `Database__Provider=SqlServer`.
-- [ ] Set `Database__MigrateOnStartup=false`.
-- [ ] Supply `ConnectionStrings__DefaultConnection` from the Container Apps
+- [x] Set `Database__Provider=SqlServer`.
+- [x] Set `Database__MigrateOnStartup=false`.
+- [x] Supply `ConnectionStrings__DefaultConnection` from the Container Apps
   secret.
-- [ ] Deploy the Container App revision.
+- [x] Deploy the Container App revision.
 - [ ] Verify the main profile, job, status, and analysis workflow.
 - [ ] Restart the app and confirm data persists.
-- [ ] Remove the SQLite Azure Files mount if it is not used for anything else.
+- [x] Remove the SQLite Azure Files mount if it is not used for anything else.
 
 Verification (2026-07-26): `azure-sql.bicep` compiled successfully, and the
 guarded Azure `what-if` contained exactly three creates (the logical server,
@@ -257,6 +257,19 @@ applied `20260725095637_InitialCreate` with
 migration ID in `__EFMigrationsHistory`. The temporary single-IP firewall rule
 and shell-only configuration were removed afterward; no Container App revision,
 secret, or application configuration changed.
+
+Cutover deployment verification (2026-07-26): release images built from the
+committed remediation revision passed the required tests, audits, secret scan,
+Bicep compilation, and HIGH/CRITICAL image scans before publication. Guarded
+Azure `what-if` reported one Container App deploy and only ignored existing
+dependencies. The deployed definition was inspected without reading secret
+values and confirms the `database-connection-string` secret reference,
+`SqlServer` provider, disabled startup migrations, single-revision mode, and
+no Azure Files volume or backend mount. The revision reached two-container
+readiness, but the public browser response did not observe the required CSP or
+other nginx security headers. Ingress was disabled and the active revision
+deactivated immediately. Workflow,
+persistence, restart, and owner-only acceptance remain unchecked.
 
 ## Acceptance criteria
 
