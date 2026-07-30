@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ProfilePage } from './pages/ProfilePage';
 import { JobListPage } from './pages/JobListPage';

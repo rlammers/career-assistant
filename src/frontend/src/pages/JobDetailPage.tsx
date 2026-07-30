@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router';
 import { jobAPI } from '../services/api';
 import type { JobApplication, JobAnalysisResult, JobStatus } from '../services/api';
 import { InlineError } from '../components/InlineError';

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router';
 import { jobAPI, analysisAPI } from '../services/api';
 import type { JobApplication } from '../services/api';
 import { InlineError } from '../components/InlineError';

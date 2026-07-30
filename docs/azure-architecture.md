@@ -1,7 +1,9 @@
-# Proposed Azure demo architecture
+# Proposed Azure deployment architecture
 
 Status: **static design only; never deployed**  
 Region: Australia East
+
+The temporary private milestone uses an externally reachable Azure URL with Microsoft Entra application access assigned only to the owner. It does not use private-network-only ingress. Public production remains a later milestone.
 
 ```mermaid
 flowchart LR
@@ -27,10 +29,13 @@ flowchart LR
 
 ## Runtime invariants
 
-- Runtime scaling must remain compatible with the selected persistence design.
+- The temporary SQLite deployment uses single-revision mode and exactly one replica. Its private deployment wrapper enables startup migrations; the reusable public-production template defaults them to disabled.
+- Frontend and backend containers each use internal HTTP Startup, Readiness, and Liveness probes. Both containers must become ready before the revision receives ingress traffic.
+- Frontend probes test nginx directly at `/`; backend probes test the API directly at `/health`. The public nginx `/health` route remains an end-to-end backend diagnostic and is not used for frontend container health.
 - Every non-health application route must require Entra authentication and server-side authorization for an assigned invited guest; direct API requests must not bypass access control.
-- The public demo uses `AI__Provider=Mock`; no paid-provider secret is supplied.
+- The private deployment uses `AI__Provider=Mock`; no paid-provider secret is supplied.
 - Images must be referenced by a commit-specific tag or digest.
 - Only safe fictional demo content may be stored.
 - Demo storage is bounded through configuration; seed and reset behavior remains future work.
-- Deployment is blocked until `docs/auth-todo.md` is complete and the remaining review in `docs/security-review.md` is approved.
+- SQLite on Azure Files is provisional and requires live migration, persistence, locking, restart, and filesystem-compatibility verification.
+- Public production will replace SQLite and Azure Files with a managed relational SQL provider selected in a future milestone and will use a dedicated migration job.
