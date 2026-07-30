@@ -90,17 +90,44 @@ jobs:
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
 
+      - name: Create excluded frontend environment sentinel
+        run: |
+          printf '%s\n' \
+            'VITE_ENTRA_REDIRECT_URI=http://localhost:5173/' \
+            'VITE_BUILD_CONTEXT_SENTINEL=must-not-enter-the-image' \
+            > src/frontend/.env.local
+
       - name: Build frontend Docker image
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: .
           file: src/frontend/Dockerfile
+          load: true
           push: false
           tags: career-assistant-frontend:ci
           build-args: |
+            SOURCE_REVISION=${{ github.sha }}
+            SOURCE_URL=${{ github.server_url }}/${{ github.repository }}
             VITE_AUTH_ENABLED=true
             VITE_ENTRA_TENANT_ID=11111111-1111-1111-1111-111111111111
             VITE_ENTRA_SPA_CLIENT_ID=22222222-2222-2222-2222-222222222222
             VITE_ENTRA_API_SCOPE=api://33333333-3333-3333-3333-333333333333/access_as_user
           cache-from: type=gha,scope=frontend-image
           cache-to: type=gha,mode=max,scope=frontend-image
+
+      - name: Verify frontend image inputs and provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          if docker run --rm --entrypoint sh career-assistant-frontend:ci -c \
+            "grep -R -F -q 'http://localhost:5173' /usr/share/nginx/html"; then
+            echo "Frontend image contains a localhost redirect." >&2
+            exit 1
+          fi
+          if docker run --rm --entrypoint sh career-assistant-frontend:ci -c \
+            "grep -R -F -q 'must-not-enter-the-image' /usr/share/nginx/html"; then
+            echo "Frontend image contains the build-context sentinel." >&2
+            exit 1
+          fi
+          test "$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' career-assistant-frontend:ci)" = "$GITHUB_SHA"
+          test "$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.source" }}' career-assistant-frontend:ci)" = "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"

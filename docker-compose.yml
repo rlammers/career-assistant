@@ -55,6 +55,8 @@ services:
       context: .
       dockerfile: src/frontend/Dockerfile
       args:
+        SOURCE_REVISION: ${SOURCE_REVISION:-local}
+        SOURCE_URL: ${SOURCE_URL:-local}
         VITE_API_BASE_URL: /api
         VITE_AUTH_ENABLED: ${VITE_AUTH_ENABLED:-false}
         VITE_ENTRA_TENANT_ID: ${VITE_ENTRA_TENANT_ID:-}

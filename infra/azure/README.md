@@ -78,11 +78,23 @@ Vite replaces frontend environment variables during the production build, so Mic
 
 The delegated scope must be fully qualified, for example `api://<api-application-client-id>/access_as_user`. The redirect URI is not compiled into the Azure image: the application derives it from `window.location.origin`. Register that exact origin in Microsoft Entra; its scheme, hostname, and port must match, and an origin contains no path or trailing slash.
 
+The Docker context recursively excludes `.env`, `.env.*`, and `*.local`, and
+the frontend Dockerfile copies only explicit tracked build inputs. Its build
+stage also fails if `/app/.env.local` exists. This keeps the local Vite
+authentication file available for direct development without allowing it to
+override release image configuration.
+
 From the repository root, source the public values from the current environment:
 
 ```powershell
+$sourceRevision = (git rev-parse HEAD).Trim()
+$sourceUrl = (git remote get-url origin).Trim()
+
 docker build `
+  --no-cache `
   --file src/frontend/Dockerfile `
+  --build-arg SOURCE_REVISION="$sourceRevision" `
+  --build-arg SOURCE_URL="$sourceUrl" `
   --build-arg VITE_AUTH_ENABLED=true `
   --build-arg VITE_ENTRA_TENANT_ID="$env:VITE_ENTRA_TENANT_ID" `
   --build-arg VITE_ENTRA_SPA_CLIENT_ID="$env:VITE_ENTRA_SPA_CLIENT_ID" `
@@ -90,6 +102,29 @@ docker build `
   --tag career-assistant-frontend `
   .
 ```
+
+Before tagging or publishing the image, fail closed if its source provenance or
+compiled redirect differs from the release inputs:
+
+```powershell
+$image = (docker image inspect career-assistant-frontend | ConvertFrom-Json)[0]
+if ($image.Config.Labels.'org.opencontainers.image.revision' -cne $sourceRevision) {
+  throw "Frontend image revision provenance does not match HEAD."
+}
+if ($image.Config.Labels.'org.opencontainers.image.source' -cne $sourceUrl) {
+  throw "Frontend image source provenance does not match the repository."
+}
+
+docker run --rm --entrypoint sh career-assistant-frontend -c `
+  "if grep -R -F -q 'http://localhost:5173' /usr/share/nginx/html; then exit 1; fi"
+if ($LASTEXITCODE -ne 0) {
+  throw "Frontend image contains a localhost authentication redirect."
+}
+```
+
+Build, scan, and publish only from a clean committed worktree. Tag the release
+with that commit, verify the pushed ACR digest, and deploy the digest-qualified
+reference rather than the mutable tag.
 
 Compilation is safe and does not contact an Azure subscription:
 

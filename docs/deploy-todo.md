@@ -88,6 +88,29 @@ test stopped before application writes or a revision restart, and external
 ingress was disabled and verified afterward. Publish and deploy a corrected
 immutable frontend image before retrying the owner workflow.
 
+Diagnostic conclusion on 2026-07-30: the exact active frontend image and the
+JavaScript served through Azure had the same hash, and an isolated browser
+capture proved that the SPA supplied `http://localhost:5173/` as the outbound
+Microsoft authorization request's `redirect_uri`. The deployed HTTPS origin is
+registered correctly in Entra, so Entra did not select localhost. The root
+cause is the Docker build context: the current `.dockerignore` rules do not
+exclude the nested `src/frontend/.env.local`, Docker copies that local-only file
+into the build stage, and Vite compiles its redirect value into the production
+bundle. A forced no-cache build reproduced the deployed bundle exactly. The
+active image also differs from the intended release reference and has no
+project-specific source revision label. The affected revision, digest, bundle
+hash, and diagnostic timestamp are retained only in private operator variables.
+External ingress was disabled and independently verified after the bounded
+capture.
+
+Before publishing a replacement, recursively exclude frontend environment
+files from the Docker context (or copy only explicit tracked build inputs),
+prove the build stage does not contain `.env.local`, scan the resulting bundle
+for localhost redirect values, and attach project source provenance to the
+immutable image. Then deploy the verified digest and repeat the bounded owner
+workflow. `scripts/Test-PrivateAzureAuthRedirect.ps1` provides the sanitized
+asset and outbound-request capture with fail-closed cleanup.
+
 The safe-state helper's mutation path also raised a Windows PowerShell native
 command error while invoking Azure CLI. Direct Azure CLI cleanup disabled
 ingress successfully, and the final state was verified. Keep the helper item

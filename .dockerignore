@@ -22,6 +22,6 @@ logs/
 *.db-shm
 *.sqlite-journal
 *.sqlite3-journal
-.env
-.env.*
-*.local
+**/.env
+**/.env.*
+**/*.local
