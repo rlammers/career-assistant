@@ -122,6 +122,28 @@ Azure documents the first connection to a paused serverless database as error
 40613 while auto-resume begins. No application data was changed or restarted,
 and ingress was disabled and independently verified after each attempt.
 
+Follow-up diagnosis on 2026-07-30 isolated the live `500` to SQL Client
+connection-string parsing before any database connection was attempted. The
+deployed secret was manually assembled and an unquoted semicolon in the
+password created an orphan segment, producing a sanitized `Keyword not
+supported` failure. This explains why Azure SQL remained paused and why the
+40613 handler did not run.
+
+The deployed secret was subsequently rebuilt in memory without exposing its
+value. The password is now safely quoted, the catalog targets the sole
+application database, SQL Client accepts the result, encryption remains
+enabled, and certificate trust remains strict. The unchanged revision restarted
+healthy. An intermediate test returned `504` and aggregate logs showed SQL
+error `4060` because an operator-side PowerShell array bug had temporarily
+constructed the wrong catalog; that catalog was corrected and independently
+validated. The final bounded owner retry still returned `500`, so profile
+loading and the database workflow remain blocked by an unresolved live
+failure. No fictional data was written and the persistence restart test was
+not performed. External ingress was disabled and independently verified in
+Single revision mode before stopping. Resume only with a fresh bounded
+diagnostic window; do not repeat the already-resolved redirect, malformed
+password, or catalog investigations.
+
 The safe-state helper's mutation path also raised a Windows PowerShell native
 command error while invoking Azure CLI. Direct Azure CLI cleanup disabled
 ingress successfully, and the final state was verified. Keep the helper item

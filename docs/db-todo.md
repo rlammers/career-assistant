@@ -88,9 +88,17 @@ Verification attempt on 2026-07-30: the corrected authentication redirect
 returned the owner to the deployed frontend, but `GET /api/profile` repeatedly
 returned `500`. Azure SQL was confirmed paused with substantial monthly free
 compute remaining, so free-limit exhaustion was not the cause. The application
-must handle the documented serverless auto-resume error as a bounded retryable
-condition. No data was changed, both verification items remain open, and
-external ingress was disabled and independently verified.
+now handles the documented serverless auto-resume error as a bounded retryable
+condition. Aggregate logs first proved that an unquoted semicolon in the
+manually assembled database password malformed the deployed connection string.
+The secret was rebuilt without exposing its value, the password is safely
+quoted, the catalog now matches the sole deployed application database, and
+the unchanged revision restarted healthy. An intermediate `504` was traced to
+SQL error `4060` from a temporary operator-side catalog construction error and
+was corrected. The final owner retry still returned `500`; its cause was not
+diagnosed before the session stopped. No data was changed, both verification
+items remain open, the persistence restart test was not performed, and
+external ingress was independently verified disabled in Single revision mode.
 
 ## Acceptance criteria
 

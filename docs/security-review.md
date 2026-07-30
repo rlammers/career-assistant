@@ -1,6 +1,6 @@
 # Security review: private Azure deployment
 
-Review updated: 2026-07-26
+Review updated: 2026-07-30
 
 ## Decision
 
@@ -49,6 +49,14 @@ Stop a bounded test and disable ingress if any of these occur:
 - Azure SQL writes fail or data appears at risk;
 - resource behavior creates unexpected cost; or
 - a material public attack path is observed.
+
+Current status: owner authentication returns to the deployed frontend, but the
+final bounded `GET /api/profile` verification returned `500` after the
+connection secret had been parser-validated and targeted to the deployed
+database. The owner workflow and restart-persistence checks therefore remain
+incomplete. No application data was changed. External ingress was disabled and
+independently verified before stopping; do not leave the endpoint publicly
+available while this failure remains unresolved.
 
 ## Non-blocking follow-ups
 

@@ -41,6 +41,29 @@ public class DatabaseProviderRegistrationTests
     }
 
     [Fact]
+    public void MalformedSqlServerConnectionStringFailsAtStartupWithoutEchoingTheValue()
+    {
+        const string malformedConnectionString =
+            "Data Source=example.invalid;Password=fictional-part;orphan;Connect Timeout=30";
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+        {
+            var services = new ServiceCollection();
+            services.AddCareerAssistantServices(BuildConfiguration(
+                new KeyValuePair<string, string?>("Database:Provider", "SqlServer"),
+                new KeyValuePair<string, string?>(
+                    "ConnectionStrings:DefaultConnection",
+                    malformedConnectionString)));
+        });
+
+        Assert.Equal(
+            "DefaultConnection is not a valid SQL Server connection string.",
+            exception.Message);
+        Assert.DoesNotContain(malformedConnectionString, exception.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("fictional-part", exception.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void MissingDatabaseProviderFailsClearly()
     {
         var exception = Assert.Throws<InvalidOperationException>(() =>

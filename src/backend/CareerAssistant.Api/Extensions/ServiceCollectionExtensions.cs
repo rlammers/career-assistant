@@ -5,6 +5,7 @@ using CareerAssistant.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
@@ -91,6 +92,16 @@ internal static class ServiceCollectionExtensions
 
         if (string.Equals(provider, "SqlServer", StringComparison.OrdinalIgnoreCase))
         {
+            try
+            {
+                _ = new SqlConnectionStringBuilder(connectionString);
+            }
+            catch (ArgumentException)
+            {
+                throw new InvalidOperationException(
+                    "DefaultConnection is not a valid SQL Server connection string.");
+            }
+
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(connectionString, sql =>
                 {

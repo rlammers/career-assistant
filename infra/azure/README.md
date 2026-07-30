@@ -186,6 +186,17 @@ following commands use environment variables by name without printing their
 values:
 
 ```powershell
+$sqlConnection = [System.Data.SqlClient.SqlConnectionStringBuilder]@{
+  DataSource = "tcp:$env:CAREER_ASSISTANT_SQL_SERVER_NAME.database.windows.net,1433"
+  InitialCatalog = $env:CAREER_ASSISTANT_SQL_DATABASE_NAME
+  UserID = $env:CAREER_ASSISTANT_SQL_ADMINISTRATOR_LOGIN
+  Password = $env:CAREER_ASSISTANT_SQL_ADMINISTRATOR_PASSWORD
+  Encrypt = $true
+  TrustServerCertificate = $false
+  ConnectTimeout = 30
+}
+$env:CAREER_ASSISTANT_SQL_CONNECTION_STRING = $sqlConnection.ConnectionString
+
 az deployment group what-if `
   --resource-group career-assistant-private `
   --name career-assistant-sql-preflight `
@@ -211,6 +222,13 @@ az deployment group what-if `
     authenticationRequiredAppRole="$env:CAREER_ASSISTANT_AUTHENTICATION_REQUIRED_APP_ROLE" `
     databaseConnectionString="$env:CAREER_ASSISTANT_SQL_CONNECTION_STRING"
 ```
+
+Always construct the application connection string with
+`SqlConnectionStringBuilder`. Never interpolate the administrator password
+into a connection-string literal: reserved characters such as semicolons must
+be quoted by the builder. The API also parses SQL Server configuration during
+startup and fails with a sanitized error before serving traffic if the secret
+is malformed.
 
 Review the SQL `what-if` for one logical server, one database, and only the
 `AllowAzureServices` firewall rule. Review the application `what-if` for the
