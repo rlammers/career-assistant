@@ -1,76 +1,48 @@
-# Career Assistant Frontend
+# Career Assistant frontend
 
-React + Vite + TypeScript frontend for the Job Application Tracker MVP.
+React, TypeScript, and Vite frontend for Career Assistant. For full-stack setup, Microsoft Entra configuration, Docker Compose, and verification workflows, use the [development guide](../../docs/development.md).
 
-## Project Structure
+## Project structure
 
-```
+```text
 src/
-├── components/        # React components
-├── pages/            # Page-level components
-├── services/         # API service layer
-├── App.tsx           # Root component
-└── main.tsx          # Entry point
+|-- auth/              # Microsoft Entra configuration and token handling
+|-- components/        # Shared React components
+|-- pages/             # Page-level components
+|-- services/          # Fetch-based API service layer
+|-- App.tsx            # Root application component
+`-- main.tsx           # Browser entry point
 ```
 
 ## Development
 
-Start the development server:
+Install dependencies and start the development server:
 
-```bash
+```powershell
+npm install
 npm run dev
 ```
 
-The app will be available at `http://localhost:5173`.
+The frontend runs at `http://localhost:5173`.
 
-## Build
+API calls use `http://localhost:5117/api` by default. Set `VITE_API_BASE_URL` to override it.
 
-Compile for production:
+## Checks
 
-```bash
+```powershell
+npm run lint
+npm run test
 npm run build
 ```
 
-Output is in the `dist/` directory.
+The production build is written to `dist/`.
 
-## Dependencies
+## Frontend responsibilities
 
-- **React** – UI framework
-- **React Router** – Client-side routing
-- **TypeScript** – Type safety
-- **Vite** – Build tool and dev server
+- Profile creation and editing
+- Job creation, editing, status tracking, analysis, and deletion
+- Fetch API integration with the backend
+- Microsoft Entra sign-in, sign-out, access-denied, and expired-session states
+- Stable loading, validation, error, and success feedback
 
-## Features (MVP)
-
-- Profile page (edit and save user profile)
-- Job list page (view all saved jobs)
-- Job detail page (view job description and analysis)
-- API integration with backend
-
-## API Integration
-
-All API calls are made via the Fetch API to `http://localhost:5117/api` by default. Set `VITE_API_BASE_URL` to override it.
-
-## Microsoft Entra authentication
-
-Authentication is disabled unless `VITE_AUTH_ENABLED` is explicitly set to `true`. For local Entra testing, create an ignored `.env.local` file:
-
-```dotenv
-VITE_AUTH_ENABLED=true
-VITE_ENTRA_TENANT_ID=<tenant-guid>
-VITE_ENTRA_SPA_CLIENT_ID=<spa-client-guid>
-VITE_ENTRA_API_SCOPE=api://<api-client-guid>/access_as_user
-VITE_ENTRA_REDIRECT_URI=http://localhost:5173/
-```
-
-These identifiers are safe frontend configuration, but environment-specific production values should be supplied by the deployment platform. The SPA uses authorization code with PKCE and does not use a client secret.
-
-Endpoints consumed:
-
-- `GET /api/profile`
-- `POST /api/profile`
-- `GET /api/jobs`
-- `GET /api/jobs/{id}`
-- `POST /api/jobs`
-- `PATCH /api/jobs/{id}/status`
-- `POST /api/jobs/{id}/analyse`
+Authentication is disabled unless `VITE_AUTH_ENABLED=true`. Enabled builds require the tenant ID, SPA client ID, and fully qualified delegated API scope. The SPA uses authorization code with PKCE and does not use a client secret. See the [local authentication workflow](../../docs/development.md#verify-microsoft-entra-authentication-locally) for configuration and safety requirements.

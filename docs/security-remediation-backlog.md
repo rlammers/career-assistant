@@ -1,16 +1,36 @@
 # Security readiness backlog
 
-Deployment remains blocked while the application completes its public-demo readiness work.
+The repository now has two distinct deployment gates.
 
-The public work categories are:
+## Private owner-only milestone
 
-1. Complete the invitation-only Entra authentication and server-side authorization checklist in `docs/auth-todo.md`, including direct API enforcement and email one-time passcode verification.
-2. Define the lifecycle of safe fictional demo data.
-3. Validate the selected persistent-storage design.
-4. Validate production ingress and proxy behavior.
-5. Complete browser-facing security hardening.
-6. Complete cloud operational and cost controls.
-7. Strengthen build and dependency supply-chain controls.
-8. Record explicit acceptance for any remaining public-demo risk.
+Authentication and server-side authorization are implemented and locally verified. Private deployment remains gated on:
 
-Exact weaknesses, test observations, thresholds, topology details, and exit criteria are stored in the ignored local file `docs/security-review-private.md`.
+Repository readiness, Azure CLI authentication, region selection, required provider registration, subscription permission inspection, and Bicep compilation are complete and recorded in [`deploy-todo.md`](./deploy-todo.md). No Azure workload resources have been created.
+
+Private deployment remains gated on:
+
+1. Re-running tests, audits, secret scanning, image scans, and Bicep compilation from the final deployment commit.
+2. Reviewing Azure `what-if` output, least-privilege identity assignments, public service endpoints, and storage linkage.
+3. Verifying the live Entra assignment, direct API boundary, proxy routing, HTTPS behavior, and backend sidecar isolation.
+4. Validating SQLite migration, locking, persistence, restart, and replacement-revision behavior on Azure Files using fictional data.
+5. Inspecting Azure logs and errors for sensitive configuration or identity disclosure.
+6. Enabling budget alerts and recording rollback, emergency stop, and teardown procedures.
+7. Recording explicit acceptance for any owner-only limitation that remains after live verification.
+
+The ordered execution and evidence checklist is [`deploy-todo.md`](./deploy-todo.md).
+
+## Public production milestone
+
+Public production remains blocked on:
+
+1. Replacing SQLite and Azure Files with a selected managed relational SQL provider and deployment-safe migration process.
+2. Completing browser and proxy edge hardening and validating real client-address behavior.
+3. Verifying the intended invited-guest and email one-time passcode workflows in the deployed environment.
+4. Reviewing public network exposure, secrets/keys, identities, logs, backup/restore, availability, and disaster recovery.
+5. Strengthening remaining supply-chain controls where the public threat model justifies them.
+6. Re-running the security review against the live public configuration and recording the final release decision.
+
+The public milestone is tracked in [`production-todo.md`](./production-todo.md).
+
+Exact tactical evidence remains in the ignored local `docs/security-review-private.md` and must not be committed or copied into public artifacts.
