@@ -6,8 +6,9 @@ Use SQLite for local development and Azure SQL Database serverless for the
 private Azure deployment without changing application architecture.
 
 Status: **provider support, migrations, Azure SQL infrastructure, and the
-Container App cutover are complete. Live workflow and restart-persistence
-verification remain blocked by the deployed frontend authentication redirect.**
+Container App cutover are complete. The frontend redirect is corrected. Live
+workflow and restart-persistence verification are blocked by the profile
+request surfacing a serverless database wake-up as `500`.**
 
 Browser headers, ingress diagnostics, and other public-edge work are tracked in
 [`deploy-todo.md`](deploy-todo.md). They do not block database completion while
@@ -83,6 +84,14 @@ contrary to the current source configuration. No application data was changed,
 the revision was not restarted, both database items remain open, and external
 ingress was disabled and verified afterward.
 
+Verification attempt on 2026-07-30: the corrected authentication redirect
+returned the owner to the deployed frontend, but `GET /api/profile` repeatedly
+returned `500`. Azure SQL was confirmed paused with substantial monthly free
+compute remaining, so free-limit exhaustion was not the cause. The application
+must handle the documented serverless auto-resume error as a bounded retryable
+condition. No data was changed, both verification items remain open, and
+external ingress was disabled and independently verified.
+
 ## Acceptance criteria
 
 - Local development and automated tests use SQLite.
@@ -106,3 +115,6 @@ ingress was disabled and verified afterward.
 - In Container Apps Single revision mode, an active revision may remain while
   external ingress is disabled. Disabled ingress, not zero active revisions, is
   the public-access safety boundary.
+- A paused Azure SQL serverless database can reject its first connection while
+  auto-resume begins. Treat that condition as temporary availability, never as
+  an authentication failure, and never retry writes automatically.

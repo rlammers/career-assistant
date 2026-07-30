@@ -48,7 +48,11 @@ export function ProfileGate() {
   };
 
   if (state === 'loading') {
-    return <main className="page-state" aria-busy="true"><p>Checking your profile…</p></main>;
+    return (
+      <main className="page-state" aria-busy="true">
+        <p>Checking your profile. The private database may take about a minute to start…</p>
+      </main>
+    );
   }
 
   if (state === 'error') {

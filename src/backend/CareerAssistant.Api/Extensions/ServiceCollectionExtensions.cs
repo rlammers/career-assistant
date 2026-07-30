@@ -1,4 +1,5 @@
 using CareerAssistant.Api.Data;
+using CareerAssistant.Api.ErrorHandling;
 using CareerAssistant.Api.Options;
 using CareerAssistant.Api.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -26,6 +27,8 @@ internal static class ServiceCollectionExtensions
         var aiProvider = string.IsNullOrWhiteSpace(aiOptions.Provider) ? "Mock" : aiOptions.Provider;
 
         services.AddConfiguredDatabase(configuration);
+        services.AddProblemDetails();
+        services.AddExceptionHandler<AzureSqlUnavailableExceptionHandler>();
         services.AddCareerAssistantOptions(configuration);
         services.AddConfiguredAuthentication(authenticationOptions);
         services.AddAuthorization(options =>
@@ -91,7 +94,7 @@ internal static class ServiceCollectionExtensions
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(connectionString, sql =>
                 {
-                    sql.EnableRetryOnFailure();
+                    sql.EnableRetryOnFailure([AzureSqlUnavailableExceptionHandler.DatabaseUnavailableErrorNumber]);
                     sql.MigrationsAssembly(SqlServerMigrationsAssembly);
                 }));
             return;

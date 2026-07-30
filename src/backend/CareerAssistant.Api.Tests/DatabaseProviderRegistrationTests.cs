@@ -25,6 +25,22 @@ public class DatabaseProviderRegistrationTests
     }
 
     [Fact]
+    public void SqlServerProviderUsesRetryingExecutionStrategy()
+    {
+        var services = new ServiceCollection();
+        services.AddCareerAssistantServices(BuildConfiguration(
+            new KeyValuePair<string, string?>("Database:Provider", "SqlServer")));
+
+        using var serviceProvider = services.BuildServiceProvider();
+        using var scope = serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        Assert.Equal(
+            "SqlServerRetryingExecutionStrategy",
+            dbContext.Database.CreateExecutionStrategy().GetType().Name);
+    }
+
+    [Fact]
     public void MissingDatabaseProviderFailsClearly()
     {
         var exception = Assert.Throws<InvalidOperationException>(() =>

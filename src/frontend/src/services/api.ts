@@ -35,6 +35,10 @@ const API_BASE_URL = trimTrailingSlashes(import.meta.env.VITE_API_BASE_URL || 'h
 const API_HEALTH_URL = API_BASE_URL.endsWith('/api')
   ? `${API_BASE_URL.slice(0, -4)}/health`
   : `${API_BASE_URL}/health`;
+const PROFILE_RETRY_WINDOW_MS = 90_000;
+const DEFAULT_PROFILE_RETRY_DELAY_MS = 10_000;
+const MIN_PROFILE_RETRY_DELAY_MS = 1_000;
+const MAX_PROFILE_RETRY_DELAY_MS = 15_000;
 
 const sendApiRequest = async (
   input: string,
@@ -81,6 +85,23 @@ const apiFetch = async (input: string, init: RequestInit = {}): Promise<Response
   }
 };
 
+const getProfileRetryDelayMs = (response: Response): number => {
+  const retryAfter = response.headers?.get('Retry-After');
+  const retryAfterSeconds = retryAfter == null ? Number.NaN : Number(retryAfter);
+  if (!Number.isFinite(retryAfterSeconds) || retryAfterSeconds < 0) {
+    return DEFAULT_PROFILE_RETRY_DELAY_MS;
+  }
+
+  return Math.min(
+    Math.max(retryAfterSeconds * 1_000, MIN_PROFILE_RETRY_DELAY_MS),
+    MAX_PROFILE_RETRY_DELAY_MS,
+  );
+};
+
+const wait = (milliseconds: number) => new Promise((resolve) => {
+  globalThis.setTimeout(resolve, milliseconds);
+});
+
 // Types
 export interface Profile {
   id: number;
@@ -114,9 +135,23 @@ export interface JobAnalysisResult {
 // Profile endpoints
 export const profileAPI = {
   getProfile: async (): Promise<Profile> => {
-    const response = await apiFetch(`${API_BASE_URL}/profile`);
-    if (!response.ok) throw await getApiError(`Failed to fetch profile: ${response.statusText}`, response);
-    return response.json();
+    const retryDeadline = Date.now() + PROFILE_RETRY_WINDOW_MS;
+
+    while (true) {
+      const response = await apiFetch(`${API_BASE_URL}/profile`);
+      if (response.ok) return response.json();
+
+      if (response.status !== 503) {
+        throw await getApiError(`Failed to fetch profile: ${response.statusText}`, response);
+      }
+
+      const retryDelay = getProfileRetryDelayMs(response);
+      if (Date.now() + retryDelay > retryDeadline) {
+        throw await getApiError(`Failed to fetch profile: ${response.statusText}`, response);
+      }
+
+      await wait(retryDelay);
+    }
   },
 
   saveProfile: async (profile: Omit<Profile, 'id'>): Promise<Profile> => {

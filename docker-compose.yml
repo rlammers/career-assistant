@@ -19,6 +19,9 @@ services:
     build:
       context: .
       dockerfile: src/backend/CareerAssistant.Api/Dockerfile
+      args:
+        SOURCE_REVISION: ${SOURCE_REVISION:-local}
+        SOURCE_URL: ${SOURCE_URL:-local}
     depends_on:
       backend-data-init:
         condition: service_completed_successfully

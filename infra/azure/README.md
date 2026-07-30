@@ -72,6 +72,33 @@ for traffic. In Single revision mode, one active revision may remain while
 external ingress is disabled; disabled ingress is the public-access safety
 boundary.
 
+## Azure SQL verification readiness
+
+The General Purpose serverless database normally auto-pauses after 60 minutes
+without activity. Its first authenticated application query triggers
+auto-resume, and Azure can reject that initial connection with SQL error 40613
+while the database starts. The API maps that condition to a sanitized `503`
+with `Retry-After`; the frontend retries only `GET /api/profile` for a bounded
+90-second window. Mutating requests are never replayed.
+
+Before a bounded owner test, keep ingress disabled and run:
+
+```powershell
+.\scripts\Test-PrivateAzureSqlVerificationReadiness.ps1 `
+  -ExpectedSubscriptionId "$env:CAREER_ASSISTANT_AZURE_SUBSCRIPTION_ID" `
+  -ExpectedTenantId "$env:CAREER_ASSISTANT_AUTHENTICATION_TENANT_ID"
+```
+
+The helper validates the selected account, fail-closed Container App state,
+serverless configuration, and remaining free allowance without reading the SQL
+credential or changing database settings. `AuthenticatedWakeRequired=true` is
+an expected result when the database is paused; enable ingress only after the
+deployed API and frontend include the bounded wake-up handling.
+
+The Azure SQL management `resume` action is not available for this General
+Purpose serverless edition. Do not use a no-op database update, disable
+auto-pause, or enable paid overage merely to warm the private demo.
+
 ## Authenticated frontend image
 
 Vite replaces frontend environment variables during the production build, so Microsoft Entra configuration is compiled into the immutable frontend image. Tenant IDs, application client IDs, and delegated scope names are public client configuration rather than secrets, but real environment identifiers should remain outside the repository. Docker build arguments must never carry client secrets, API keys, credentials, tokens, connection strings, certificates, or private keys.
@@ -124,7 +151,9 @@ if ($LASTEXITCODE -ne 0) {
 
 Build, scan, and publish only from a clean committed worktree. Tag the release
 with that commit, verify the pushed ACR digest, and deploy the digest-qualified
-reference rather than the mutable tag.
+reference rather than the mutable tag. Supply the same `SOURCE_REVISION` and
+`SOURCE_URL` build arguments to the backend Dockerfile and verify its OCI
+revision/source labels before publication.
 
 Compilation is safe and does not contact an Azure subscription:
 

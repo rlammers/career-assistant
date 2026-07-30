@@ -7,10 +7,11 @@ SQL persistence, Microsoft Entra authorization, Mock AI, and bounded public
 verification.
 
 Status: **the infrastructure, Azure SQL cutover, immutable images, managed
-identity pulls, and owner-only Entra configuration are deployed. External
-ingress is disabled. HTTPS readiness and the anonymous authorization boundary
-passed live verification; the owner workflow is blocked by the deployed
-frontend authentication redirect.**
+identity pulls, and owner-only Entra configuration are deployed. The corrected
+frontend redirect passed live verification. External ingress is disabled. The
+owner workflow is now blocked by a repeatable profile `500` while the
+serverless database is paused; the cold-start handling must be deployed and
+verified before continuing.**
 
 For this milestone, "private" means the Azure URL is enabled only during a
 bounded test and application access is assigned only to the owner. It does not
@@ -110,6 +111,16 @@ for localhost redirect values, and attach project source provenance to the
 immutable image. Then deploy the verified digest and repeat the bounded owner
 workflow. `scripts/Test-PrivateAzureAuthRedirect.ps1` provides the sanitized
 asset and outbound-request capture with fail-closed cleanup.
+
+Corrected-image verification on 2026-07-30: the externally served asset matched
+the replacement image, the outbound authorization request used the deployed
+HTTPS origin, no localhost redirect was supplied, and cleanup independently
+verified disabled ingress. During the subsequent owner window, sign-in reached
+the deployed frontend but `GET /api/profile` repeatedly returned `500`. The
+database was then confirmed paused with substantial free compute remaining.
+Azure documents the first connection to a paused serverless database as error
+40613 while auto-resume begins. No application data was changed or restarted,
+and ingress was disabled and independently verified after each attempt.
 
 The safe-state helper's mutation path also raised a Windows PowerShell native
 command error while invoking Azure CLI. Direct Azure CLI cleanup disabled

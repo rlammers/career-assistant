@@ -51,6 +51,8 @@ internal static class WebApplicationExtensions
 
     public static void UseCareerAssistantPipeline(this WebApplication app, bool authenticationEnabled)
     {
+        app.UseExceptionHandler();
+
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();

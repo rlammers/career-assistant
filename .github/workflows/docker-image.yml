@@ -71,10 +71,21 @@ jobs:
         with:
           context: .
           file: src/backend/CareerAssistant.Api/Dockerfile
+          load: true
           push: false
           tags: career-assistant-backend:ci
+          build-args: |
+            SOURCE_REVISION=${{ github.sha }}
+            SOURCE_URL=${{ github.server_url }}/${{ github.repository }}
           cache-from: type=gha,scope=backend-image
           cache-to: type=gha,mode=max,scope=backend-image
+
+      - name: Verify backend image provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' career-assistant-backend:ci)" = "$GITHUB_SHA"
+          test "$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.source" }}' career-assistant-backend:ci)" = "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
 
   build-frontend:
     name: Build frontend image
