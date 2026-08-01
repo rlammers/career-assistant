@@ -37,6 +37,10 @@ updates:
       time: "09:30"
       timezone: "Pacific/Auckland"
     open-pull-requests-limit: 3
+    groups:
+      codeql-actions:
+        patterns:
+          - "github/codeql-action/*"
 
   - package-ecosystem: "docker"
     directory: "/src/backend/CareerAssistant.Api"
