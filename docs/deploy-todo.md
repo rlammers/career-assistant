@@ -9,9 +9,9 @@ verification.
 Status: **the infrastructure, Azure SQL cutover, immutable images, managed
 identity pulls, and owner-only Entra configuration are deployed. The corrected
 frontend redirect passed live verification. External ingress is disabled. The
-owner workflow is now blocked by a repeatable profile `500` while the
-serverless database is paused; the cold-start handling must be deployed and
-verified before continuing.**
+profile `500` was isolated to SQL Client timeout `-2` during serverless wake-up;
+the expanded cold-start handling must be deployed and verified before
+continuing the owner workflow.**
 
 For this milestone, "private" means the Azure URL is enabled only during a
 bounded test and application access is assigned only to the owner. It does not
@@ -148,6 +148,19 @@ The safe-state helper's mutation path also raised a Windows PowerShell native
 command error while invoking Azure CLI. Direct Azure CLI cleanup disabled
 ingress successfully, and the final state was verified. Keep the helper item
 open until its mutation path is corrected and exercised in a bounded window.
+
+Bounded diagnosis on 2026-08-01 reproduced exactly one authenticated profile
+`500`. Aggregate frontend logs confirmed the response, aggregate backend logs
+identified `Microsoft.Data.SqlClient.SqlException` error `-2`, and the database
+changed from `Paused` to `Online`. There was no corresponding proxy or platform
+failure. The active containers contained the previously deployed `40613`
+handler and bounded frontend retry, but registry RBAC did not permit retrieving
+their exact OCI source labels. The source exception handler now maps `-2` to
+the same sanitized `503` with `Retry-After`; it does not add timeout errors to
+EF Core's automatic retry list. No writes were attempted, and cleanup
+independently verified disabled ingress in Single revision mode. Publish and
+deploy a verified immutable backend image, then repeat the bounded profile read
+before resuming workflow writes.
 
 ## Follow-ups that do not block database completion
 

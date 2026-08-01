@@ -6,9 +6,10 @@ Use SQLite for local development and Azure SQL Database serverless for the
 private Azure deployment without changing application architecture.
 
 Status: **provider support, migrations, Azure SQL infrastructure, and the
-Container App cutover are complete. The frontend redirect is corrected. Live
-workflow and restart-persistence verification are blocked by the profile
-request surfacing a serverless database wake-up as `500`.**
+Container App cutover are complete. The frontend redirect is corrected. The
+profile `500` was isolated to SQL Client timeout `-2` while the paused database
+woke. Source now maps that condition to the existing bounded `503` retry path;
+deployment and live workflow verification remain open.**
 
 Browser headers, ingress diagnostics, and other public-edge work are tracked in
 [`deploy-todo.md`](deploy-todo.md). They do not block database completion while
@@ -100,6 +101,19 @@ diagnosed before the session stopped. No data was changed, both verification
 items remain open, the persistence restart test was not performed, and
 external ingress was independently verified disabled in Single revision mode.
 
+Bounded diagnosis on 2026-08-01 reproduced one authenticated
+`GET /api/profile` returning `500`. Timestamp-correlated aggregate logs showed
+`Microsoft.Data.SqlClient.SqlException` with error `-2` (connection timeout),
+and Azure SQL changed from `Paused` to `Online`. This proves the request reached
+Azure SQL and triggered auto-resume, but its first connection timed out instead
+of returning `40613`, so the existing exception handler did not produce the
+retryable `503`. The deployed binaries contained the existing backend handler
+and frontend retry behavior; exact OCI source-label retrieval was blocked by
+registry data-plane authorization. Source now treats SQL timeout `-2` as the
+same temporary serverless wake-up condition without adding it to EF Core's
+automatic retry list. No data was changed, and external ingress was disabled
+and independently verified after the diagnostic.
+
 ## Acceptance criteria
 
 - Local development and automated tests use SQLite.
@@ -123,6 +137,7 @@ external ingress was independently verified disabled in Single revision mode.
 - In Container Apps Single revision mode, an active revision may remain while
   external ingress is disabled. Disabled ingress, not zero active revisions, is
   the public-access safety boundary.
-- A paused Azure SQL serverless database can reject its first connection while
-  auto-resume begins. Treat that condition as temporary availability, never as
-  an authentication failure, and never retry writes automatically.
+- A paused Azure SQL serverless database can reject its first connection with
+  `40613`, or the connection can time out with SQL error `-2` while auto-resume
+  completes. Treat either condition as temporary availability, never as an
+  authentication failure, and never retry writes automatically.

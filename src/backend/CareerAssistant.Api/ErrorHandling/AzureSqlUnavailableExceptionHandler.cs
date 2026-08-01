@@ -8,6 +8,7 @@ internal sealed class AzureSqlUnavailableExceptionHandler(
     ILogger<AzureSqlUnavailableExceptionHandler> logger) : IExceptionHandler
 {
     internal const int DatabaseUnavailableErrorNumber = 40613;
+    internal const int ConnectionTimeoutErrorNumber = -2;
     internal const int RetryAfterSeconds = 10;
 
     public async ValueTask<bool> TryHandleAsync(
@@ -15,14 +16,14 @@ internal sealed class AzureSqlUnavailableExceptionHandler(
         Exception exception,
         CancellationToken cancellationToken)
     {
-        if (!ContainsDatabaseUnavailableError(exception))
+        if (!TryGetDatabaseUnavailableErrorNumber(exception, out var errorNumber))
         {
             return false;
         }
 
         logger.LogWarning(
             "Azure SQL is temporarily unavailable. SQL error number: {SqlErrorNumber}.",
-            DatabaseUnavailableErrorNumber);
+            errorNumber);
 
         httpContext.Response.Headers.RetryAfter = RetryAfterSeconds.ToString(
             System.Globalization.CultureInfo.InvariantCulture);
@@ -37,17 +38,30 @@ internal sealed class AzureSqlUnavailableExceptionHandler(
     }
 
     internal static bool ContainsDatabaseUnavailableError(Exception exception)
+        => TryGetDatabaseUnavailableErrorNumber(exception, out _);
+
+    private static bool TryGetDatabaseUnavailableErrorNumber(
+        Exception exception,
+        out int errorNumber)
     {
         for (var current = exception; current != null; current = current.InnerException)
         {
-            if (current is SqlException sqlException
-                && sqlException.Errors.Cast<SqlError>().Any(
-                    error => error.Number == DatabaseUnavailableErrorNumber))
+            if (current is not SqlException sqlException)
             {
-                return true;
+                continue;
+            }
+
+            foreach (var error in sqlException.Errors.Cast<SqlError>())
+            {
+                if (error.Number is DatabaseUnavailableErrorNumber or ConnectionTimeoutErrorNumber)
+                {
+                    errorNumber = error.Number;
+                    return true;
+                }
             }
         }
 
+        errorNumber = default;
         return false;
     }
 }

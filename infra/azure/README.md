@@ -76,10 +76,12 @@ boundary.
 
 The General Purpose serverless database normally auto-pauses after 60 minutes
 without activity. Its first authenticated application query triggers
-auto-resume, and Azure can reject that initial connection with SQL error 40613
-while the database starts. The API maps that condition to a sanitized `503`
-with `Retry-After`; the frontend retries only `GET /api/profile` for a bounded
-90-second window. Mutating requests are never replayed.
+auto-resume. Azure can reject that initial connection with SQL error `40613`,
+or SQL Client can exhaust its connection timeout with error `-2` while the
+database starts. The API maps either condition to a sanitized `503` with
+`Retry-After`; the frontend retries only `GET /api/profile` for a bounded
+90-second window. Timeout `-2` is not added to EF Core's automatic retry list,
+and mutating requests are never replayed by the client.
 
 Before a bounded owner test, keep ingress disabled and run:
 

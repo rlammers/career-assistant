@@ -1,6 +1,6 @@
 # Security review: private Azure deployment
 
-Review updated: 2026-07-30
+Review updated: 2026-08-01
 
 ## Decision
 
@@ -50,13 +50,15 @@ Stop a bounded test and disable ingress if any of these occur:
 - resource behavior creates unexpected cost; or
 - a material public attack path is observed.
 
-Current status: owner authentication returns to the deployed frontend, but the
-final bounded `GET /api/profile` verification returned `500` after the
-connection secret had been parser-validated and targeted to the deployed
-database. The owner workflow and restart-persistence checks therefore remain
-incomplete. No application data was changed. External ingress was disabled and
-independently verified before stopping; do not leave the endpoint publicly
-available while this failure remains unresolved.
+Current status: owner authentication returns to the deployed frontend. A
+bounded 2026-08-01 reproduction isolated `GET /api/profile` returning `500` to
+SQL Client timeout `-2` while Azure SQL changed from `Paused` to `Online`.
+Source now maps that condition to the sanitized, bounded `503` retry contract,
+but the replacement backend has not yet been deployed and verified. The owner
+workflow and restart-persistence checks therefore remain incomplete. No
+application data was changed. External ingress was disabled and independently
+verified before stopping; do not leave the endpoint publicly available while
+this failure remains unresolved.
 
 ## Non-blocking follow-ups
 

@@ -57,6 +57,30 @@ public class AzureSqlUnavailableExceptionHandlerTests
     }
 
     [Fact]
+    public async Task ConnectionTimeoutReturnsSanitizedServiceUnavailableResponse()
+    {
+        var handler = new AzureSqlUnavailableExceptionHandler(
+            NullLogger<AzureSqlUnavailableExceptionHandler>.Instance);
+        var context = CreateHttpContext();
+        var exception = CreateSqlException(
+            AzureSqlUnavailableExceptionHandler.ConnectionTimeoutErrorNumber,
+            "private-server",
+            "private-database");
+
+        var handled = await handler.TryHandleAsync(context, exception, CancellationToken.None);
+
+        Assert.True(handled);
+        Assert.Equal(StatusCodes.Status503ServiceUnavailable, context.Response.StatusCode);
+        Assert.Equal(
+            AzureSqlUnavailableExceptionHandler.RetryAfterSeconds.ToString(),
+            context.Response.Headers.RetryAfter);
+
+        var problem = await ReadProblemDetailsAsync(context);
+        Assert.DoesNotContain("private-server", problem.Title + problem.Detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("private-database", problem.Title + problem.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task UnrelatedSqlErrorIsNotHandled()
     {
         var handler = new AzureSqlUnavailableExceptionHandler(
