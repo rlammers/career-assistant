@@ -1,4 +1,7 @@
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+ARG SOURCE_REVISION=local
+ARG SOURCE_URL=local
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:ed034a8bf0b24ded0cbbac07e17825d8e9ebfe21e308191d0f7421eaf5ad4664 AS build
 WORKDIR /src
 
 COPY src/backend/CareerAssistant.Api/CareerAssistant.Api.csproj src/backend/CareerAssistant.Api/
@@ -10,8 +13,13 @@ RUN dotnet publish src/backend/CareerAssistant.Api/CareerAssistant.Api.csproj \
     --output /app/publish \
     --no-restore
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:1fa23fc4872d95fd71c2833ebe65d7e84a43b2d51a31d119516852f13d9505a7 AS runtime
+ARG SOURCE_REVISION
+ARG SOURCE_URL
 WORKDIR /app
+
+LABEL org.opencontainers.image.revision="${SOURCE_REVISION}" \
+      org.opencontainers.image.source="${SOURCE_URL}"
 
 RUN mkdir -p /app/data && chown -R app:app /app/data
 

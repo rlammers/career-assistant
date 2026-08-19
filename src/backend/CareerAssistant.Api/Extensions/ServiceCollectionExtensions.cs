@@ -1,9 +1,11 @@
 using CareerAssistant.Api.Data;
+using CareerAssistant.Api.ErrorHandling;
 using CareerAssistant.Api.Options;
 using CareerAssistant.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
@@ -15,6 +17,8 @@ namespace CareerAssistant.Api.Extensions;
 
 internal static class ServiceCollectionExtensions
 {
+    private const string SqlServerMigrationsAssembly = "CareerAssistant.Api.SqlServerMigrations";
+
     public static void AddCareerAssistantServices(
         this IServiceCollection services,
         IConfiguration configuration)
@@ -23,8 +27,9 @@ internal static class ServiceCollectionExtensions
         var aiOptions = configuration.GetSection("AI").Get<AiOptions>() ?? new();
         var aiProvider = string.IsNullOrWhiteSpace(aiOptions.Provider) ? "Mock" : aiOptions.Provider;
 
-        services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlite(configuration.GetConnectionString("DefaultConnection")));
+        services.AddConfiguredDatabase(configuration);
+        services.AddProblemDetails();
+        services.AddExceptionHandler<AzureSqlUnavailableExceptionHandler>();
         services.AddCareerAssistantOptions(configuration);
         services.AddConfiguredAuthentication(authenticationOptions);
         services.AddAuthorization(options =>
@@ -61,6 +66,52 @@ internal static class ServiceCollectionExtensions
             .Validate(options => options.MaxAnalyses > 0, "Demo:MaxAnalyses must be greater than zero.")
             .ValidateOnStart();
         services.AddSingleton<DemoQuotaGate>();
+    }
+
+    private static void AddConfiguredDatabase(this IServiceCollection services, IConfiguration configuration)
+    {
+        var provider = configuration["Database:Provider"];
+        if (string.IsNullOrWhiteSpace(provider))
+        {
+            throw new InvalidOperationException("Database:Provider is required.");
+        }
+
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException("DefaultConnection is required.");
+        }
+
+        provider = provider.Trim();
+
+        if (string.Equals(provider, "Sqlite", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite(connectionString));
+            return;
+        }
+
+        if (string.Equals(provider, "SqlServer", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                _ = new SqlConnectionStringBuilder(connectionString);
+            }
+            catch (ArgumentException)
+            {
+                throw new InvalidOperationException(
+                    "DefaultConnection is not a valid SQL Server connection string.");
+            }
+
+            services.AddDbContext<ApplicationDbContext>(options =>
+                options.UseSqlServer(connectionString, sql =>
+                {
+                    sql.EnableRetryOnFailure([AzureSqlUnavailableExceptionHandler.DatabaseUnavailableErrorNumber]);
+                    sql.MigrationsAssembly(SqlServerMigrationsAssembly);
+                }));
+            return;
+        }
+
+        throw new InvalidOperationException($"Unsupported database provider: {provider}");
     }
 
     private static void AddConfiguredAuthentication(this IServiceCollection services, AuthenticationOptions authenticationOptions)

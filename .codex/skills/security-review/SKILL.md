@@ -11,7 +11,9 @@ Prioritize concrete attack paths, data exposure, authentication and authorizatio
 
 ## Threat model
 
-Assume the application is intended for public internet deployment.
+Match the threat model to the requested milestone. For the private demo,
+external ingress is temporary and access is owner-assigned. For public
+production, assume the application is continuously reachable from the internet.
 
 Assume an attacker can:
 
@@ -28,13 +30,15 @@ Balance recommendations against the project's goals. Prefer practical controls a
 
 ## Project context
 
-Read `docs/security-review-private.md` before starting a security review. Use it as a local, project-specific baseline and update its findings only when the user explicitly requests that change.
+Use `docs/security-review.md` and the relevant deployment TODO as the current
+baseline. The ignored `docs/security-review-private.md` may contain historical
+tactical context; do not treat stale entries there as current facts or reproduce
+its identifiers externally.
 
-Do not reproduce sensitive tactical details from that document in public-facing summaries, commit messages, pull-request descriptions, or external communications. Refer to issues at an appropriate level of detail.
-
-Treat documented public-deployment blockers, including invitation-only Microsoft Entra authentication and server-side authorization, as deployment blockers until they are implemented and verified.
-
-Do not repeatedly report already documented blockers as new findings. Instead, reference them as existing known risks unless the current change materially affects them.
+Do not repeatedly report documented follow-ups as new findings unless the
+current change affects them. A non-critical diagnostic blocks only the surface
+it protects; for example, an external-header issue does not block database
+verification when ingress is disabled afterward.
 
 ## Review scope
 
@@ -86,11 +90,10 @@ If exploitation cannot be confirmed from the available evidence, clearly state t
 
 ## Review workflow
 
-1. Read the private security baseline and relevant project guidance.
-2. Inspect the change, surrounding code, configuration, dependencies, deployment files, and affected trust boundaries.
-3. Trace trust boundaries between the browser, frontend, backend API, authentication provider, AI provider, database, and infrastructure. Identify where data crosses each boundary and where authorization decisions occur.
-4. Identify and rank concrete findings.
-5. State whether the change is acceptable to merge and whether the application remains ready for public deployment.
+Inspect the change, relevant guidance, surrounding code, configuration,
+dependencies, and affected trust boundaries. Rank concrete findings and state
+whether they block the requested milestone. Do not require public-production
+controls for a bounded private test unless the same exposure exists.
 
 Do not claim a control is verified merely because its code or configuration exists. Distinguish implementation, automated checks, local validation, and production-environment verification.
 
@@ -98,17 +101,8 @@ Do not recommend controls that significantly increase operational complexity wit
 
 ## Output
 
-Present results in this order:
-
-1. Critical findings
-2. High findings
-3. Medium findings
-4. Low findings
-5. Positive controls observed
-6. Assumptions and verification gaps
-7. Merge-readiness summary
-8. Public-deployment-readiness summary
-
-Omit empty severity sections.
-
-If no actionable findings are identified, state that clearly, identify remaining verification limits, and explain why the review has reasonable confidence despite those limits.
+Lead with actionable findings ordered by severity. Include confidence, affected
+component, plausible attack or failure scenario, impact, and practical
+remediation. Omit empty sections and avoid lengthy control inventories. End
+with readiness for the requested milestone; discuss public-production readiness
+only when relevant.

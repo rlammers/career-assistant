@@ -9,9 +9,6 @@ param namePrefix string = 'career-assistant-demo'
 @description('Existing Container Apps environment name from foundation.bicep.')
 param environmentName string
 
-@description('Existing environment storage link name from foundation.bicep.')
-param environmentStorageName string
-
 @description('Existing ACR name from foundation.bicep.')
 param registryName string
 
@@ -44,13 +41,16 @@ param authenticationIssuer string
 @minLength(1)
 param authenticationRequiredAppRole string
 
+@description('Azure SQL connection string stored as a Container Apps secret.')
+@secure()
+param databaseConnectionString string
+
 module application './application.bicep' = {
   name: 'private-application'
   params: {
     location: location
     namePrefix: namePrefix
     environmentName: environmentName
-    environmentStorageName: environmentStorageName
     registryName: registryName
     imagePullIdentityName: imagePullIdentityName
     frontendImage: frontendImage
@@ -60,7 +60,8 @@ module application './application.bicep' = {
     authenticationAudience: authenticationAudience
     authenticationIssuer: authenticationIssuer
     authenticationRequiredAppRole: authenticationRequiredAppRole
-    migrateOnStartup: true
+    databaseConnectionString: databaseConnectionString
+    migrateOnStartup: false
   }
 }
 

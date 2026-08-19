@@ -9,9 +9,6 @@ param namePrefix string = 'career-assistant-demo'
 @description('Existing Container Apps environment name from foundation.bicep.')
 param environmentName string
 
-@description('Existing environment storage link name from foundation.bicep.')
-param environmentStorageName string
-
 @description('Existing ACR name from foundation.bicep.')
 param registryName string
 
@@ -44,7 +41,11 @@ param authenticationIssuer string
 @minLength(1)
 param authenticationRequiredAppRole string
 
-@description('Apply EF Core migrations when the API starts. Enable only for the temporary single-replica private deployment; public production must leave this false and use a dedicated migration job.')
+@description('Azure SQL connection string stored as a Container Apps secret.')
+@secure()
+param databaseConnectionString string
+
+@description('Apply EF Core migrations when the API starts. Serving Azure SQL revisions must leave this false and use a separate migration step.')
 param migrateOnStartup bool = false
 
 var appName = '${namePrefix}-app'
@@ -74,6 +75,12 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
     environmentId: environment.id
     configuration: {
       activeRevisionsMode: 'Single'
+      secrets: [
+        {
+          name: 'database-connection-string'
+          value: databaseConnectionString
+        }
+      ]
       ingress: {
         allowInsecure: false
         external: true
@@ -158,7 +165,11 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             }
             {
               name: 'ConnectionStrings__DefaultConnection'
-              value: 'Data Source=/app/data/CareerAssistant.db'
+              secretRef: 'database-connection-string'
+            }
+            {
+              name: 'Database__Provider'
+              value: 'SqlServer'
             }
             {
               name: 'AI__Provider'
@@ -229,12 +240,6 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             cpu: json('0.5')
             memory: '1Gi'
           }
-          volumeMounts: [
-            {
-              mountPath: '/app/data'
-              volumeName: 'app-data'
-            }
-          ]
           probes: [
             {
               type: 'Startup'
@@ -282,14 +287,6 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
         minReplicas: 1
         maxReplicas: 1
       }
-      volumes: [
-        {
-          name: 'app-data'
-          storageName: environmentStorageName
-          storageType: 'AzureFile'
-          mountOptions: 'dir_mode=0770,file_mode=0660,uid=1654,gid=1654'
-        }
-      ]
     }
   }
 }

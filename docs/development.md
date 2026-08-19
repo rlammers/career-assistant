@@ -73,6 +73,100 @@ npm run test
 npm run build
 ```
 
+## Database configuration
+
+`Database:Provider` is required. The tracked default is `Sqlite`, and the
+Development configuration keeps `Database:MigrateOnStartup=true`; source
+development therefore uses `ConnectionStrings:DefaultConnection` to select the
+local SQLite file.
+
+`SqlServer` is also registered and selected with `Database__Provider=SqlServer`
+plus `ConnectionStrings__DefaultConnection`. SQL Server has a separate EF Core
+migrations project so its history is not mixed with the SQLite migration set.
+SQL Server deployments must set `Database__MigrateOnStartup=false` and apply
+their migration outside serving-API startup.
+
+### Verify the SQL Server migration locally
+
+This is a disposable Docker-only verification. It does not create Azure
+resources. From the repository root, restore the repository-pinned EF Core
+tool and securely read a local SQL Server administrator password:
+
+```powershell
+dotnet tool restore
+$securePassword = Read-Host "SQL Server administrator password" -AsSecureString
+$credential = [pscredential]::new("sa", $securePassword)
+$env:SQLSERVER_SA_PASSWORD = $credential.GetNetworkCredential().Password
+```
+
+Start a disposable SQL Server 2022 container. Choose a password that satisfies
+SQL Server's password policy; never add it to a command history, tracked file,
+or tool output.
+
+```powershell
+docker run --detach --rm --name career-assistant-sqlserver-smoke --publish 127.0.0.1:1433:1433 --env ACCEPT_EULA=Y --env MSSQL_SA_PASSWORD=$env:SQLSERVER_SA_PASSWORD mcr.microsoft.com/mssql/server:2022-latest
+```
+
+Allow the fresh SQL Server instance to finish its one-time initialization before
+running the migration.
+
+```powershell
+Start-Sleep -Seconds 20
+```
+
+Configure the process only for the current shell, then list and apply the
+provider-specific migration. The committed initial migration already exists;
+the `migrations add` command is included for future model changes.
+
+```powershell
+$env:Database__Provider = "SqlServer"
+$sqlConnection = [System.Data.SqlClient.SqlConnectionStringBuilder]@{
+  DataSource = "127.0.0.1,1433"
+  InitialCatalog = "CareerAssistantMigrationSmoke"
+  UserID = "sa"
+  Password = $env:SQLSERVER_SA_PASSWORD
+  Encrypt = $true
+  TrustServerCertificate = $true
+}
+$env:ConnectionStrings__DefaultConnection = $sqlConnection.ConnectionString
+
+dotnet build src/backend/CareerAssistant.Api.SqlServerMigrations
+dotnet tool run dotnet-ef migrations list --project src/backend/CareerAssistant.Api.SqlServerMigrations --startup-project src/backend/CareerAssistant.Api --context ApplicationDbContext --no-build
+dotnet tool run dotnet-ef database update --project src/backend/CareerAssistant.Api.SqlServerMigrations --startup-project src/backend/CareerAssistant.Api --context ApplicationDbContext --no-build
+
+# Run only after an intentional model change, after rebuilding the migrations project.
+dotnet tool run dotnet-ef migrations add AddNewField --project src/backend/CareerAssistant.Api.SqlServerMigrations --startup-project src/backend/CareerAssistant.Api --context ApplicationDbContext --output-dir Migrations --no-build
+```
+
+In the same configured shell, run the serving API with startup migrations
+disabled. Then create and read fictional representative data from a second
+PowerShell window:
+
+```powershell
+$env:Database__MigrateOnStartup = "false"
+dotnet run --project src/backend/CareerAssistant.Api --launch-profile http
+```
+
+```powershell
+Invoke-RestMethod -Method Post -Uri http://localhost:5117/api/profile -ContentType "application/json" -Body '{"summary":"Fictional software engineer","skills":"C#, SQL Server","experience":"Fictional API experience"}'
+Invoke-RestMethod -Method Post -Uri http://localhost:5117/api/jobs -ContentType "application/json" -Body '{"company":"Example Co","role":"Backend Engineer","jobDescription":"C# and SQL Server role"}'
+Invoke-RestMethod -Method Get -Uri http://localhost:5117/api/profile
+Invoke-RestMethod -Method Get -Uri http://localhost:5117/api/jobs
+```
+
+Stop the API, remove the container, and clear shell-only values when finished:
+
+```powershell
+docker stop career-assistant-sqlserver-smoke
+Remove-Item Env:\Database__Provider, Env:\Database__MigrateOnStartup, Env:\ConnectionStrings__DefaultConnection, Env:\SQLSERVER_SA_PASSWORD -ErrorAction SilentlyContinue
+Remove-Variable credential, securePassword, sqlConnection -ErrorAction SilentlyContinue
+```
+
+To inspect the independent SQLite history instead, clear the SQL Server shell
+values and run `dotnet tool run dotnet-ef migrations list --project
+src/backend/CareerAssistant.Api --startup-project src/backend/CareerAssistant.Api
+--context ApplicationDbContext`.
+
 ## Verify Microsoft Entra authentication locally
 
 The local Entra flow uses backend user secrets and the frontend's ignored `.env.local` file. Keep real tenant and application identifiers out of tracked files.
@@ -168,6 +262,7 @@ Common Docker environment variables:
 | `BACKEND_PORT` | `5117` | Host loopback port for direct backend testing |
 | `FRONTEND_ORIGIN` | `http://localhost:5173` | Backend CORS origin for the frontend |
 | `API_UPSTREAM` | `http://backend:8080` | Internal backend URL used by nginx |
+| `Database__Provider` | `Sqlite` from application configuration | Selects `Sqlite` or `SqlServer` |
 | `ConnectionStrings__DefaultConnection` | `Data Source=/app/data/CareerAssistant.db` | SQLite path inside the backend container |
 | `Database__MigrateOnStartup` | `true` in Compose | Applies EF Core migrations during container startup |
 | `DEMO_ENABLED` | `false` | Enables demo storage quotas |
@@ -254,8 +349,11 @@ Profile fields (`Summary`, `Skills`, `Experience`) and job fields (`Company`, `R
 
 - The backend listens on HTTP port `8080` inside its container.
 - The backend exposes `GET /health` and `HEAD /health` for health checks.
-- SQLite uses `ConnectionStrings__DefaultConnection`; persistent storage is mounted at `/app/data` in Compose.
+- Compose uses the default `Sqlite` provider and `ConnectionStrings__DefaultConnection`; persistent storage is mounted at `/app/data`.
 - Development and Compose enable startup migrations explicitly. Reusable public deployment configuration disables startup migrations and requires a dedicated migration process.
+- The Azure deployment uses `SqlServer`, disables startup migrations, and
+  receives its Azure SQL connection string as a secret. Local Compose continues
+  to use its SQLite volume; see [the database checklist](db-todo.md).
 - Development allows `http://localhost:5173` through CORS. Other environments must configure exact allowed origins.
 - `ForwardedHeaders__Enabled=true` is required when the API runs behind the trusted nginx proxy.
 - Authentication and API authorization must remain enabled for authenticated test workflows; frontend route protection is not the security boundary.

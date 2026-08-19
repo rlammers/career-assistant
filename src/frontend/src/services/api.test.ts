@@ -9,6 +9,7 @@ vi.mock('../auth/authClient', () => ({
 
 describe('authenticated API requests', () => {
   beforeEach(() => {
+    vi.useRealTimers();
     vi.clearAllMocks();
   });
 
@@ -147,17 +148,83 @@ describe('authenticated API requests', () => {
 
   it('leaves ordinary API failures in the page-level error path', async () => {
     vi.mocked(getApiAccessToken).mockResolvedValue('access-token');
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+    const fetchMock = vi.fn().mockResolvedValue({
       ok: false,
       status: 500,
       statusText: 'Server error',
-    }));
+    });
+    vi.stubGlobal('fetch', fetchMock);
     const failures: AuthFailure[] = [];
     const unsubscribe = subscribeToAuthFailures((failure) => failures.push(failure));
 
     await expect(profileAPI.getProfile()).rejects.toThrow('Failed to fetch profile: Server error');
 
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(failures).toEqual([]);
     unsubscribe();
+  });
+
+  it('retries a temporarily unavailable profile GET and returns the resumed response', async () => {
+    vi.useFakeTimers();
+    vi.mocked(getApiAccessToken).mockResolvedValue('access-token');
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        statusText: 'Service Unavailable',
+        headers: new Headers({ 'Retry-After': '10' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ id: 1, summary: 'Summary', skills: 'Skills', experience: 'Experience' }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const profilePromise = profileAPI.getProfile();
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    await expect(profilePromise).resolves.toMatchObject({ id: 1 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('stops retrying a temporarily unavailable profile after the bounded window', async () => {
+    vi.useFakeTimers();
+    vi.mocked(getApiAccessToken).mockResolvedValue('access-token');
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 503,
+      statusText: 'Service Unavailable',
+      headers: new Headers({ 'Retry-After': '10' }),
+      text: async () => '',
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const profilePromise = profileAPI.getProfile();
+    const rejection = expect(profilePromise).rejects.toThrow(
+      'Failed to fetch profile: Service Unavailable',
+    );
+    await vi.advanceTimersByTimeAsync(90_000);
+
+    await rejection;
+    expect(fetchMock).toHaveBeenCalledTimes(10);
+  });
+
+  it('does not retry a mutating profile request when the database is unavailable', async () => {
+    vi.mocked(getApiAccessToken).mockResolvedValue('access-token');
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 503,
+      statusText: 'Service Unavailable',
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(profileAPI.saveProfile({
+      summary: 'Summary',
+      skills: 'Skills',
+      experience: 'Experience',
+    })).rejects.toThrow('Failed to save profile: Service Unavailable');
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
