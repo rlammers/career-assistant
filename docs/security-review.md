@@ -1,5 +1,10 @@
 # Security review: private Azure deployment readiness
 
+> **Paused reference:** This assessment applies only to the retained Azure
+> design and historical deployment work. It is not a current production
+> approval and must be revisited if Azure is selected in the
+> [hosting decision](hosting-decision.md).
+
 Review updated: 2026-07-25
 
 Scope: application, Microsoft Entra boundary, frontend proxy, backend API, persistence, containers, CI, and proposed Azure infrastructure

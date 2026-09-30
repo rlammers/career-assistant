@@ -1,4 +1,4 @@
-name: Deployment readiness security
+name: Security baseline
 
 on:
   schedule:
@@ -58,22 +58,6 @@ jobs:
       - name: Audit backend dependencies
         working-directory: src/backend
         run: dotnet list package --vulnerable --include-transitive --no-restore
-
-  bicep-compilation:
-    name: Compile Bicep templates
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Compile and lint Bicep
-        run: |
-          az bicep install
-          az bicep build --file infra/azure/foundation.bicep --stdout > /dev/null
-          az bicep build --file infra/azure/application.bicep --stdout > /dev/null
-          az bicep build --file infra/azure/private-application.bicep --stdout > /dev/null
 
   secret-scan:
     name: Scan repository secrets

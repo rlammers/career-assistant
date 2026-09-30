@@ -1,4 +1,9 @@
-# Azure deployment readiness
+# Azure deployment reference
+
+> **Paused:** Azure is not the active deployment target. These files are
+> retained for comparison and possible future reuse. Do not deploy or extend
+> them unless [`docs/hosting-decision.md`](../../docs/hosting-decision.md)
+> records Azure as the selected target and the live state is revalidated.
 
 These Bicep files describe the Azure deployment in Australia East. The foundation and private Container App have been deployed and verified to the extent recorded in `docs/deploy-todo.md`. The retained application revision is stopped and external ingress is disabled after the SQLite migration-start failure; it is not approved for private use.
 
