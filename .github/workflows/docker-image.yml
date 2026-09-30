@@ -2,14 +2,14 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
     paths:
       - 'src/backend/**'
       - 'src/frontend/**'
       - '.dockerignore'
       - '.github/workflows/docker-image.yml'
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
     paths:
       - 'src/backend/**'
       - 'src/frontend/**'
@@ -32,11 +32,9 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
       - name: Detect changed image inputs
         id: filter
         uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
@@ -52,21 +50,27 @@ jobs:
               - '.dockerignore'
               - '.github/workflows/docker-image.yml'
 
-  build-backend:
-    name: Build backend image
+  build-images:
+    name: Build changed Docker images
     needs: changes
-    if: needs.changes.outputs.backend == 'true'
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
-
+      - name: Create excluded frontend environment sentinel
+        if: needs.changes.outputs.frontend == 'true'
+        shell: bash
+        run: |
+          printf '%s\n' \
+            'VITE_ENTRA_REDIRECT_URI=http://localhost:5173/' \
+            'VITE_BUILD_CONTEXT_SENTINEL=must-not-enter-the-image' \
+            > src/frontend/.env.local
       - name: Build backend Docker image
+        if: needs.changes.outputs.backend == 'true'
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
         with:
           context: .
@@ -79,36 +83,15 @@ jobs:
             SOURCE_URL=${{ github.server_url }}/${{ github.repository }}
           cache-from: type=gha,scope=backend-image
           cache-to: type=gha,mode=max,scope=backend-image
-
       - name: Verify backend image provenance
+        if: needs.changes.outputs.backend == 'true'
         shell: bash
         run: |
           set -euo pipefail
           test "$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' career-assistant-backend:ci)" = "$GITHUB_SHA"
           test "$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.source" }}' career-assistant-backend:ci)" = "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
-
-  build-frontend:
-    name: Build frontend image
-    needs: changes
-    if: needs.changes.outputs.frontend == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
-
-      - name: Create excluded frontend environment sentinel
-        run: |
-          printf '%s\n' \
-            'VITE_ENTRA_REDIRECT_URI=http://localhost:5173/' \
-            'VITE_BUILD_CONTEXT_SENTINEL=must-not-enter-the-image' \
-            > src/frontend/.env.local
-
       - name: Build frontend Docker image
+        if: needs.changes.outputs.frontend == 'true'
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
         with:
           context: .
@@ -125,8 +108,8 @@ jobs:
             VITE_ENTRA_API_SCOPE=api://33333333-3333-3333-3333-333333333333/access_as_user
           cache-from: type=gha,scope=frontend-image
           cache-to: type=gha,mode=max,scope=frontend-image
-
       - name: Verify frontend image inputs and provenance
+        if: needs.changes.outputs.frontend == 'true'
         shell: bash
         run: |
           set -euo pipefail

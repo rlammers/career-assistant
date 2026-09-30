@@ -3,6 +3,9 @@ name: Frontend tests
 on:
   pull_request:
     branches: ["main"]
+    paths:
+      - 'src/frontend/**'
+      - '.github/workflows/frontend-tests.yml'
   push:
     branches: ["main"]
     paths:
@@ -18,28 +21,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  changes:
-    name: Detect frontend changes
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      frontend: ${{ steps.filter.outputs.frontend }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Detect changed frontend inputs
-        id: filter
-        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
-        with:
-          filters: |
-            frontend:
-              - 'src/frontend/**'
-              - '.github/workflows/frontend-tests.yml'
-
   test:
     name: Test and build frontend
-    needs: changes
-    if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -69,17 +52,3 @@ jobs:
 
       - name: Build frontend
         run: npm run build
-
-  required:
-    name: Required frontend check
-    needs: [changes, test]
-    if: always()
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Confirm frontend check result
-        if: needs.changes.result == 'success' && (needs.test.result == 'success' || needs.test.result == 'skipped')
-        run: echo "Frontend check passed or was not required for this change."
-      - name: Fail when frontend check fails
-        if: needs.changes.result != 'success' || (needs.test.result != 'success' && needs.test.result != 'skipped')
-        run: exit 1

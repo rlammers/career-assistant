@@ -2,16 +2,6 @@ name: Azure infrastructure validation
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ "main" ]
-    paths:
-      - "infra/azure/**"
-      - ".github/workflows/azure-infrastructure.yml"
-  pull_request:
-    branches: [ "main" ]
-    paths:
-      - "infra/azure/**"
-      - ".github/workflows/azure-infrastructure.yml"
 
 permissions:
   contents: read

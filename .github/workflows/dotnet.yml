@@ -11,6 +11,9 @@ on:
       - '.github/workflows/dotnet.yml'
   pull_request:
     branches: ["main"]
+    paths:
+      - 'src/backend/**'
+      - '.github/workflows/dotnet.yml'
 
 permissions:
   contents: read
@@ -21,28 +24,8 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  changes:
-    name: Detect backend changes
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Detect changed backend inputs
-        id: filter
-        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
-        with:
-          filters: |
-            backend:
-              - 'src/backend/**'
-              - '.github/workflows/dotnet.yml'
-
   build:
     name: Build and test backend
-    needs: changes
-    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -62,17 +45,3 @@ jobs:
         run: dotnet build --no-restore
       - name: Test
         run: dotnet test --no-build --verbosity normal
-
-  required:
-    name: Required backend check
-    needs: [changes, build]
-    if: always()
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Confirm backend check result
-        if: needs.changes.result == 'success' && (needs.build.result == 'success' || needs.build.result == 'skipped')
-        run: echo "Backend check passed or was not required for this change."
-      - name: Fail when backend check fails
-        if: needs.changes.result != 'success' || (needs.build.result != 'success' && needs.build.result != 'skipped')
-        run: exit 1
