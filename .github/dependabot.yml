@@ -4,11 +4,8 @@ updates:
   - package-ecosystem: "nuget"
     directory: "/src/backend"
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Pacific/Auckland"
-    open-pull-requests-limit: 5
+      interval: "quarterly"
+    open-pull-requests-limit: 2
     groups:
       dotnet-minor-and-patch:
         update-types:
@@ -18,11 +15,8 @@ updates:
   - package-ecosystem: "npm"
     directory: "/src/frontend"
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:15"
-      timezone: "Pacific/Auckland"
-    open-pull-requests-limit: 5
+      interval: "quarterly"
+    open-pull-requests-limit: 2
     groups:
       npm-minor-and-patch:
         update-types:
@@ -32,30 +26,21 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:30"
-      timezone: "Pacific/Auckland"
-    open-pull-requests-limit: 3
+      interval: "quarterly"
+    open-pull-requests-limit: 2
     groups:
-      codeql-actions:
+      github-actions:
         patterns:
-          - "github/codeql-action/*"
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/src/backend/CareerAssistant.Api"
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:45"
-      timezone: "Pacific/Auckland"
-    open-pull-requests-limit: 3
+      interval: "quarterly"
+    open-pull-requests-limit: 2
 
   - package-ecosystem: "docker"
     directory: "/src/frontend"
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "10:00"
-      timezone: "Pacific/Auckland"
-    open-pull-requests-limit: 3
+      interval: "quarterly"
+    open-pull-requests-limit: 2
