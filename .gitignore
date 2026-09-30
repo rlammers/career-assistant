@@ -55,3 +55,8 @@ Thumbs.db
 
 # Local-only detailed security assessment
 docs/security-review-private.md
+
+# Generated ARM templates; retain the Bicep source files instead
+infra/azure/foundation.json
+infra/azure/application.json
+infra/azure/private-application.json

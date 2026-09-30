@@ -1,6 +1,13 @@
-# Azure deployment readiness
+# Archived Azure deployment reference
 
-These Bicep files describe the Azure deployment in Australia East. The foundation and private Container App have been deployed and verified to the extent recorded in `docs/deploy-todo.md`. The retained application revision is stopped and external ingress is disabled after the SQLite migration-start failure; it is not approved for private use.
+> **Historical reference:** Azure is not the active deployment target. These
+> files are retained for comparison and possible future reuse. The owner
+> reports that the former subscription expired and was deleted; this has not
+> been independently verified. Do not deploy or extend these templates unless
+> a new [`docs/hosting-decision.md`](../../docs/hosting-decision.md) selects Azure
+> and the design is revalidated against a new environment.
+
+These Bicep files describe the former Azure deployment in Australia East. The foundation and private Container App were deployed and verified to the extent recorded in [`docs/deploy-todo.md`](../../docs/deploy-todo.md). The last recorded state had the application revision stopped and external ingress disabled after the SQLite migration-start failure; this is historical evidence, not a live-state claim.
 
 `foundation.bicep` defines the registry, managed identity, logging, persistent file share, and Container Apps environment. `application.bicep` defines the production-safe single-replica, two-container application after commit-specific images exist in the registry. `private-application.bicep` wraps it for the temporary owner-only deployment and explicitly enables startup migrations.
 
@@ -66,12 +73,16 @@ docker build `
   .
 ```
 
-Compilation is safe and does not contact an Azure subscription:
+Compilation is safe and does not contact an Azure subscription. Stream output
+instead of creating generated JSON files in the repository:
 
 ```powershell
-az bicep build --file infra/azure/foundation.bicep
-az bicep build --file infra/azure/application.bicep
-az bicep build --file infra/azure/private-application.bicep
+az bicep build --file infra/azure/foundation.bicep --stdout > $null
+az bicep build --file infra/azure/application.bicep --stdout > $null
+az bicep build --file infra/azure/private-application.bicep --stdout > $null
 ```
 
-Do not deploy these modules until all deployment-blocking findings in `docs/security-review.md` are accepted or remediated.
+Do not deploy these archived modules. If Azure is selected again, make a fresh
+deployment plan and security review rather than treating the historical
+findings in [`docs/security-review.md`](../../docs/security-review.md) as the
+only gate.
