@@ -3,9 +3,6 @@ name: Frontend tests
 on:
   pull_request:
     branches: ["main"]
-    paths:
-      - 'src/frontend/**'
-      - '.github/workflows/frontend-tests.yml'
   push:
     branches: ["main"]
     paths:
@@ -22,7 +19,7 @@ concurrency:
 
 jobs:
   test:
-    name: Test and build frontend
+    name: Required frontend check
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -33,8 +30,18 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Detect frontend changes
+        if: github.event_name == 'pull_request'
+        id: filter
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
+        with:
+          filters: |
+            frontend:
+              - 'src/frontend/**'
+              - '.github/workflows/frontend-tests.yml'
 
       - name: Setup Node.js
+        if: github.event_name != 'pull_request' || steps.filter.outputs.frontend == 'true'
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
         with:
           node-version: 24
@@ -42,13 +49,17 @@ jobs:
           cache-dependency-path: src/frontend/package-lock.json
 
       - name: Install dependencies
+        if: github.event_name != 'pull_request' || steps.filter.outputs.frontend == 'true'
         run: npm ci
 
       - name: Run frontend tests
+        if: github.event_name != 'pull_request' || steps.filter.outputs.frontend == 'true'
         run: npm test
 
       - name: Lint frontend
+        if: github.event_name != 'pull_request' || steps.filter.outputs.frontend == 'true'
         run: npm run lint
 
       - name: Build frontend
+        if: github.event_name != 'pull_request' || steps.filter.outputs.frontend == 'true'
         run: npm run build

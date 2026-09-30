@@ -9,9 +9,6 @@ on:
       - '.github/workflows/codeql-frontend.yml'
   pull_request:
     branches: ["main"]
-    paths:
-      - 'src/frontend/**'
-      - '.github/workflows/codeql-frontend.yml'
 
 permissions:
   security-events: write

@@ -500,5 +500,6 @@ If the lesson is reusable:
 - Update this `AGENTS.md` in the same change with the smallest practical preventive rule
 - State the invariant or required verification, not the details of the individual incident
 - Check every affected layer when introducing a cross-cutting change; for example, a new HTTP method must be allowed by the controller, CORS policy, reverse proxy, and relevant tests
+- When changing GitHub Actions triggers or check names, inspect the active branch ruleset and ensure every required status is reported on every pull request, including documentation-only changes
 
 Do not add guidance for one-off mistakes that are already clearly covered or are unlikely to recur.

@@ -11,9 +11,6 @@ on:
       - '.github/workflows/dotnet.yml'
   pull_request:
     branches: ["main"]
-    paths:
-      - 'src/backend/**'
-      - '.github/workflows/dotnet.yml'
 
 permissions:
   contents: read
@@ -25,7 +22,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build and test backend
+    name: Required backend check
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -35,13 +32,26 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Detect backend changes
+        if: github.event_name == 'pull_request'
+        id: filter
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
+        with:
+          filters: |
+            backend:
+              - 'src/backend/**'
+              - '.github/workflows/dotnet.yml'
       - name: Setup .NET
+        if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: 10.0.x
       - name: Restore dependencies
+        if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
         run: dotnet restore
       - name: Build
+        if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
         run: dotnet build --no-restore
       - name: Test
+        if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
         run: dotnet test --no-build --verbosity normal
