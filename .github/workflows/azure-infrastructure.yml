@@ -1,0 +1,43 @@
+name: Azure infrastructure validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "infra/azure/**"
+      - ".github/workflows/azure-infrastructure.yml"
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - "infra/azure/**"
+      - ".github/workflows/azure-infrastructure.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  bicep-compilation:
+    name: Compile Bicep templates
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Compile and lint Bicep
+        shell: bash
+        run: |
+          set -euo pipefail
+          az bicep install
+          mapfile -d '' templates < <(find infra/azure -type f -name '*.bicep' -print0 | sort -z)
+          test "${#templates[@]}" -gt 0
+          for template in "${templates[@]}"; do
+            echo "Compiling ${template}"
+            az bicep build --file "${template}" --stdout > /dev/null
+          done
