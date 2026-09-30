@@ -25,3 +25,6 @@ logs/
 .env
 .env.*
 *.local
+**/.env
+**/.env.*
+**/*.local
