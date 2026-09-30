@@ -1,15 +1,16 @@
-# Private Azure Container Apps deployment TODO
+# Archived private Azure Container Apps deployment checklist
 
-> **Paused reference:** Azure is not the active deployment target. This file
-> preserves historical implementation and verification evidence and must not be
-> treated as an active procedure. Resume provider-specific work only after the
-> [hosting decision](hosting-decision.md) records Azure as the selected target.
+> **Historical reference:** Azure is not the active deployment target. The owner
+> reports that the subscription expired and was deleted; this has not been
+> independently verified. This checklist records past work, including unchecked
+> items that were never completed. Do not use it as an active procedure. A new
+> deployment requires a fresh [hosting decision](hosting-decision.md).
 
-Status: **the Azure foundation, immutable deployed images, managed-identity image pulls, and owner-only Microsoft Entra configuration are verified. A controlled reset of the disposable SQLite database reproduced the backend migration-start failure on a clean database. The sole revision is stopped and external ingress is disabled; runtime, security-boundary, persistence, and operational verification remain blocked pending a separate persistence-design reassessment.**
+Last recorded deployment state: **the Azure foundation, immutable deployed images, managed-identity image pulls, and owner-only Microsoft Entra configuration were verified. A controlled reset of the disposable SQLite database reproduced the backend migration-start failure on a clean database. The sole revision was stopped and external ingress disabled. Runtime, security-boundary, persistence, and operational verification were not completed. This is historical evidence, not a claim about current Azure resources.**
 
 For this milestone, private means the Azure URL is externally reachable but Microsoft Entra application access is assigned only to the owner. It does not mean private-network-only ingress. Public deployment and broader guest access remain deferred to [`production-todo.md`](./production-todo.md).
 
-Follow this checklist in order. Do not mark Azure or live-verification items complete from local or static evidence.
+The sequence below is preserved for historical context. Do not mark Azure or live-verification items complete from local or static evidence.
 
 ## 1. Repository readiness
 
@@ -191,7 +192,7 @@ Status: **complete.** The frontend dependency findings were remediated, the fail
 
 ## 6. Deploy the private application
 
-Status: **the reviewed deployment, exact SPA origin, owner-only access configuration, deployed image digests, and managed-identity image pulls are verified. A controlled reset reproduced the backend migration-start failure on a clean SQLite database. The sole revision is stopped and external ingress is disabled; remaining runtime checks are blocked pending a separate persistence-design reassessment.**
+Historical status at this stage: **the reviewed deployment, exact SPA origin, owner-only access configuration, deployed image digests, and managed-identity image pulls were verified. A controlled reset reproduced the backend migration-start failure on a clean SQLite database. The sole revision was subsequently stopped and external ingress disabled; remaining runtime checks were not completed.**
 
 - [x] Prepare and validate the `private-application.bicep` inputs from foundation outputs, digest-qualified images, and the collected non-secret API authentication values.
 - [x] Compile `private-application.bicep` without diagnostics or generated repository artifacts.

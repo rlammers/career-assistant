@@ -218,12 +218,14 @@ Do not put real API keys in Compose files, appsettings files, frontend code, or 
 
 ## Application configuration
 
-The application is configured by environment. Code remains unchanged between local development, private deployment, public demo deployment, and personal use.
+The application is configured by environment. Local development and Docker
+Compose are supported now; any future hosted environment needs a recorded
+[hosting decision](hosting-decision.md) before provider-specific implementation.
 
 | Environment | Provider | Purpose |
 | --- | --- | --- |
 | Development | `Mock` | Build and test without cost |
-| Private deployment | `Mock` | Private Azure validation with no paid AI usage |
+| Historical private Azure deployment | `Mock` | Archived validation work; not an active environment |
 | Public demo | `Mock` | Future portfolio demo with no paid AI usage |
 | Personal | `OpenAI` | Private use with a real provider |
 | Future | `OpenAI`, `Azure OpenAI`, or `Anthropic` | Additional providers without controller changes |
@@ -261,4 +263,7 @@ Profile fields (`Summary`, `Skills`, `Experience`) and job fields (`Company`, `R
 - Authentication and API authorization must remain enabled for authenticated test workflows; frontend route protection is not the security boundary.
 - The frontend listens on HTTP port `8080`, serves the Vite build, and proxies `/api` and `/health` to `API_UPSTREAM`.
 
-For Azure deployment behavior, probes, persistence constraints, and infrastructure parameters, use the [Azure infrastructure guide](../infra/azure/README.md) and [private deployment checklist](deploy-todo.md).
+For historical Azure deployment behavior, probes, persistence constraints, and
+infrastructure parameters, see the [archived Azure infrastructure guide](../infra/azure/README.md)
+and [deployment checklist](deploy-todo.md). These are not current deployment
+instructions.

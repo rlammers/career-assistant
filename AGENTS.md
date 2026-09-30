@@ -24,8 +24,10 @@ The supported current state is local source development and the Docker Compose
 workflow. The application, deterministic Mock AI provider, and Microsoft Entra
 authentication boundary remain supported while cloud hosting is reassessed.
 
-Azure deployment work is paused and retained only as reference material. Do not
-extend Azure infrastructure, add AWS infrastructure, or introduce another
+Azure deployment work is archived as historical reference. The owner reports
+that the Azure subscription expired and was deleted; this is not independently
+verified by the repository. Do not extend Azure infrastructure, add AWS
+infrastructure, or introduce another
 provider-specific deployment path until the decision criteria in
 [`docs/hosting-decision.md`](docs/hosting-decision.md) have been evaluated and a
 target has been recorded.
