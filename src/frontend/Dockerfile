@@ -1,10 +1,17 @@
-FROM node:26-alpine AS build
+ARG SOURCE_REVISION=local
+ARG SOURCE_URL=local
+
+FROM node:26-alpine@sha256:0b36e8c136b94cd4fcf02188228e76c31ad5872eef3fec8cbd2eee500cfd9e80 AS build
 WORKDIR /app
 
 COPY src/frontend/package*.json ./
 RUN npm ci
 
-COPY src/frontend/ ./
+COPY src/frontend/tsconfig*.json src/frontend/vite.config.ts src/frontend/index.html ./
+COPY src/frontend/public/ ./public/
+COPY src/frontend/src/ ./src/
+
+RUN test ! -e /app/.env.local
 
 ARG VITE_API_BASE_URL=/api
 ARG VITE_AUTH_ENABLED=false
@@ -19,7 +26,11 @@ ENV VITE_ENTRA_API_SCOPE=$VITE_ENTRA_API_SCOPE
 
 RUN npm run build
 
-FROM nginxinc/nginx-unprivileged:1.31.3-alpine AS runtime
+FROM nginxinc/nginx-unprivileged:1.31.6-alpine@sha256:26b0bf6fbf07297983cb341998d79c831508787de26627dd2a112321b9c3a4af AS runtime
+ARG SOURCE_REVISION
+ARG SOURCE_URL
+LABEL org.opencontainers.image.revision="${SOURCE_REVISION}" \
+      org.opencontainers.image.source="${SOURCE_URL}"
 USER root
 RUN apk upgrade --no-cache
 USER 101

@@ -1,36 +1,55 @@
 # Public production deployment TODO
 
-Status: **deferred until the private Azure Containers deployment is verified.**
+Status: **deferred until a hosting target is selected and a new private
+deployment milestone is defined.**
 
-This is the final deployment milestone. It covers the additional Microsoft Entra, public-ingress, and release checks needed before enabling public access.
+These requirements are provider-neutral. Do not translate retained Azure demo
+decisions into production defaults without review.
 
-## Managed relational database roadmap
+## Hosting and infrastructure
 
-- [ ] Select a managed relational SQL provider based on cost, Azure integration, operational complexity, backup and restore requirements, expected workload, and portfolio value. Do not assume the provider in advance.
-- [ ] Replace the temporary SQLite database and Azure Files database volume.
-- [ ] Review EF Core models and migrations for provider-specific assumptions and create the production provider's migration path.
-- [ ] Implement a deployment-safe migration process, expected to use a dedicated migration job with `migrateOnStartup=false` for the serving API.
-- [ ] Define database authentication, monitoring, backup, restore, availability, and disaster-recovery requirements.
-- [ ] Decide whether data created during the temporary SQLite milestone will be migrated or discarded.
+- [ ] Record the hosting decision using [`hosting-decision.md`](hosting-decision.md).
+- [ ] Define reproducible infrastructure, environment separation, network
+  boundaries, ingress, DNS, TLS, observability, and cost controls.
+- [ ] Keep the backend without an independent public route unless a reviewed
+  architecture requires one.
+- [ ] Define rollback and teardown procedures before enabling public access.
 
-## Production Entra configuration
+## Managed relational database
 
-- [ ] Create or confirm a dedicated production app registration and HTTPS redirect URI.
-- [ ] Keep the production application single-tenant and use B2B guest invitations for external users.
-- [ ] Confirm email one-time passcode fallback is enabled for guests.
-- [ ] Configure the production SPA/API delegated scope and least-privilege consent.
-- [ ] Define the production demo-access app role or dedicated group.
-- [ ] Require assignment to the production enterprise application where supported.
-- [ ] Set the production redirect URI to the deployed frontend URL and verify an exact match in Entra.
-- [ ] Keep production tenant, application, role, scope, redirect, and object identifiers in deployment configuration only.
+- [ ] Select a managed relational provider based on compatibility, cost,
+  operations, backup and restore, availability, and expected workload.
+- [ ] Replace the temporary SQLite deployment path.
+- [ ] Review EF Core models and migrations for provider-specific assumptions
+  and create a dedicated migration path for the selected provider.
+- [ ] Run migrations separately from serving application startup.
+- [ ] Define database authentication, network access, monitoring, backup,
+  restore, retention, and disaster recovery.
+- [ ] Decide whether private-demo data is discarded or migrated.
 
-## Public verification and release decision
+## Identity and authorization
 
-- [ ] Verify an invited Microsoft organizational account can sign in.
-- [ ] Verify an invited non-Microsoft email can use email one-time passcode.
-- [ ] Verify the deployed frontend shows only the sign-in experience when signed out.
-- [ ] Verify the deployed HTTPS redirect and callback flow.
-- [ ] Verify public ingress cannot bypass API authorization through a proxy or sidecar address.
-- [ ] Re-run the security review against the deployed configuration.
-- [ ] Recheck current Microsoft Entra External ID pricing before enabling public access.
-- [ ] Record the final public deployment decision before enabling public ingress.
+- [ ] Retain Microsoft Entra unless the hosting decision explicitly selects a
+  replacement identity provider.
+- [ ] Configure production SPA and API registrations, exact HTTPS redirect,
+  delegated scope, app role, consent, and assignment policy.
+- [ ] Verify invited Microsoft identities and email one-time passcode guests.
+- [ ] Verify anonymous and unassigned identities cannot access application data
+  or operations.
+- [ ] Keep tenant, application, role, scope, redirect, and object identifiers in
+  deployment configuration only.
+
+## Public verification and release
+
+- [ ] Verify browser security headers on the externally served response.
+- [ ] Confirm proxy and network routing cannot expose or bypass the backend.
+- [ ] Run dependency, secret, source, infrastructure, and final-image security
+  checks against the release commit.
+- [ ] Confirm logs and error responses do not expose credentials, tokens,
+  identity data, connection strings, prompts, or private configuration.
+- [ ] Verify the main profile, job, status, and Mock-analysis workflow with
+  fictional data and no paid-provider secret.
+- [ ] Verify persistence, replacement deployment, rollback, backup, restore,
+  recovery, and teardown.
+- [ ] Run a fresh security review against the selected deployed architecture.
+- [ ] Record the release decision before enabling persistent public ingress.

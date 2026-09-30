@@ -13,17 +13,17 @@ Career Assistant provides a small, linear workflow for:
 
 ## Status
 
-The MVP and its core backend/frontend workflow are complete. Invitation-only Microsoft Entra authentication and server-side authorization are working locally.
+The MVP and its core backend/frontend workflow are complete. Local source and
+Docker Compose development are the supported current paths. Invitation-only
+Microsoft Entra authentication and server-side authorization remain supported.
 
-The next milestone is a private Azure Container Apps deployment with:
-
-- a React frontend and ASP.NET Core API;
-- persistent temporary SQLite storage;
-- deterministic Mock AI analysis with no paid-provider secret;
-- safe fictional demo data; and
-- Microsoft Entra authentication restricted to explicitly authorized users.
-
-Public deployment is deferred until the private deployment has been verified.
+Cloud hosting selection is paused while the deployment options are reassessed.
+The existing Azure infrastructure and operational documents are retained as
+historical reference material, not an active deployment target. The owner
+reports that the Azure subscription expired and was deleted; this has not been
+independently verified from the repository. No new provider-specific
+infrastructure will be added until the
+[hosting decision](docs/hosting-decision.md) is recorded.
 
 ## Tech stack
 
@@ -31,7 +31,7 @@ Public deployment is deferred until the private deployment has been verified.
 - Frontend: React, TypeScript, Vite, Fetch API
 - Authentication: Microsoft Entra ID with server-side app-role authorization
 - Containers: Docker Compose and nginx
-- Planned hosting: Azure Container Apps
+- Hosting: undecided; the retired Azure work is retained as historical reference
 
 ## Quick start
 
@@ -63,8 +63,9 @@ See the [development guide](docs/development.md) for full setup, authentication,
 
 - [Development guide](docs/development.md) — local setup, API routes, authentication, tests, Docker, and configuration
 - [Frontend guide](src/frontend/README.md) — frontend structure and component-level development
-- [Azure infrastructure](infra/azure/README.md) — Bicep modules, parameters, probes, and authenticated image builds
-- [Private deployment checklist](docs/deploy-todo.md) — current Azure deployment milestone
-- [Azure architecture](docs/azure-architecture.md) — proposed topology and trust boundaries
-- [Security review](docs/security-review.md) — current private-deployment security assessment
-- [Public production backlog](docs/production-todo.md) — deferred public-release work
+- [Hosting decision](docs/hosting-decision.md) — criteria to evaluate before provider-specific work resumes
+- [Public production backlog](docs/production-todo.md) — provider-neutral production requirements
+- [Archived Azure infrastructure](infra/azure/README.md) — retained Bicep reference
+- [Archived Azure deployment checklist](docs/deploy-todo.md) — historical implementation and verification record
+- [Archived Azure architecture](docs/azure-architecture.md) — retained topology and trust boundaries
+- [Archived Azure security review](docs/security-review.md) — historical deployment-specific assessment

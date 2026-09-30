@@ -1,36 +1,32 @@
 # Security readiness backlog
 
-The repository now has two distinct deployment gates.
+Local development and Docker Compose are the supported current paths. Invitation-only
+Microsoft Entra authentication and server-side authorization remain supported.
+Cloud hosting is undecided; select a target through the
+[hosting decision](hosting-decision.md) before provider-specific work resumes.
 
-## Private owner-only milestone
+## Retired Azure milestone
 
-Authentication and server-side authorization are implemented and locally verified. Private deployment remains gated on:
+The Azure foundation and private Container App were deployed and verified to the
+extent recorded in the [archived deployment checklist](deploy-todo.md). A clean
+SQLite database on Azure Files reproduced the migration-start failure. The last
+recorded state had the revision stopped and external ingress disabled. The owner
+reports that the subscription subsequently expired and was deleted; this has
+not been independently verified. No live Azure verification is currently planned.
 
-Repository readiness, Azure CLI authentication, region selection, required provider registration, subscription permission inspection, and Bicep compilation are complete and recorded in [`deploy-todo.md`](./deploy-todo.md). No Azure workload resources have been created.
+The [archived security review](security-review.md) records which controls were
+and were not verified. Its unchecked items are historical, not a deployment
+queue. Retained Bicep files compile on relevant changes but do not deploy.
 
-Private deployment remains gated on:
+## Future deployment gate
 
-1. Re-running tests, audits, secret scanning, image scans, and Bicep compilation from the final deployment commit.
-2. Reviewing Azure `what-if` output, least-privilege identity assignments, public service endpoints, and storage linkage.
-3. Verifying the live Entra assignment, direct API boundary, proxy routing, HTTPS behavior, and backend sidecar isolation.
-4. Validating SQLite migration, locking, persistence, restart, and replacement-revision behavior on Azure Files using fictional data.
-5. Inspecting Azure logs and errors for sensitive configuration or identity disclosure.
-6. Enabling budget alerts and recording rollback, emergency stop, and teardown procedures.
-7. Recording explicit acceptance for any owner-only limitation that remains after live verification.
+Before any private or public hosting milestone, record the selected compute,
+managed relational database, networking, identity, migration, cost, backup,
+recovery, and teardown approach in the [hosting decision](hosting-decision.md).
+Then re-run relevant tests, audits, secret and image scans, and a security review
+against the selected live configuration. The provider-neutral requirements are
+tracked in the [production backlog](production-todo.md).
 
-The ordered execution and evidence checklist is [`deploy-todo.md`](./deploy-todo.md).
-
-## Public production milestone
-
-Public production remains blocked on:
-
-1. Replacing SQLite and Azure Files with a selected managed relational SQL provider and deployment-safe migration process.
-2. Completing browser and proxy edge hardening and validating real client-address behavior.
-3. Verifying the intended invited-guest and email one-time passcode workflows in the deployed environment.
-4. Reviewing public network exposure, secrets/keys, identities, logs, backup/restore, availability, and disaster recovery.
-5. Strengthening remaining supply-chain controls where the public threat model justifies them.
-6. Re-running the security review against the live public configuration and recording the final release decision.
-
-The public milestone is tracked in [`production-todo.md`](./production-todo.md).
-
-Exact tactical evidence remains in the ignored local `docs/security-review-private.md` and must not be committed or copied into public artifacts.
+Exact tactical evidence remains in the ignored local
+`docs/security-review-private.md` and must not be committed or copied into public
+artifacts.

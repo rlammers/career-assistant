@@ -1,16 +1,22 @@
-# Security review: private Azure deployment readiness
+# Archived security review: private Azure deployment
+
+> **Historical reference:** This assessment applies only to the former Azure
+> design and deployment. The owner reports that the subscription expired and
+> was deleted; this has not been independently verified. It is not a current
+> production approval. A new Azure deployment requires a fresh
+> [hosting decision](hosting-decision.md) and security review.
 
 Review updated: 2026-07-25
 
 Scope: application, Microsoft Entra boundary, frontend proxy, backend API, persistence, containers, CI, and proposed Azure infrastructure
 
-Deployment status: **the Azure foundation, reviewed application deployment, immutable image references, managed-identity image pulls, and owner-only Entra configuration are verified. A controlled disposable-database reset reproduced the backend migration-start failure on a clean SQLite database. The revision is stopped and external ingress is disabled, so runtime security verification remains blocked**
+Last recorded deployment state: **the Azure foundation, reviewed application deployment, immutable image references, managed-identity image pulls, and owner-only Entra configuration were verified. A controlled disposable-database reset reproduced the backend migration-start failure on a clean SQLite database. The revision was stopped and external ingress disabled; runtime security verification was not completed. This is not a claim about current Azure resources.**
 
 ## Summary
 
-No critical or high-severity issue was identified in the current static owner-only deployment path. Invitation-only Microsoft Entra authentication and server-side app-role authorization are implemented and locally verified. The proposed Azure configuration enables authentication, exposes only the frontend container, uses Mock AI without a paid-provider secret, and constrains the provisional SQLite deployment to one replica.
+No critical or high-severity issue was identified in the then-reviewed static owner-only deployment path. Invitation-only Microsoft Entra authentication and server-side app-role authorization were implemented and locally verified. The archived Azure configuration enabled authentication, exposed only the frontend container, used Mock AI without a paid-provider secret, and constrained the provisional SQLite deployment to one replica.
 
-This is not a claim that application controls work in production. The foundation provider-level `what-if`, deployment, least-privilege image-pull identity, logging integration, and storage linkage have been verified. The private application inputs and compiled template were statically reviewed, Provider validation and Azure `what-if` predicted exactly the intended Container App creation, and the controlled deployment succeeded. The exact SPA redirect, sole owner role assignment, and principal-only `access_as_user` consent are verified without tenant-wide consent or an unused Graph data permission. Both deployed image references match the retained immutable digests, and the configured identity successfully pulled both images without a registry credential or pull failure. A single controlled reset removed only the disposable SQLite database, but the unchanged revision reproduced its migration-start failure before applying `InitialCreate` or listening. The revision is now stopped with external ingress disabled. Token validation in the deployed browser and API, application logs beyond the targeted startup evidence, probes, cost controls, persistence, and all runtime application controls must still be verified through [`deploy-todo.md`](./deploy-todo.md).
+This is not a claim that application controls worked in production. The foundation provider-level `what-if`, deployment, least-privilege image-pull identity, logging integration, and storage linkage were verified at the time. The private application inputs and compiled template were statically reviewed, Provider validation and Azure `what-if` predicted exactly the intended Container App creation, and the controlled deployment succeeded. The exact SPA redirect, sole owner role assignment, and principal-only `access_as_user` consent were verified without tenant-wide consent or an unused Graph data permission. Both deployed image references matched the retained immutable digests, and the configured identity successfully pulled both images without a registry credential or pull failure. A single controlled reset removed only the disposable SQLite database, but the unchanged revision reproduced its migration-start failure before applying `InitialCreate` or listening. The last recorded state had the revision stopped with external ingress disabled. Token validation in the deployed browser and API, application logs beyond the targeted startup evidence, probes, cost controls, persistence, and runtime application controls were never completed, as recorded in [`deploy-todo.md`](./deploy-todo.md).
 
 Public production remains a separate blocked milestone. Its database, edge-hardening, guest-access, operational, and final security-review work is tracked in [`production-todo.md`](./production-todo.md).
 
@@ -72,7 +78,7 @@ No remaining risk is accepted by this documentation update. Any owner-only accep
 | Private workload images and registry identity | Both revision images match retained digests; the expected identity has one registry-scoped `AcrPull`; targeted events confirm both pulls and no pull failure | Immutable image selection and managed-identity pulls verified |
 | Dependency, secret, and final-image scans | npm/NuGet audits clean, Gitleaks scanned 117 commits with no leaks, source filesystem scan clean, and both image archives had no HIGH/CRITICAL vulnerabilities | Locally verified |
 | Reverse proxy and persistence | Local container smoke evidence exists; the Azure SQLite reset reproduced the migration-start failure | Azure persistence design not accepted |
-| Entra, ingress, probes, storage, logs, and cost controls | Entra registration and image-pull identity are verified; the failed revision is stopped and external ingress is disabled | Azure runtime behavior blocked and unverified |
+| Entra, ingress, probes, storage, logs, and cost controls | Entra registration and image-pull identity were verified; the failed revision was stopped and external ingress disabled | Azure runtime behavior was blocked and unverified |
 
 ## Readiness decisions
 
@@ -82,7 +88,7 @@ The current authentication, private-deployment Bicep, frontend image configurati
 
 ### Private owner-only deployment readiness
 
-Not approved for private use. The foundation, application deployment, immutable images, managed-identity pulls, SPA redirect, and owner-only Entra configuration are verified, but a controlled disposable-database reset reproduced the backend migration-start failure before `InitialCreate` or HTTP listening. The sole revision is stopped and external ingress is disabled. Reassess the persistence design in a separate increment before another deployment attempt or any remaining Section 6 configuration, identity-boundary, probe, workflow, persistence, logging, cost, rollback, or teardown verification. Only fictional data may be used.
+The historical deployment was not approved for private use. The foundation, application deployment, immutable images, managed-identity pulls, SPA redirect, and owner-only Entra configuration were verified, but a controlled disposable-database reset reproduced the backend migration-start failure before `InitialCreate` or HTTP listening. The last recorded state had the sole revision stopped and external ingress disabled. Any new deployment requires a fresh hosting decision, persistence design, and security review. Only fictional data may be used.
 
 ### Public production readiness
 
