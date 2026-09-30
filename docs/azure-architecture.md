@@ -1,13 +1,14 @@
-# Proposed Azure deployment architecture
+# Archived Azure deployment architecture
 
-Status: **paused reference; not the active deployment architecture**
+Status: **historical reference; not the active deployment architecture**
 Region: Australia East
 
-Resume implementation only if the [hosting decision](hosting-decision.md)
-selects Azure. Historical deployment evidence is retained separately in the
+Use this design only for comparison. Any new Azure implementation requires a
+fresh [hosting decision](hosting-decision.md) and deployment design. Historical
+deployment evidence is retained separately in the
 [Azure deployment checklist](deploy-todo.md).
 
-The temporary private milestone uses an externally reachable Azure URL with Microsoft Entra application access assigned only to the owner. It does not use private-network-only ingress. Public production remains a later milestone.
+The historical temporary private milestone used an externally reachable Azure URL with Microsoft Entra application access assigned only to the owner. It did not use private-network-only ingress. Public production was not deployed.
 
 ```mermaid
 flowchart LR

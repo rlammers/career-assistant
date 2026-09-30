@@ -3,9 +3,12 @@
 Status: **not decided; provider-specific implementation is paused.**
 
 Use this document to record the next hosting decision before adding or
-extending cloud infrastructure. Existing Azure material is reference evidence,
-not an active default. This document does not prefer Azure, AWS, or another
-provider.
+extending cloud infrastructure. Existing Azure material is historical reference
+evidence, not an active default. The owner reports that the prior Azure
+subscription expired and was deleted; this has not been independently
+verified here. A future Azure choice would require a new deployment and fresh
+validation, not resumption of the old environment. This document does not
+prefer Azure, AWS, or another provider.
 
 ## Required decision criteria
 

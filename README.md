@@ -19,8 +19,10 @@ Microsoft Entra authentication and server-side authorization remain supported.
 
 Cloud hosting selection is paused while the deployment options are reassessed.
 The existing Azure infrastructure and operational documents are retained as
-reference material, but Azure is not the active deployment target. No new
-provider-specific infrastructure will be added until the
+historical reference material, not an active deployment target. The owner
+reports that the Azure subscription expired and was deleted; this has not been
+independently verified from the repository. No new provider-specific
+infrastructure will be added until the
 [hosting decision](docs/hosting-decision.md) is recorded.
 
 ## Tech stack
@@ -29,7 +31,7 @@ provider-specific infrastructure will be added until the
 - Frontend: React, TypeScript, Vite, Fetch API
 - Authentication: Microsoft Entra ID with server-side app-role authorization
 - Containers: Docker Compose and nginx
-- Hosting: undecided; Azure reference material is retained while options are evaluated
+- Hosting: undecided; the retired Azure work is retained as historical reference
 
 ## Quick start
 
@@ -63,7 +65,7 @@ See the [development guide](docs/development.md) for full setup, authentication,
 - [Frontend guide](src/frontend/README.md) — frontend structure and component-level development
 - [Hosting decision](docs/hosting-decision.md) — criteria to evaluate before provider-specific work resumes
 - [Public production backlog](docs/production-todo.md) — provider-neutral production requirements
-- [Paused Azure infrastructure](infra/azure/README.md) — retained Bicep reference
-- [Paused Azure deployment checklist](docs/deploy-todo.md) — historical implementation and verification record
-- [Paused Azure architecture](docs/azure-architecture.md) — retained topology and trust boundaries
-- [Paused Azure security review](docs/security-review.md) — retained deployment-specific assessment
+- [Archived Azure infrastructure](infra/azure/README.md) — retained Bicep reference
+- [Archived Azure deployment checklist](docs/deploy-todo.md) — historical implementation and verification record
+- [Archived Azure architecture](docs/azure-architecture.md) — retained topology and trust boundaries
+- [Archived Azure security review](docs/security-review.md) — historical deployment-specific assessment
