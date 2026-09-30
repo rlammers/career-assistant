@@ -1,8 +1,13 @@
-# Future Azure deployment runbook
+# Archived Azure deployment runbook
 
-Status: **design only; no steps have been executed**
+> **Historical reference:** Do not execute this runbook against a new
+> subscription without a fresh [hosting decision](hosting-decision.md), design,
+> security review, and cost assessment. The owner reports that the previous
+> subscription expired and was deleted; this has not been independently verified.
 
-This document is an operator checklist, not an executable deployment script. The first owner-only deployment uses the private application wrapper and startup migrations. The public-production sequence remains deferred.
+Status: **archived planning sequence; not an active rollout checklist**
+
+This document records a proposed operator sequence, not an executable deployment script. A separate historical owner-only deployment used the private application wrapper and startup migrations, as recorded in [the deployment checklist](deploy-todo.md). The public-production sequence was not executed.
 
 ## Preconditions
 
