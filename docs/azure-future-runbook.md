@@ -1,5 +1,9 @@
 # Future Azure deployment runbook
 
+> **Paused reference:** Do not use this runbook to resume deployment unless the
+> [hosting decision](hosting-decision.md) selects Azure and the retained state
+> has been revalidated.
+
 Status: **design only; no steps have been executed**
 
 This document is an operator checklist, not an executable deployment script. The first owner-only deployment uses the private application wrapper and startup migrations. The public-production sequence remains deferred.

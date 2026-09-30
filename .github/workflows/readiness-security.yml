@@ -1,4 +1,4 @@
-name: Deployment readiness security
+name: Security baseline
 
 on:
   schedule:
@@ -59,22 +59,6 @@ jobs:
         working-directory: src/backend
         run: dotnet list package --vulnerable --include-transitive --no-restore
 
-  bicep-compilation:
-    name: Compile Bicep templates
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Compile and lint Bicep
-        run: |
-          az bicep install
-          az bicep build --file infra/azure/foundation.bicep --stdout > /dev/null
-          az bicep build --file infra/azure/application.bicep --stdout > /dev/null
-          az bicep build --file infra/azure/private-application.bicep --stdout > /dev/null
-
   secret-scan:
     name: Scan repository secrets
     runs-on: ubuntu-latest
@@ -111,17 +95,17 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
 
       - name: Build backend image
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
         with:
           context: .
           file: src/backend/CareerAssistant.Api/Dockerfile
           load: true
+          pull: true
+          no-cache: true
           tags: career-assistant-backend:security-review
-          cache-from: type=gha,scope=backend-image
-          cache-to: type=gha,mode=max,scope=backend-image
 
       - name: Scan backend image
         run: docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.69.3 image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 career-assistant-backend:security-review
@@ -136,23 +120,23 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
 
       - name: Build frontend image
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
         with:
           context: .
           file: src/frontend/Dockerfile
           load: true
           push: false
+          pull: true
+          no-cache: true
           tags: career-assistant-frontend:security-review
           build-args: |
             VITE_AUTH_ENABLED=true
             VITE_ENTRA_TENANT_ID=11111111-1111-1111-1111-111111111111
             VITE_ENTRA_SPA_CLIENT_ID=22222222-2222-2222-2222-222222222222
             VITE_ENTRA_API_SCOPE=api://33333333-3333-3333-3333-333333333333/access_as_user
-          cache-from: type=gha,scope=frontend-image
-          cache-to: type=gha,mode=max,scope=frontend-image
 
       - name: Scan frontend image
         run: docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.69.3 image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 career-assistant-frontend:security-review

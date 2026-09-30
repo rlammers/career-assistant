@@ -1,5 +1,10 @@
 # Private Azure Container Apps deployment TODO
 
+> **Paused reference:** Azure is not the active deployment target. This file
+> preserves historical implementation and verification evidence and must not be
+> treated as an active procedure. Resume provider-specific work only after the
+> [hosting decision](hosting-decision.md) records Azure as the selected target.
+
 Status: **the Azure foundation, immutable deployed images, managed-identity image pulls, and owner-only Microsoft Entra configuration are verified. A controlled reset of the disposable SQLite database reproduced the backend migration-start failure on a clean database. The sole revision is stopped and external ingress is disabled; runtime, security-boundary, persistence, and operational verification remain blocked pending a separate persistence-design reassessment.**
 
 For this milestone, private means the Azure URL is externally reachable but Microsoft Entra application access is assigned only to the owner. It does not mean private-network-only ingress. Public deployment and broader guest access remain deferred to [`production-todo.md`](./production-todo.md).
