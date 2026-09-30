@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter, MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ProfileGate } from './App';
@@ -43,7 +43,7 @@ describe('profile-first workflow gate', () => {
 
     expect(await screen.findByRole('heading', { name: 'Job Applications' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Jobs' })).toBeInTheDocument();
-    expect(jobAPI.getJobs).toHaveBeenCalled();
+    await waitFor(() => expect(jobAPI.getJobs).toHaveBeenCalled());
   });
 
   it('shows profile-load errors instead of treating them as a missing profile', async () => {
